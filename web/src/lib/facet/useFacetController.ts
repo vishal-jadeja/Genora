@@ -44,13 +44,13 @@ export function useFacetController() {
     }));
   }, []);
   const goDash = useCallback(() => setView("dashboard"), [setView]);
-  const goSettings = useCallback(
-    (tab?: SettingsTab) => {
-      setState((s) => ({ ...s, view: "settings", settingsTab: tab ?? "keys" }));
-    },
-    []
+  const goSettings = useCallback((tab?: SettingsTab) => {
+    setState((s) => ({ ...s, view: "settings", settingsTab: tab ?? "keys" }));
+  }, []);
+  const homeClick = useCallback(
+    () => patch({ activeFolder: null, search: "" }),
+    [patch],
   );
-  const homeClick = useCallback(() => patch({ activeFolder: null, search: "" }), [patch]);
 
   const newPost = useCallback(
     (folder?: string | null) => {
@@ -64,12 +64,14 @@ export function useFacetController() {
         slopHard: false,
       });
     },
-    [patch]
+    [patch],
   );
 
   const openPost = useCallback((post: Post) => {
     if (["Generated", "Edited", "Exported"].includes(post.status)) {
-      const sel = post.platforms.length ? post.platforms : (["linkedin"] as PlatformId[]);
+      const sel = post.platforms.length
+        ? post.platforms
+        : (["linkedin"] as PlatformId[]);
       const content: Partial<Record<PlatformId, string>> = {};
       const versions: Partial<Record<PlatformId, string[]>> = {};
       sel.forEach((id) => {
@@ -104,7 +106,7 @@ export function useFacetController() {
   const onSearch = useCallback((v: string) => patch({ search: v }), [patch]);
   const selectFolder = useCallback(
     (id: string | null) => patch({ activeFolder: id, search: "" }),
-    [patch]
+    [patch],
   );
   const toggleMove = useCallback((id: string) => {
     setState((s) => ({ ...s, moveMenu: s.moveMenu === id ? null : id }));
@@ -112,7 +114,9 @@ export function useFacetController() {
   const moveTo = useCallback((postId: string, folderId: string | null) => {
     setState((s) => ({
       ...s,
-      posts: s.posts.map((p) => (p.id === postId ? { ...p, folder: folderId } : p)),
+      posts: s.posts.map((p) =>
+        p.id === postId ? { ...p, folder: folderId } : p,
+      ),
       moveMenu: null,
     }));
   }, []);
@@ -120,7 +124,7 @@ export function useFacetController() {
   // ---- dashboard composer -------------------------------------------------
   const onDashDraft = useCallback(
     (v: string) => patch({ dashDraft: v, dashFocused: true }),
-    [patch]
+    [patch],
   );
   const dashFocus = useCallback(() => patch({ dashFocused: true }), [patch]);
   const openEditorFromDash = useCallback(() => {
@@ -139,10 +143,19 @@ export function useFacetController() {
   }, []);
 
   // ---- compose --------------------------------------------------------
-  const onTitle = useCallback((v: string) => patch({ composeTitle: v }), [patch]);
-  const onDraft = useCallback((v: string) => patch({ draft: v, softNudge: false }), [patch]);
+  const onTitle = useCallback(
+    (v: string) => patch({ composeTitle: v }),
+    [patch],
+  );
+  const onDraft = useCallback(
+    (v: string) => patch({ draft: v, softNudge: false }),
+    [patch],
+  );
   const togglePlatform = useCallback((id: PlatformId) => {
-    setState((s) => ({ ...s, platforms: { ...s.platforms, [id]: !s.platforms[id] } }));
+    setState((s) => ({
+      ...s,
+      platforms: { ...s.platforms, [id]: !s.platforms[id] },
+    }));
   }, []);
   const openModel = useCallback(() => {
     setState((s) => ({ ...s, modelOpen: !s.modelOpen }));
@@ -151,13 +164,14 @@ export function useFacetController() {
     setState((s) => ({ ...s, folderPickerOpen: !s.folderPickerOpen }));
   }, []);
   const pickComposeFolder = useCallback(
-    (id: string | null) => patch({ composeFolder: id, folderPickerOpen: false }),
-    [patch]
+    (id: string | null) =>
+      patch({ composeFolder: id, folderPickerOpen: false }),
+    [patch],
   );
 
   const hasKey = useCallback(
     (s: FacetState = state) => Object.values(s.keys).some((k) => k.c),
-    [state]
+    [state],
   );
 
   const pickModel = useCallback(
@@ -167,7 +181,7 @@ export function useFacetController() {
         return s;
       });
     },
-    [hasKey]
+    [hasKey],
   );
 
   // ---- generation -------------------------------------------------------
@@ -242,7 +256,13 @@ export function useFacetController() {
       return;
     }
     const title = t.trim().split(/\s+/).slice(0, 6).join(" ") || "Untitled";
-    patch({ draft: t, composeTitle: title, view: "compose", softNudge: false, softDismissed: false });
+    patch({
+      draft: t,
+      composeTitle: title,
+      view: "compose",
+      softNudge: false,
+      softDismissed: false,
+    });
 
     const { hard, soft } = thresholds(state.slopStrictness);
     const words = wordCount(t);
@@ -271,15 +291,21 @@ export function useFacetController() {
   }, [patch, runGenerate]);
 
   // ---- output -----------------------------------------------------------
-  const backToCompose = useCallback(() => patch({ view: "compose", slopHard: false }), [patch]);
+  const backToCompose = useCallback(
+    () => patch({ view: "compose", slopHard: false }),
+    [patch],
+  );
   const selectTab = useCallback(
     (id: PlatformId) => patch({ activeTab: id, historyOpen: false }),
-    [patch]
+    [patch],
   );
   const onEditContent = useCallback((v: string) => {
     setState((s) => ({ ...s, content: { ...s.content, [s.activeTab]: v } }));
   }, []);
-  const onRedditSub = useCallback((v: string) => patch({ redditSub: v }), [patch]);
+  const onRedditSub = useCallback(
+    (v: string) => patch({ redditSub: v }),
+    [patch],
+  );
   const regenerate = useCallback(() => {
     setState((s) => {
       const tab = s.activeTab;
@@ -296,13 +322,20 @@ export function useFacetController() {
     setState((s) => ({ ...s, historyOpen: !s.historyOpen }));
   }, []);
   const restoreVersion = useCallback((tab: PlatformId, text: string) => {
-    setState((s) => ({ ...s, content: { ...s.content, [tab]: text }, historyOpen: false }));
+    setState((s) => ({
+      ...s,
+      content: { ...s.content, [tab]: text },
+      historyOpen: false,
+    }));
   }, []);
-  const flash = useCallback((msg: string) => {
-    patch({ flashMsg: msg });
-    if (flashTimer.current) clearTimeout(flashTimer.current);
-    flashTimer.current = setTimeout(() => patch({ flashMsg: "" }), 3200);
-  }, [patch]);
+  const flash = useCallback(
+    (msg: string) => {
+      patch({ flashMsg: msg });
+      if (flashTimer.current) clearTimeout(flashTimer.current);
+      flashTimer.current = setTimeout(() => patch({ flashMsg: "" }), 3200);
+    },
+    [patch],
+  );
   const copyText = useCallback(() => {
     const t = state.content[state.activeTab] || "";
     if (typeof navigator !== "undefined" && navigator.clipboard) {
@@ -316,7 +349,9 @@ export function useFacetController() {
     if (m.share === "prefill") {
       if (m.sub) {
         if (!state.redditSub.trim()) return;
-        flash("Opening r/" + state.redditSub.trim() + " with your draft prefilled…");
+        flash(
+          "Opening r/" + state.redditSub.trim() + " with your draft prefilled…",
+        );
       } else {
         flash("Opening the X composer with your text already in place…");
       }
@@ -330,12 +365,21 @@ export function useFacetController() {
   }, [state, flash]);
 
   // ---- settings -----------------------------------------------------------
-  const setSettingsTab = useCallback((t: SettingsTab) => patch({ settingsTab: t }), [patch]);
+  const setSettingsTab = useCallback(
+    (t: SettingsTab) => patch({ settingsTab: t }),
+    [patch],
+  );
   const onKeyInput = useCallback((id: ProviderId, v: string) => {
-    setState((s) => ({ ...s, keys: { ...s.keys, [id]: { ...s.keys[id], v } } }));
+    setState((s) => ({
+      ...s,
+      keys: { ...s.keys, [id]: { ...s.keys[id], v } },
+    }));
   }, []);
   const validateKey = useCallback((id: ProviderId) => {
-    setState((s) => ({ ...s, keys: { ...s.keys, [id]: { ...s.keys[id], c: true } } }));
+    setState((s) => ({
+      ...s,
+      keys: { ...s.keys, [id]: { ...s.keys[id], c: true } },
+    }));
   }, []);
   const removeKey = useCallback((id: ProviderId) => {
     setState((s) => ({ ...s, keys: { ...s.keys, [id]: { c: false, v: "" } } }));
@@ -352,9 +396,12 @@ export function useFacetController() {
   }, []);
   const setSlopStrictness = useCallback(
     (v: SlopStrictness) => patch({ slopStrictness: v }),
-    [patch]
+    [patch],
   );
-  const resetInstrDefaults = useCallback(() => patch({ instr: { ...INSTR_DEFAULTS } }), [patch]);
+  const resetInstrDefaults = useCallback(
+    () => patch({ instr: { ...INSTR_DEFAULTS } }),
+    [patch],
+  );
 
   // ---- derived (pure data, no styling) ------------------------------------
   const derived = useMemo(() => {
@@ -367,14 +414,16 @@ export function useFacetController() {
     const quotaLow = !hk && S.freeLeft <= 1;
 
     const hr = new Date().getHours();
-    const greeting = hr < 12 ? "Good morning" : hr < 18 ? "Good afternoon" : "Good evening";
+    const greeting =
+      hr < 12 ? "Good morning" : hr < 18 ? "Good afternoon" : "Good evening";
 
     const counts: Record<string, number> = {};
     S.folders.forEach((f) => (counts[f.id] = 0));
     S.posts.forEach((p) => {
       if (p.folder && counts[p.folder] != null) counts[p.folder]++;
     });
-    const folderName = (id: string | null) => S.folders.find((f) => f.id === id)?.name ?? null;
+    const folderName = (id: string | null) =>
+      S.folders.find((f) => f.id === id)?.name ?? null;
 
     const dashExpanded = S.dashFocused || S.dashDraft.trim() !== "";
     const dashWords = wordCount(S.dashDraft);
@@ -387,9 +436,13 @@ export function useFacetController() {
     const q = S.search.trim().toLowerCase();
     let rows = S.posts;
     if (S.activeFolder) rows = rows.filter((p) => p.folder === S.activeFolder);
-    if (q) rows = rows.filter((p) => (p.title + " " + p.snippet).toLowerCase().includes(q));
+    if (q)
+      rows = rows.filter((p) =>
+        (p.title + " " + p.snippet).toLowerCase().includes(q),
+      );
     const showEmptyAll = S.posts.length === 0;
-    const showEmptyFolder = !showEmptyAll && rows.length === 0 && S.activeFolder !== null && !q;
+    const showEmptyFolder =
+      !showEmptyAll && rows.length === 0 && S.activeFolder !== null && !q;
     const hasRows = rows.length > 0;
     const hasContent = S.posts.length > 0;
 
@@ -553,7 +606,7 @@ export function useFacetController() {
       toggleSlop,
       setSlopStrictness,
       resetInstrDefaults,
-    ]
+    ],
   );
 
   return { state, derived, actions };

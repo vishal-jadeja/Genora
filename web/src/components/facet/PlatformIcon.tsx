@@ -14,7 +14,11 @@ export interface PlatformIconProps {
   active?: boolean;
 }
 
-export function PlatformIcon({ platform, size = 20, active = true }: PlatformIconProps) {
+export function PlatformIcon({
+  platform,
+  size = 20,
+  active = true,
+}: PlatformIconProps) {
   const px = size;
   const radius = Math.max(4, Math.round(size * 0.28));
   const bg = active ? BRAND[platform] : "var(--c-tile)";

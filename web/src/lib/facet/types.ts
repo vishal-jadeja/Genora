@@ -8,12 +8,7 @@ export type PostStatus = "Draft" | "Generated" | "Edited" | "Exported";
 
 export type ViewName = "dashboard" | "compose" | "output" | "settings";
 
-export type SettingsTab =
-  | "keys"
-  | "instructions"
-  | "voice"
-  | "slop"
-  | "model";
+export type SettingsTab = "keys" | "instructions" | "voice" | "slop" | "model";
 
 export type SlopStrictness = "lenient" | "balanced" | "strict";
 

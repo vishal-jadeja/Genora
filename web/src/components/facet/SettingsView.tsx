@@ -2,7 +2,11 @@
 
 import type { CSSProperties } from "react";
 import { MODELS, ORDER, PLAT, PROVIDERS } from "@/lib/facet/data";
-import type { ProviderId, SettingsTab, SlopStrictness } from "@/lib/facet/types";
+import type {
+  ProviderId,
+  SettingsTab,
+  SlopStrictness,
+} from "@/lib/facet/types";
 import { Hoverable } from "./Hoverable";
 import { GREEN, PRIMARY, radioStyle } from "./styleHelpers";
 import type { FacetViewProps } from "./viewProps";
@@ -16,9 +20,21 @@ const SETTINGS_TABS: { id: SettingsTab; label: string }[] = [
 ];
 
 const SLOP_OPTIONS: { id: SlopStrictness; label: string; desc: string }[] = [
-  { id: "lenient", label: "Lenient", desc: "Only block completely empty or one-line input. Nudge rarely." },
-  { id: "balanced", label: "Balanced", desc: "Block bare topics with no stance; nudge thin-but-real drafts." },
-  { id: "strict", label: "Strict", desc: "Demand a clear opinion and a concrete detail before generating." },
+  {
+    id: "lenient",
+    label: "Lenient",
+    desc: "Only block completely empty or one-line input. Nudge rarely.",
+  },
+  {
+    id: "balanced",
+    label: "Balanced",
+    desc: "Block bare topics with no stance; nudge thin-but-real drafts.",
+  },
+  {
+    id: "strict",
+    label: "Strict",
+    desc: "Demand a clear opinion and a concrete detail before generating.",
+  },
 ];
 
 function navTabStyle(active: boolean): CSSProperties {
@@ -64,25 +80,68 @@ function modelItemStyle(selected: boolean): CSSProperties {
 export function SettingsView({ state, derived, actions }: FacetViewProps) {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <header style={{ display: "flex", alignItems: "center", gap: 16, padding: "15px 28px", borderBottom: "1px solid var(--c-border)" }}>
+      <header
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+          padding: "15px 28px",
+          borderBottom: "1px solid var(--c-border)",
+        }}
+      >
         <Hoverable
           as="button"
           onClick={actions.goDash}
-          style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "#8f8f8f", fontSize: 13.5 }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            background: "none",
+            border: "none",
+            color: "#8f8f8f",
+            fontSize: 13.5,
+          }}
           hoverStyle={{ color: "#ededed" }}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.9"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M15 18l-6-6 6-6" />
           </svg>
           Dashboard
         </Hoverable>
-        <span style={{ fontFamily: "var(--font-newsreader), serif", fontSize: 16 }}>Settings</span>
+        <span
+          style={{ fontFamily: "var(--font-newsreader), serif", fontSize: 16 }}
+        >
+          Settings
+        </span>
       </header>
 
       <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
-        <nav style={{ width: 224, flex: "none", borderRight: "1px solid var(--c-border)", padding: "20px 14px", display: "flex", flexDirection: "column", gap: 1 }}>
+        <nav
+          style={{
+            width: 224,
+            flex: "none",
+            borderRight: "1px solid var(--c-border)",
+            padding: "20px 14px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 1,
+          }}
+        >
           {SETTINGS_TABS.map((s) => (
-            <button key={s.id} onClick={() => actions.setSettingsTab(s.id)} style={navTabStyle(state.settingsTab === s.id)}>
+            <button
+              key={s.id}
+              onClick={() => actions.setSettingsTab(s.id)}
+              style={navTabStyle(state.settingsTab === s.id)}
+            >
               {s.label}
             </button>
           ))}
@@ -92,15 +151,52 @@ export function SettingsView({ state, derived, actions }: FacetViewProps) {
           <div style={{ maxWidth: 640 }}>
             {state.settingsTab === "keys" && (
               <>
-                <h2 style={{ margin: "0 0 6px", fontFamily: "var(--font-newsreader), serif", fontWeight: 500, fontSize: 23 }}>API keys</h2>
-                <p style={{ margin: "0 0 20px", color: "#8f8f8f", fontSize: 14, lineHeight: 1.5 }}>{derived.tierBanner}</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <h2
+                  style={{
+                    margin: "0 0 6px",
+                    fontFamily: "var(--font-newsreader), serif",
+                    fontWeight: 500,
+                    fontSize: 23,
+                  }}
+                >
+                  API keys
+                </h2>
+                <p
+                  style={{
+                    margin: "0 0 20px",
+                    color: "#8f8f8f",
+                    fontSize: 14,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {derived.tierBanner}
+                </p>
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 12 }}
+                >
                   {PROVIDERS.map((pr) => {
                     const k = state.keys[pr.id as ProviderId];
                     return (
-                      <div key={pr.id} style={{ border: "1px solid var(--c-borderStrong)", borderRadius: 12, padding: "16px 18px", background: "var(--c-surface)" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                          <span style={{ fontSize: 15, fontWeight: 600 }}>{pr.name}</span>
+                      <div
+                        key={pr.id}
+                        style={{
+                          border: "1px solid var(--c-borderStrong)",
+                          borderRadius: 12,
+                          padding: "16px 18px",
+                          background: "var(--c-surface)",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            marginBottom: 12,
+                          }}
+                        >
+                          <span style={{ fontSize: 15, fontWeight: 600 }}>
+                            {pr.name}
+                          </span>
                           <span
                             style={{
                               fontSize: 11,
@@ -108,22 +204,46 @@ export function SettingsView({ state, derived, actions }: FacetViewProps) {
                               padding: "2px 8px",
                               borderRadius: 5,
                               color: k.c ? GREEN : "#8f8f8f",
-                              background: k.c ? "rgba(108,174,142,.12)" : "var(--c-tile)",
+                              background: k.c
+                                ? "rgba(108,174,142,.12)"
+                                : "var(--c-tile)",
                             }}
                           >
                             {k.c ? "Connected" : "Not connected"}
                           </span>
                         </div>
-                        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 10,
+                            alignItems: "center",
+                          }}
+                        >
                           <input
                             value={k.v}
-                            onChange={(e) => actions.onKeyInput(pr.id as ProviderId, e.target.value)}
+                            onChange={(e) =>
+                              actions.onKeyInput(
+                                pr.id as ProviderId,
+                                e.target.value,
+                              )
+                            }
                             placeholder={pr.ph}
                             type="password"
-                            style={{ flex: 1, background: "var(--c-surface)", border: "1px solid var(--c-borderStrong)", borderRadius: 8, padding: "9px 13px", fontSize: 13, fontFamily: "var(--font-jetbrains-mono), monospace" }}
+                            style={{
+                              flex: 1,
+                              background: "var(--c-surface)",
+                              border: "1px solid var(--c-borderStrong)",
+                              borderRadius: 8,
+                              padding: "9px 13px",
+                              fontSize: 13,
+                              fontFamily:
+                                "var(--font-jetbrains-mono), monospace",
+                            }}
                           />
                           <button
-                            onClick={() => actions.validateKey(pr.id as ProviderId)}
+                            onClick={() =>
+                              actions.validateKey(pr.id as ProviderId)
+                            }
                             style={{
                               border: `1px solid ${k.c ? "var(--c-borderStrong)" : PRIMARY}`,
                               background: k.c ? "transparent" : PRIMARY,
@@ -139,9 +259,21 @@ export function SettingsView({ state, derived, actions }: FacetViewProps) {
                           {k.c && (
                             <Hoverable
                               as="button"
-                              onClick={() => actions.removeKey(pr.id as ProviderId)}
-                              style={{ background: "none", border: "1px solid var(--c-borderStrong)", borderRadius: 8, color: "#8f8f8f", fontSize: 12.5, padding: "9px 13px" }}
-                              hoverStyle={{ color: "#d47a7a", borderColor: "#4a2626" }}
+                              onClick={() =>
+                                actions.removeKey(pr.id as ProviderId)
+                              }
+                              style={{
+                                background: "none",
+                                border: "1px solid var(--c-borderStrong)",
+                                borderRadius: 8,
+                                color: "#8f8f8f",
+                                fontSize: 12.5,
+                                padding: "9px 13px",
+                              }}
+                              hoverStyle={{
+                                color: "#d47a7a",
+                                borderColor: "#4a2626",
+                              }}
                             >
                               Remove
                             </Hoverable>
@@ -156,33 +288,108 @@ export function SettingsView({ state, derived, actions }: FacetViewProps) {
 
             {state.settingsTab === "instructions" && (
               <>
-                <h2 style={{ margin: "0 0 6px", fontFamily: "var(--font-newsreader), serif", fontWeight: 500, fontSize: 23 }}>Per-platform instructions</h2>
-                <p style={{ margin: "0 0 20px", color: "#8f8f8f", fontSize: 14, lineHeight: 1.5 }}>
-                  Tone, structure, and formatting rules Facet follows for each platform. Override any of these per post.
+                <h2
+                  style={{
+                    margin: "0 0 6px",
+                    fontFamily: "var(--font-newsreader), serif",
+                    fontWeight: 500,
+                    fontSize: 23,
+                  }}
+                >
+                  Per-platform instructions
+                </h2>
+                <p
+                  style={{
+                    margin: "0 0 20px",
+                    color: "#8f8f8f",
+                    fontSize: 14,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Tone, structure, and formatting rules Facet follows for each
+                  platform. Override any of these per post.
                 </p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 8 }}
+                >
                   {ORDER.map((id) => {
                     const open = state.instrOpen === id;
                     return (
-                      <div key={id} style={{ border: "1px solid var(--c-borderStrong)", borderRadius: 12, overflow: "hidden", background: "var(--c-surface)" }}>
+                      <div
+                        key={id}
+                        style={{
+                          border: "1px solid var(--c-borderStrong)",
+                          borderRadius: 12,
+                          overflow: "hidden",
+                          background: "var(--c-surface)",
+                        }}
+                      >
                         <Hoverable
                           as="button"
                           onClick={() => actions.toggleInstr(id)}
-                          style={{ width: "100%", display: "flex", alignItems: "center", gap: 11, background: "none", border: "none", padding: "14px 16px", textAlign: "left" }}
+                          style={{
+                            width: "100%",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 11,
+                            background: "none",
+                            border: "none",
+                            padding: "14px 16px",
+                            textAlign: "left",
+                          }}
                           hoverStyle={{ background: "var(--c-popover)" }}
                         >
-                          <span style={{ width: 22, height: 22, borderRadius: 5, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-jetbrains-mono), monospace", fontSize: 9.5, fontWeight: 600, background: PLAT[id].bg, color: PLAT[id].color }}>
+                          <span
+                            style={{
+                              width: 22,
+                              height: 22,
+                              borderRadius: 5,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontFamily:
+                                "var(--font-jetbrains-mono), monospace",
+                              fontSize: 9.5,
+                              fontWeight: 600,
+                              background: PLAT[id].bg,
+                              color: PLAT[id].color,
+                            }}
+                          >
                             {PLAT[id].mono}
                           </span>
-                          <span style={{ flex: 1, fontSize: 14.5, fontWeight: 500 }}>{PLAT[id].label}</span>
-                          <span style={{ color: "#565656", fontSize: 11 }}>{open ? "▲" : "▼"}</span>
+                          <span
+                            style={{ flex: 1, fontSize: 14.5, fontWeight: 500 }}
+                          >
+                            {PLAT[id].label}
+                          </span>
+                          <span style={{ color: "#565656", fontSize: 11 }}>
+                            {open ? "▲" : "▼"}
+                          </span>
                         </Hoverable>
                         {open && (
-                          <div style={{ padding: "0 16px 16px", animation: "ffade .15s ease" }}>
+                          <div
+                            style={{
+                              padding: "0 16px 16px",
+                              animation: "ffade .15s ease",
+                            }}
+                          >
                             <textarea
                               value={state.instr[id]}
-                              onChange={(e) => actions.onInstr(id, e.target.value)}
-                              style={{ width: "100%", background: "var(--c-surface)", border: "1px solid var(--c-borderStrong)", borderRadius: 8, resize: "vertical", fontSize: 13.5, lineHeight: 1.55, color: "#d6d6d6", padding: 13, minHeight: 96 }}
+                              onChange={(e) =>
+                                actions.onInstr(id, e.target.value)
+                              }
+                              style={{
+                                width: "100%",
+                                background: "var(--c-surface)",
+                                border: "1px solid var(--c-borderStrong)",
+                                borderRadius: 8,
+                                resize: "vertical",
+                                fontSize: 13.5,
+                                lineHeight: 1.55,
+                                color: "#d6d6d6",
+                                padding: 13,
+                                minHeight: 96,
+                              }}
                             />
                           </div>
                         )}
@@ -195,46 +402,164 @@ export function SettingsView({ state, derived, actions }: FacetViewProps) {
 
             {state.settingsTab === "voice" && (
               <>
-                <h2 style={{ margin: "0 0 6px", fontFamily: "var(--font-newsreader), serif", fontWeight: 500, fontSize: 23 }}>Voice calibration</h2>
-                <p style={{ margin: "0 0 20px", color: "#8f8f8f", fontSize: 14, lineHeight: 1.5 }}>
-                  Paste a few of your own past posts. Facet studies your rhythm and word choice so generations sound like you, not a template.
+                <h2
+                  style={{
+                    margin: "0 0 6px",
+                    fontFamily: "var(--font-newsreader), serif",
+                    fontWeight: 500,
+                    fontSize: 23,
+                  }}
+                >
+                  Voice calibration
+                </h2>
+                <p
+                  style={{
+                    margin: "0 0 20px",
+                    color: "#8f8f8f",
+                    fontSize: 14,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Paste a few of your own past posts. Facet studies your rhythm
+                  and word choice so generations sound like you, not a template.
                 </p>
                 <textarea
                   value={state.voice}
                   onChange={(e) => actions.onVoice(e.target.value)}
                   placeholder="Paste 2–3 past posts here…"
-                  style={{ width: "100%", background: "var(--c-surface)", border: "1px solid var(--c-borderStrong)", borderRadius: 12, resize: "vertical", fontFamily: "var(--font-newsreader), serif", fontSize: 15, lineHeight: 1.6, color: "#d6d6d6", padding: 18, minHeight: 220 }}
+                  style={{
+                    width: "100%",
+                    background: "var(--c-surface)",
+                    border: "1px solid var(--c-borderStrong)",
+                    borderRadius: 12,
+                    resize: "vertical",
+                    fontFamily: "var(--font-newsreader), serif",
+                    fontSize: 15,
+                    lineHeight: 1.6,
+                    color: "#d6d6d6",
+                    padding: 18,
+                    minHeight: 220,
+                  }}
                 />
-                <div style={{ marginTop: 12, fontSize: 12.5, color: "#6b6b6b" }}>{derived.voiceStatus}</div>
+                <div
+                  style={{ marginTop: 12, fontSize: 12.5, color: "#6b6b6b" }}
+                >
+                  {derived.voiceStatus}
+                </div>
               </>
             )}
 
             {state.settingsTab === "slop" && (
               <>
-                <h2 style={{ margin: "0 0 6px", fontFamily: "var(--font-newsreader), serif", fontWeight: 500, fontSize: 23 }}>Slop Guard</h2>
-                <p style={{ margin: "0 0 20px", color: "#8f8f8f", fontSize: 14, lineHeight: 1.5 }}>
-                  Facet refuses to generate from input with no real thought behind it. Set how hard it pushes back.
+                <h2
+                  style={{
+                    margin: "0 0 6px",
+                    fontFamily: "var(--font-newsreader), serif",
+                    fontWeight: 500,
+                    fontSize: 23,
+                  }}
+                >
+                  Slop Guard
+                </h2>
+                <p
+                  style={{
+                    margin: "0 0 20px",
+                    color: "#8f8f8f",
+                    fontSize: 14,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Facet refuses to generate from input with no real thought
+                  behind it. Set how hard it pushes back.
                 </p>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", border: "1px solid var(--c-borderStrong)", borderRadius: 12, padding: "15px 18px", marginBottom: 18, background: "var(--c-surface)" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    border: "1px solid var(--c-borderStrong)",
+                    borderRadius: 12,
+                    padding: "15px 18px",
+                    marginBottom: 18,
+                    background: "var(--c-surface)",
+                  }}
+                >
                   <div>
-                    <div style={{ fontSize: 14.5, fontWeight: 500 }}>Slop Guard enabled</div>
-                    <div style={{ fontSize: 12.5, color: "#6b6b6b", marginTop: 3 }}>{state.blockedCount} low-substance drafts turned away so far</div>
+                    <div style={{ fontSize: 14.5, fontWeight: 500 }}>
+                      Slop Guard enabled
+                    </div>
+                    <div
+                      style={{ fontSize: 12.5, color: "#6b6b6b", marginTop: 3 }}
+                    >
+                      {state.blockedCount} low-substance drafts turned away so
+                      far
+                    </div>
                   </div>
                   <button
                     onClick={actions.toggleSlop}
-                    style={{ width: 44, height: 25, borderRadius: 999, border: "none", padding: 0, position: "relative", background: state.slopEnabled ? PRIMARY : "var(--c-borderStrong)" }}
+                    style={{
+                      width: 44,
+                      height: 25,
+                      borderRadius: 999,
+                      border: "none",
+                      padding: 0,
+                      position: "relative",
+                      background: state.slopEnabled
+                        ? PRIMARY
+                        : "var(--c-borderStrong)",
+                    }}
                   >
-                    <span style={{ position: "absolute", top: 3, left: state.slopEnabled ? 22 : 3, width: 19, height: 19, borderRadius: "50%", background: "var(--c-shell)", transition: "left .16s ease" }} />
+                    <span
+                      style={{
+                        position: "absolute",
+                        top: 3,
+                        left: state.slopEnabled ? 22 : 3,
+                        width: 19,
+                        height: 19,
+                        borderRadius: "50%",
+                        background: "var(--c-shell)",
+                        transition: "left .16s ease",
+                      }}
+                    />
                   </button>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 10 }}
+                >
                   {SLOP_OPTIONS.map((o) => {
                     const selected = state.slopStrictness === o.id;
                     return (
-                      <button key={o.id} onClick={() => actions.setSlopStrictness(o.id)} style={strictOptStyle(selected)}>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 3, textAlign: "left" }}>
-                          <span style={{ fontSize: 14.5, fontWeight: 500, color: "#ededed" }}>{o.label}</span>
-                          <span style={{ fontSize: 12.5, color: "#8f8f8f", lineHeight: 1.4 }}>{o.desc}</span>
+                      <button
+                        key={o.id}
+                        onClick={() => actions.setSlopStrictness(o.id)}
+                        style={strictOptStyle(selected)}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 3,
+                            textAlign: "left",
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: 14.5,
+                              fontWeight: 500,
+                              color: "#ededed",
+                            }}
+                          >
+                            {o.label}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: 12.5,
+                              color: "#8f8f8f",
+                              lineHeight: 1.4,
+                            }}
+                          >
+                            {o.desc}
+                          </span>
                         </div>
                         <span style={radioStyle(selected)} />
                       </button>
@@ -246,17 +571,68 @@ export function SettingsView({ state, derived, actions }: FacetViewProps) {
 
             {state.settingsTab === "model" && (
               <>
-                <h2 style={{ margin: "0 0 6px", fontFamily: "var(--font-newsreader), serif", fontWeight: 500, fontSize: 23 }}>Default model</h2>
-                <p style={{ margin: "0 0 20px", color: "#8f8f8f", fontSize: 14, lineHeight: 1.5 }}>{derived.modelPageNote}</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <h2
+                  style={{
+                    margin: "0 0 6px",
+                    fontFamily: "var(--font-newsreader), serif",
+                    fontWeight: 500,
+                    fontSize: 23,
+                  }}
+                >
+                  Default model
+                </h2>
+                <p
+                  style={{
+                    margin: "0 0 20px",
+                    color: "#8f8f8f",
+                    fontSize: 14,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {derived.modelPageNote}
+                </p>
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 10 }}
+                >
                   {MODELS.map((m) => {
                     const locked = !m.free && !derived.hasKey;
                     const selected = state.model === m.id;
                     return (
-                      <button key={m.id} onClick={() => actions.pickModel(m)} style={modelItemStyle(selected)}>
-                        <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <span style={{ fontSize: 14.5, fontWeight: 500, color: locked ? "#565656" : "#ededed" }}>{m.label}</span>
-                          <span style={{ fontSize: 9.5, fontWeight: 600, color: locked ? "#565656" : m.free ? GREEN : "#c9c9c9", border: "1px solid var(--c-borderHover)", borderRadius: 4, padding: "1px 6px" }}>
+                      <button
+                        key={m.id}
+                        onClick={() => actions.pickModel(m)}
+                        style={modelItemStyle(selected)}
+                      >
+                        <span
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: 14.5,
+                              fontWeight: 500,
+                              color: locked ? "#565656" : "#ededed",
+                            }}
+                          >
+                            {m.label}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: 9.5,
+                              fontWeight: 600,
+                              color: locked
+                                ? "#565656"
+                                : m.free
+                                  ? GREEN
+                                  : "#c9c9c9",
+                              border: "1px solid var(--c-borderHover)",
+                              borderRadius: 4,
+                              padding: "1px 6px",
+                            }}
+                          >
                             {locked ? "Locked" : m.tag}
                           </span>
                         </span>

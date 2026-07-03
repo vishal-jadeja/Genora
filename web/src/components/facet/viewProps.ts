@@ -1,5 +1,8 @@
 import type { FacetState } from "@/lib/facet/types";
-import type { FacetActions, FacetDerived } from "@/lib/facet/useFacetController";
+import type {
+  FacetActions,
+  FacetDerived,
+} from "@/lib/facet/useFacetController";
 
 export interface FacetViewProps {
   state: FacetState;

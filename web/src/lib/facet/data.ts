@@ -237,7 +237,8 @@ export const INSTR_DEFAULTS: Record<PlatformId, string> = {
     "Conversational, zero marketing voice. Give real context, invite discussion, end with a genuine question. Respect the target subreddit's norms.",
   medium:
     "Essayistic and long-form. Use a title (##) and let paragraphs breathe. First person, specific, unhurried.",
-  substack: "Warm, direct-address newsletter voice. Keep it short. Sign off personally.",
+  substack:
+    "Warm, direct-address newsletter voice. Keep it short. Sign off personally.",
 };
 
 export const DEFAULT_THEME = THEMES[0];
@@ -320,7 +321,13 @@ export function createInitialState(): FacetState {
     composeTitle: "Writing for the dashboard",
     draft:
       "I spent two years letting my analytics dashboard decide what I wrote about. Every time a post did well, I'd drift toward more of that — and the dashboard rewarded certainty, so I slowly stopped publishing anything I was still thinking through. Last month I hid the stats for 30 days and wrote only what I actually wanted to say. Reach dropped about 30%, but the replies got so much better: longer, more specific, from people I'd actually want to talk to. \"What performs\" and \"what's worth writing\" had quietly drifted apart, and I couldn't see it with the numbers in the way.",
-    platforms: { linkedin: true, x: true, reddit: false, medium: false, substack: true },
+    platforms: {
+      linkedin: true,
+      x: true,
+      reddit: false,
+      medium: false,
+      substack: true,
+    },
     model: "sonnet" as ModelId,
     modelOpen: false,
     composeFolder: "essays",

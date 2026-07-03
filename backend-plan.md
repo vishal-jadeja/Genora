@@ -25,6 +25,19 @@ This prompt is for the **backend only**. Frontend/UI is being designed separatel
 6. Trigger.dev collects all subtask results (partial failures allowed — one platform failing doesn't fail the run), logs cost/tokens per span, writes results to Postgres, updates free-tier quota in Redis.
 7. Frontend polls/subscribes to the run for completion.
 
+## Decisions made post-review (2026-07-03)
+- **Postgres provider**: Neon, EU region (Frankfurt).
+- **Embeddings**: Google `gemini-embedding-001` API, truncated to 768-dim (Matryoshka/MRL), NOT self-hosted. Fixed platform-owned key, independent of user's BYOK provider choice for generation — this is what prevents dimension mismatch (different BYOK providers would otherwise imply different embedding dims). Self-hosting was considered and rejected: `ai-service` already runs 24/7 for the pipeline, but torch + model runtime overhead would still force a paid instance tier (~$3-10/mo) plus bigger image/slower cold starts — not actually free. Free-tier Gemini embedding API (1,500 req/day, generous TPM, no card) is the better free option and currently #1 on English MTEB (68.32).
+  - **Open question, revisit before Phase 3**: free-tier Gemini ToS allows Google to use prompt data for training. Embed inputs are users' private posts. Decide then: accept for MVP, or enable billing (near-zero cost) to opt out of training-data use.
+- **Service-to-service auth**: shared-secret header (`INTERNAL_SERVICE_SECRET`) checked by FastAPI middleware on every call from Next.js/Trigger.dev to `ai-service`. Closes the "public endpoint, no gate" hole.
+- **BYOK key transport**: Next.js decrypts a user's key server-side at request time, sends plaintext over the internal HTTPS call (with the shared secret) to `ai-service`. Python side holds it in memory for the request only — never persisted, never logged.
+- **Quota bookkeeping**: Redis = live counter w/ monthly TTL reset, gates allow/deny in real time (enforced Phase 6). Postgres `usage_logs` = append-only audit/analytics trail. Two different jobs, no reconciliation needed between them.
+- **Rate limiting dependency**: `@upstash/ratelimit` pre-approved for Phase 6 (sits on Upstash Redis already in the stack).
+- **Known risk, accepted**: NextAuth v5 is still in beta (`5.0.0-beta.31` as of this check, no stable release) — pinning prod auth to it is a real risk, not a blocker.
+- **Known caveat, accepted**: Trigger.dev v4's span/tracing support is generic (metadata attach), not automatic LLM cost calculation — cost math is still hand-rolled per subtask.
+
+This changes the `embeddings` table spec in Phase 1 from an unspecified dimension to a fixed `vector(768)`.
+
 ## Working instructions
 - Build the phases below **in order**. Don't start a phase until the previous one works, and give me a short summary at the end of each phase: what was built, decisions you made, anything you need from me (accounts, API keys, secrets) before continuing.
 - Ask before adding any dependency not listed in the tech stack above.
