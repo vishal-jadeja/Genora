@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 import { PLAT } from "@/lib/facet/data";
 import type { PlatformId } from "@/lib/facet/types";
 
-export const PRIMARY = "#f0f0f0";
+export const PRIMARY = "var(--c-primaryBg)";
 export const GREEN = "#6cae8e";
 export const AMBER = "#d4a960";
 export const RED = "#d47a7a";
@@ -17,7 +17,7 @@ export function chipStyle(id: PlatformId, selected: boolean): CSSProperties {
     borderRadius: 999,
     border: `1px solid ${selected ? meta.color : "var(--c-borderStrong)"}`,
     background: selected ? meta.bg : "transparent",
-    color: selected ? "#ededed" : "#8f8f8f",
+    color: selected ? "var(--c-text)" : "var(--c-text3)",
     fontSize: 12.5,
     fontWeight: 500,
   };
@@ -36,7 +36,7 @@ export function monoStyle(id: PlatformId, selected: boolean): CSSProperties {
     fontSize: 8.5,
     fontWeight: 600,
     background: selected ? meta.bg : "var(--c-tile)",
-    color: selected ? meta.color : "#777",
+    color: selected ? meta.color : "var(--c-text3)",
   };
 }
 
@@ -50,7 +50,7 @@ export function optStyle(selected: boolean): CSSProperties {
     borderRadius: 7,
     padding: "8px 10px",
     fontSize: 13,
-    color: "#d6d6d6",
+    color: "var(--c-text2)",
   };
 }
 
@@ -63,7 +63,7 @@ export const moveOptStyle: CSSProperties = {
   borderRadius: 6,
   padding: "7px 9px",
   fontSize: 12.5,
-  color: "#c4c4c4",
+  color: "var(--c-text2)",
 };
 
 export function radioStyle(selected: boolean): CSSProperties {
@@ -72,8 +72,8 @@ export function radioStyle(selected: boolean): CSSProperties {
     height: 16,
     borderRadius: "50%",
     flex: "none",
-    border: `1.5px solid ${selected ? "#ededed" : "var(--c-borderHover)"}`,
-    background: selected ? "#ededed" : "transparent",
+    border: `1.5px solid ${selected ? "var(--c-text)" : "var(--c-borderHover)"}`,
+    background: selected ? "var(--c-text)" : "transparent",
     boxShadow: selected ? "inset 0 0 0 3px var(--c-shell)" : "none",
   };
 }

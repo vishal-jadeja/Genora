@@ -71,68 +71,49 @@ export const STATUS_ICON: Record<PostStatus, string> = {
   Exported: "↗",
 };
 
-export const THEMES: ThemeDef[] = [
-  {
-    name: "Charcoal",
-    swatch: ["#15151a", "#1a1a20", "#1e1e24", "#393942"],
-    t: {
-      shell: "#15151a",
-      canvas: "#1a1a20",
-      surface: "#1e1e24",
-      surfaceHover: "#26262d",
-      popover: "#232329",
-      tile: "#2a2a31",
-      border: "#2b2b33",
-      borderStrong: "#393942",
-      borderHover: "#47474f",
-    },
+export const DARK_THEME: ThemeDef = {
+  name: "Dark",
+  t: {
+    shell: "#0a0a0a",
+    canvas: "#0e0e0e",
+    surface: "#141414",
+    surfaceHover: "#1c1c1c",
+    popover: "#181818",
+    tile: "#1e1e1e",
+    border: "#202020",
+    borderStrong: "#2c2c2c",
+    borderHover: "#3a3a3a",
+    text: "#ededed",
+    text2: "#c4c4c4",
+    text3: "#8f8f8f",
+    text4: "#6b6b6b",
+    text5: "#565656",
+    primaryBg: "#f0f0f0",
+    primaryText: "#0a0a0a",
   },
-  {
-    name: "Black",
-    swatch: ["#0a0a0a", "#0e0e0e", "#141414", "#2c2c2c"],
-    t: {
-      shell: "#0a0a0a",
-      canvas: "#0e0e0e",
-      surface: "#141414",
-      surfaceHover: "#1c1c1c",
-      popover: "#181818",
-      tile: "#1e1e1e",
-      border: "#202020",
-      borderStrong: "#2c2c2c",
-      borderHover: "#3a3a3a",
-    },
+};
+
+export const LIGHT_THEME: ThemeDef = {
+  name: "Light",
+  t: {
+    shell: "#f5f5f4",
+    canvas: "#ffffff",
+    surface: "#ffffff",
+    surfaceHover: "#eeeeec",
+    popover: "#ffffff",
+    tile: "#ececea",
+    border: "#e3e3e0",
+    borderStrong: "#d3d3cf",
+    borderHover: "#b6b6b1",
+    text: "#18181a",
+    text2: "#47474a",
+    text3: "#71716f",
+    text4: "#96968f",
+    text5: "#b7b7b0",
+    primaryBg: "#18181a",
+    primaryText: "#f5f5f4",
   },
-  {
-    name: "Slate",
-    swatch: ["#10131a", "#151923", "#1a1f2a", "#333c4c"],
-    t: {
-      shell: "#10131a",
-      canvas: "#151923",
-      surface: "#1a1f2a",
-      surfaceHover: "#232935",
-      popover: "#1f2530",
-      tile: "#252c38",
-      border: "#262d3a",
-      borderStrong: "#333c4c",
-      borderHover: "#454f61",
-    },
-  },
-  {
-    name: "Graphite",
-    swatch: ["#16130f", "#1b1712", "#211c16", "#3a3226"],
-    t: {
-      shell: "#16130f",
-      canvas: "#1b1712",
-      surface: "#211c16",
-      surfaceHover: "#2a241d",
-      popover: "#251f19",
-      tile: "#2b241c",
-      border: "#2c2620",
-      borderStrong: "#3a3226",
-      borderHover: "#4a4030",
-    },
-  },
-];
+};
 
 export const MODELS: ModelMeta[] = [
   { id: "sonnet", label: "Claude Sonnet 4.5", tag: "Free", free: true },
@@ -241,11 +222,10 @@ export const INSTR_DEFAULTS: Record<PlatformId, string> = {
     "Warm, direct-address newsletter voice. Keep it short. Sign off personally.",
 };
 
-export const DEFAULT_THEME = THEMES[1];
-
 export function createInitialState(): FacetState {
   return {
     view: "dashboard",
+    themeMode: "system",
     activeFolder: null,
     search: "",
     folders: [

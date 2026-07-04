@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ALTS,
   INSTR_DEFAULTS,
@@ -20,8 +20,11 @@ import type {
   ProviderId,
   SettingsTab,
   SlopStrictness,
+  ThemeMode,
   ViewName,
 } from "./types";
+
+const THEME_MODE_KEY = "facet-theme-mode";
 
 export function useFacetController() {
   const [state, setState] = useState<FacetState>(createInitialState);
@@ -31,6 +34,17 @@ export function useFacetController() {
   const patch = useCallback((p: Partial<FacetState>) => {
     setState((s) => ({ ...s, ...p }));
   }, []);
+
+  // ---- theme --------------------------------------------------------------
+  const setThemeMode = useCallback(
+    (mode: ThemeMode) => {
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(THEME_MODE_KEY, mode);
+      }
+      patch({ themeMode: mode });
+    },
+    [patch],
+  );
 
   // ---- navigation -------------------------------------------------------
   const setView = useCallback((v: ViewName) => {
@@ -518,8 +532,19 @@ export function useFacetController() {
     };
   }, [state]);
 
+  useEffect(() => {
+    const saved = window.localStorage.getItem(THEME_MODE_KEY);
+    if (saved === "light" || saved === "dark" || saved === "system") {
+      // Restore the persisted override post-mount, same reasoning as
+      // FacetApp's system-preference read: keeps SSR/first-paint in sync.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      patch({ themeMode: saved });
+    }
+  }, [patch]);
+
   const actions = useMemo(
     () => ({
+      setThemeMode,
       goDash,
       goSettings,
       homeClick,
@@ -564,6 +589,7 @@ export function useFacetController() {
       resetInstrDefaults,
     }),
     [
+      setThemeMode,
       goDash,
       goSettings,
       homeClick,

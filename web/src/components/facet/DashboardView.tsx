@@ -87,7 +87,7 @@ function Sidebar({ state, derived, actions }: FacetViewProps) {
           <div
             style={{
               fontSize: 11.5,
-              color: "#6b6b6b",
+              color: "var(--c-text4)",
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -109,9 +109,12 @@ function Sidebar({ state, derived, actions }: FacetViewProps) {
             background: "none",
             border: "1px solid var(--c-borderStrong)",
             borderRadius: 8,
-            color: "#8f8f8f",
+            color: "var(--c-text3)",
           }}
-          hoverStyle={{ borderColor: "var(--c-borderHover)", color: "#ededed" }}
+          hoverStyle={{
+            borderColor: "var(--c-borderHover)",
+            color: "var(--c-text)",
+          }}
         >
           <svg
             width="15"
@@ -140,7 +143,7 @@ function Sidebar({ state, derived, actions }: FacetViewProps) {
           border: "1px solid var(--c-borderStrong)",
           borderRadius: 10,
           padding: "9px 11px",
-          color: "#8f8f8f",
+          color: "var(--c-text3)",
           fontSize: 13,
         }}
         hoverStyle={{ borderColor: "var(--c-borderStrong)" }}
@@ -163,7 +166,7 @@ function Sidebar({ state, derived, actions }: FacetViewProps) {
           style={{
             fontFamily: "var(--font-jetbrains-mono), monospace",
             fontSize: 11,
-            color: "#565656",
+            color: "var(--c-text5)",
             border: "1px solid var(--c-borderStrong)",
             borderRadius: 5,
             padding: "1px 6px",
@@ -184,7 +187,7 @@ function Sidebar({ state, derived, actions }: FacetViewProps) {
           border: "none",
           borderRadius: 9,
           padding: "9px 11px",
-          color: "#ededed",
+          color: "var(--c-text)",
           fontSize: 13.5,
           fontWeight: 500,
           textAlign: "left",
@@ -212,7 +215,7 @@ function Sidebar({ state, derived, actions }: FacetViewProps) {
           fontWeight: 600,
           letterSpacing: ".09em",
           textTransform: "uppercase",
-          color: "#565656",
+          color: "var(--c-text5)",
           padding: "20px 10px 8px",
         }}
       >
@@ -233,7 +236,7 @@ function Sidebar({ state, derived, actions }: FacetViewProps) {
                   alignItems: "center",
                   gap: 11,
                   overflow: "hidden",
-                  color: active ? "#ededed" : "#6b6b6b",
+                  color: active ? "var(--c-text)" : "var(--c-text4)",
                 }}
               >
                 <svg
@@ -254,7 +257,7 @@ function Sidebar({ state, derived, actions }: FacetViewProps) {
                     whiteSpace: "nowrap",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
-                    color: active ? "#ededed" : "#b0b0b0",
+                    color: active ? "var(--c-text)" : "var(--c-text2)",
                   }}
                 >
                   {f.name}
@@ -263,7 +266,7 @@ function Sidebar({ state, derived, actions }: FacetViewProps) {
               <span
                 style={{
                   fontSize: 12,
-                  color: "#565656",
+                  color: "var(--c-text5)",
                   fontVariantNumeric: "tabular-nums",
                 }}
               >
@@ -302,10 +305,12 @@ function Sidebar({ state, derived, actions }: FacetViewProps) {
                 ? "#6cae8e"
                 : derived.quotaLow
                   ? "#d4a960"
-                  : "#ededed",
+                  : "var(--c-text)",
             }}
           />
-          <span style={{ fontSize: 12, color: "#9a9a9a", lineHeight: 1.3 }}>
+          <span
+            style={{ fontSize: 12, color: "var(--c-text2)", lineHeight: 1.3 }}
+          >
             {derived.quotaText}
           </span>
         </div>
@@ -318,13 +323,16 @@ function Sidebar({ state, derived, actions }: FacetViewProps) {
             gap: 11,
             background: "none",
             border: "none",
-            color: "#8f8f8f",
+            color: "var(--c-text3)",
             fontSize: 13.5,
             padding: "9px 11px",
             textAlign: "left",
             borderRadius: 9,
           }}
-          hoverStyle={{ background: "var(--c-popover)", color: "#ededed" }}
+          hoverStyle={{
+            background: "var(--c-popover)",
+            color: "var(--c-text)",
+          }}
         >
           <svg
             width="16"
@@ -376,7 +384,7 @@ function Main({ state, derived, actions }: FacetViewProps) {
               fontSize: 34,
               fontWeight: 500,
               letterSpacing: "-.015em",
-              color: "#f3f3f3",
+              color: "var(--c-text)",
             }}
           >
             {derived.greeting}
@@ -393,7 +401,9 @@ function Main({ state, derived, actions }: FacetViewProps) {
             }}
           >
             <div style={{ display: "flex", gap: 13, padding: "18px 18px 6px" }}>
-              <span style={{ marginTop: 3, flex: "none", color: "#8f8f8f" }}>
+              <span
+                style={{ marginTop: 3, flex: "none", color: "var(--c-text3)" }}
+              >
                 <svg
                   width="19"
                   height="19"
@@ -420,7 +430,7 @@ function Main({ state, derived, actions }: FacetViewProps) {
                   fontFamily: "var(--font-newsreader), serif",
                   fontSize: 17,
                   lineHeight: 1.55,
-                  color: "#e6e6e6",
+                  color: "var(--c-text)",
                   padding: "2px 0",
                   minHeight: dashExpanded ? 84 : 28,
                   transition: "min-height .2s ease",
@@ -483,7 +493,7 @@ function Main({ state, derived, actions }: FacetViewProps) {
                           background: "var(--c-popover)",
                           border: "1px solid var(--c-borderStrong)",
                           borderRadius: 8,
-                          color: "#c4c4c4",
+                          color: "var(--c-text2)",
                           fontSize: 12.5,
                           padding: "7px 11px",
                         }}
@@ -502,7 +512,9 @@ function Main({ state, derived, actions }: FacetViewProps) {
                           <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                         </svg>
                         {derived.folderName(state.composeFolder) || "None"}
-                        <span style={{ color: "#565656", fontSize: 9 }}>▾</span>
+                        <span style={{ color: "var(--c-text5)", fontSize: 9 }}>
+                          ▾
+                        </span>
                       </Hoverable>
                       {state.folderPickerOpen && (
                         <div style={{ ...popoverStyle, bottom: 40, left: 0 }}>
@@ -530,7 +542,7 @@ function Main({ state, derived, actions }: FacetViewProps) {
                           background: "var(--c-popover)",
                           border: "1px solid var(--c-borderStrong)",
                           borderRadius: 8,
-                          color: "#c4c4c4",
+                          color: "var(--c-text2)",
                           fontSize: 12.5,
                           padding: "7px 11px",
                         }}
@@ -555,7 +567,7 @@ function Main({ state, derived, actions }: FacetViewProps) {
                             fontWeight: 600,
                             color: derived.curModel.free
                               ? "#6cae8e"
-                              : "#c9c9c9",
+                              : "var(--c-text2)",
                             border: "1px solid var(--c-borderHover)",
                             borderRadius: 4,
                             padding: "1px 5px",
@@ -563,7 +575,9 @@ function Main({ state, derived, actions }: FacetViewProps) {
                         >
                           {derived.curModel.free ? "Free" : "BYOK"}
                         </span>
-                        <span style={{ color: "#565656", fontSize: 9 }}>▾</span>
+                        <span style={{ color: "var(--c-text5)", fontSize: 9 }}>
+                          ▾
+                        </span>
                       </Hoverable>
                       {state.modelOpen && (
                         <div
@@ -594,7 +608,9 @@ function Main({ state, derived, actions }: FacetViewProps) {
                                   borderRadius: 7,
                                   padding: "9px 10px",
                                   fontSize: 13,
-                                  color: locked ? "#565656" : "#d6d6d6",
+                                  color: locked
+                                    ? "var(--c-text5)"
+                                    : "var(--c-text2)",
                                   textAlign: "left",
                                 }}
                               >
@@ -611,10 +627,10 @@ function Main({ state, derived, actions }: FacetViewProps) {
                                       fontSize: 9,
                                       fontWeight: 600,
                                       color: locked
-                                        ? "#565656"
+                                        ? "var(--c-text5)"
                                         : m.free
                                           ? "#6cae8e"
-                                          : "#c9c9c9",
+                                          : "var(--c-text2)",
                                       border: "1px solid var(--c-borderHover)",
                                       borderRadius: 4,
                                       padding: "1px 5px",
@@ -634,7 +650,7 @@ function Main({ state, derived, actions }: FacetViewProps) {
                           <div
                             style={{
                               fontSize: 11,
-                              color: "#565656",
+                              color: "var(--c-text5)",
                               padding: "8px 9px 4px",
                               lineHeight: 1.4,
                             }}
@@ -660,7 +676,7 @@ function Main({ state, derived, actions }: FacetViewProps) {
                       style={{
                         fontFamily: "var(--font-jetbrains-mono), monospace",
                         fontSize: 11.5,
-                        color: "#565656",
+                        color: "var(--c-text5)",
                       }}
                     >
                       ~{derived.dashTok} tokens
@@ -671,11 +687,11 @@ function Main({ state, derived, actions }: FacetViewProps) {
                       style={{
                         background: "none",
                         border: "none",
-                        color: "#8f8f8f",
+                        color: "var(--c-text3)",
                         fontSize: 12.5,
                         padding: "8px 4px",
                       }}
-                      hoverStyle={{ color: "#ededed" }}
+                      hoverStyle={{ color: "var(--c-text)" }}
                     >
                       Open editor
                     </Hoverable>
@@ -691,10 +707,13 @@ function Main({ state, derived, actions }: FacetViewProps) {
                         fontSize: 13,
                         fontWeight: 600,
                         ...(derived.dashCanGen
-                          ? { background: "#f0f0f0", color: "var(--c-shell)" }
+                          ? {
+                              background: "var(--c-primaryBg)",
+                              color: "var(--c-primaryText)",
+                            }
                           : {
                               background: "var(--c-popover)",
-                              color: "#565656",
+                              color: "var(--c-text5)",
                               cursor: "not-allowed",
                             }),
                       }}
@@ -722,7 +741,7 @@ function Main({ state, derived, actions }: FacetViewProps) {
                     display: "flex",
                     alignItems: "center",
                     gap: 9,
-                    color: "#c4c4c4",
+                    color: "var(--c-text2)",
                   }}
                 >
                   <svg
@@ -750,13 +769,13 @@ function Main({ state, derived, actions }: FacetViewProps) {
                     background: "none",
                     border: "1px solid var(--c-borderStrong)",
                     borderRadius: 8,
-                    color: "#c4c4c4",
+                    color: "var(--c-text2)",
                     fontSize: 12.5,
                     padding: "6px 12px",
                   }}
                   hoverStyle={{
                     borderColor: "var(--c-borderHover)",
-                    color: "#ededed",
+                    color: "var(--c-text)",
                   }}
                 >
                   New
@@ -815,7 +834,7 @@ function Main({ state, derived, actions }: FacetViewProps) {
                         style={{
                           fontSize: 14,
                           fontWeight: 600,
-                          color: "#ededed",
+                          color: "var(--c-text)",
                           whiteSpace: "nowrap",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
@@ -823,12 +842,12 @@ function Main({ state, derived, actions }: FacetViewProps) {
                       >
                         {f.name}
                       </span>
-                      <span style={{ fontSize: 12, color: "#6b6b6b" }}>
+                      <span style={{ fontSize: 12, color: "var(--c-text4)" }}>
                         {derived.counts[f.id]}{" "}
                         {derived.counts[f.id] === 1 ? "post" : "posts"}
                       </span>
                     </span>
-                    <span style={{ color: "#565656", flex: "none" }}>
+                    <span style={{ color: "var(--c-text5)", flex: "none" }}>
                       <svg
                         width="17"
                         height="17"
@@ -854,7 +873,7 @@ function Main({ state, derived, actions }: FacetViewProps) {
               alignItems: "center",
               gap: 9,
               margin: "40px 2px 16px",
-              color: "#c4c4c4",
+              color: "var(--c-text2)",
             }}
           >
             <svg
@@ -884,7 +903,11 @@ function Main({ state, derived, actions }: FacetViewProps) {
               }}
             >
               <span
-                style={{ position: "absolute", left: 12, color: "#565656" }}
+                style={{
+                  position: "absolute",
+                  left: 12,
+                  color: "var(--c-text5)",
+                }}
               >
                 <svg
                   width="14"
@@ -987,7 +1010,7 @@ function Main({ state, derived, actions }: FacetViewProps) {
                           style={{
                             fontFamily: "var(--font-newsreader), serif",
                             fontSize: 16,
-                            color: "#ededed",
+                            color: "var(--c-text)",
                             whiteSpace: "nowrap",
                             overflow: "hidden",
                             textOverflow: "ellipsis",
@@ -999,7 +1022,7 @@ function Main({ state, derived, actions }: FacetViewProps) {
                         <div
                           style={{
                             fontSize: 12.5,
-                            color: "#6b6b6b",
+                            color: "var(--c-text4)",
                             lineHeight: 1.4,
                             display: "-webkit-box",
                             WebkitLineClamp: 2,
@@ -1053,7 +1076,7 @@ function Main({ state, derived, actions }: FacetViewProps) {
                         <span
                           style={{
                             fontSize: 11,
-                            color: "#565656",
+                            color: "var(--c-text5)",
                             display: "flex",
                             alignItems: "center",
                             gap: 4,
@@ -1093,13 +1116,13 @@ function Main({ state, derived, actions }: FacetViewProps) {
                         background: "var(--c-popover)",
                         border: "1px solid var(--c-borderStrong)",
                         borderRadius: 6,
-                        color: "#8f8f8f",
+                        color: "var(--c-text3)",
                         opacity: 0.85,
                       }}
                       hoverStyle={{
                         opacity: 1,
                         borderColor: "var(--c-borderHover)",
-                        color: "#ededed",
+                        color: "var(--c-text)",
                       }}
                     >
                       <svg
@@ -1128,7 +1151,7 @@ function Main({ state, derived, actions }: FacetViewProps) {
                         <div
                           style={{
                             fontSize: 10.5,
-                            color: "#565656",
+                            color: "var(--c-text5)",
                             padding: "5px 9px 6px",
                             letterSpacing: ".06em",
                             textTransform: "uppercase",
@@ -1185,7 +1208,7 @@ function Main({ state, derived, actions }: FacetViewProps) {
               <p
                 style={{
                   margin: "0 0 18px",
-                  color: "#8f8f8f",
+                  color: "var(--c-text3)",
                   fontSize: 13.5,
                   maxWidth: 320,
                   lineHeight: 1.5,
@@ -1214,7 +1237,7 @@ function Main({ state, derived, actions }: FacetViewProps) {
                   fontFamily: "var(--font-newsreader), serif",
                   fontWeight: 500,
                   fontSize: 20,
-                  color: "#dedede",
+                  color: "var(--c-text)",
                 }}
               >
                 A blank page, and that&rsquo;s a good thing
@@ -1222,7 +1245,7 @@ function Main({ state, derived, actions }: FacetViewProps) {
               <p
                 style={{
                   margin: 0,
-                  color: "#8f8f8f",
+                  color: "var(--c-text3)",
                   fontSize: 14,
                   maxWidth: 360,
                   lineHeight: 1.55,

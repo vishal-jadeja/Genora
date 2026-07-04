@@ -8,6 +8,8 @@ export type PostStatus = "Draft" | "Generated" | "Edited" | "Exported";
 
 export type ViewName = "dashboard" | "compose" | "output" | "settings";
 
+export type ThemeMode = "system" | "light" | "dark";
+
 export type SettingsTab = "keys" | "instructions" | "voice" | "slop" | "model";
 
 export type SlopStrictness = "lenient" | "balanced" | "strict";
@@ -52,7 +54,6 @@ export interface ProviderMeta {
 
 export interface ThemeDef {
   name: string;
-  swatch: [string, string, string, string];
   t: {
     shell: string;
     canvas: string;
@@ -63,6 +64,13 @@ export interface ThemeDef {
     border: string;
     borderStrong: string;
     borderHover: string;
+    text: string;
+    text2: string;
+    text3: string;
+    text4: string;
+    text5: string;
+    primaryBg: string;
+    primaryText: string;
   };
 }
 
@@ -73,6 +81,7 @@ export interface KeyState {
 
 export interface FacetState {
   view: ViewName;
+  themeMode: ThemeMode;
   activeFolder: string | null;
   search: string;
   folders: Folder[];

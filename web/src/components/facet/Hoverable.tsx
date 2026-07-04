@@ -10,7 +10,9 @@ type Tag = "button" | "div" | "textarea" | "input" | "span";
 // shorthand and non-shorthand for the same property.
 function expandBorderShorthand(style: CSSProperties): CSSProperties {
   if (!style.border) return style;
-  const [width, borderStyle, ...colorParts] = style.border.toString().split(" ");
+  const [width, borderStyle, ...colorParts] = style.border
+    .toString()
+    .split(" ");
   const rest = { ...style };
   delete rest.border;
   return {

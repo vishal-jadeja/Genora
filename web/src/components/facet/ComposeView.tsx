@@ -50,10 +50,10 @@ export function ComposeView({ state, derived, actions }: FacetViewProps) {
             gap: 6,
             background: "none",
             border: "none",
-            color: "#8f8f8f",
+            color: "var(--c-text3)",
             fontSize: 13.5,
           }}
-          hoverStyle={{ color: "#ededed" }}
+          hoverStyle={{ color: "var(--c-text)" }}
         >
           <svg
             width="16"
@@ -87,7 +87,7 @@ export function ComposeView({ state, derived, actions }: FacetViewProps) {
               animation: "fpulse 2.4s ease infinite",
             }}
           />
-          <span style={{ fontSize: 12, color: "#565656" }}>
+          <span style={{ fontSize: 12, color: "var(--c-text5)" }}>
             Saved · autosaves as you write
           </span>
         </div>
@@ -103,7 +103,7 @@ export function ComposeView({ state, derived, actions }: FacetViewProps) {
                 background: "var(--c-surface)",
                 border: "1px solid var(--c-borderStrong)",
                 borderRadius: 8,
-                color: "#c4c4c4",
+                color: "var(--c-text2)",
                 fontSize: 12.5,
                 padding: "7px 11px",
               }}
@@ -122,7 +122,7 @@ export function ComposeView({ state, derived, actions }: FacetViewProps) {
                 <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
               </svg>
               {derived.folderName(state.composeFolder) || "None"}
-              <span style={{ color: "#565656", fontSize: 9 }}>▾</span>
+              <span style={{ color: "var(--c-text5)", fontSize: 9 }}>▾</span>
             </Hoverable>
             {state.folderPickerOpen && (
               <div style={{ ...popoverStyle, top: 40, right: 0, left: "auto" }}>
@@ -149,7 +149,7 @@ export function ComposeView({ state, derived, actions }: FacetViewProps) {
                 background: "var(--c-surface)",
                 border: "1px solid var(--c-borderStrong)",
                 borderRadius: 8,
-                color: "#c4c4c4",
+                color: "var(--c-text2)",
                 fontSize: 12.5,
                 padding: "7px 11px",
               }}
@@ -160,7 +160,7 @@ export function ComposeView({ state, derived, actions }: FacetViewProps) {
                 style={{
                   fontSize: 9,
                   fontWeight: 600,
-                  color: derived.curModel.free ? GREEN : "#c9c9c9",
+                  color: derived.curModel.free ? GREEN : "var(--c-text2)",
                   border: "1px solid var(--c-borderHover)",
                   borderRadius: 4,
                   padding: "1px 5px",
@@ -168,7 +168,7 @@ export function ComposeView({ state, derived, actions }: FacetViewProps) {
               >
                 {derived.curModel.free ? "Free" : "BYOK"}
               </span>
-              <span style={{ color: "#565656", fontSize: 9 }}>▾</span>
+              <span style={{ color: "var(--c-text5)", fontSize: 9 }}>▾</span>
             </Hoverable>
             {state.modelOpen && (
               <div
@@ -200,7 +200,7 @@ export function ComposeView({ state, derived, actions }: FacetViewProps) {
                         borderRadius: 7,
                         padding: "9px 10px",
                         fontSize: 13,
-                        color: locked ? "#565656" : "#d6d6d6",
+                        color: locked ? "var(--c-text5)" : "var(--c-text2)",
                         textAlign: "left",
                       }}
                     >
@@ -217,10 +217,10 @@ export function ComposeView({ state, derived, actions }: FacetViewProps) {
                             fontSize: 9,
                             fontWeight: 600,
                             color: locked
-                              ? "#565656"
+                              ? "var(--c-text5)"
                               : m.free
                                 ? GREEN
-                                : "#c9c9c9",
+                                : "var(--c-text2)",
                             border: "1px solid var(--c-borderHover)",
                             borderRadius: 4,
                             padding: "1px 5px",
@@ -238,7 +238,7 @@ export function ComposeView({ state, derived, actions }: FacetViewProps) {
                 <div
                   style={{
                     fontSize: 11,
-                    color: "#565656",
+                    color: "var(--c-text5)",
                     padding: "8px 9px 4px",
                     lineHeight: 1.4,
                   }}
@@ -282,7 +282,7 @@ export function ComposeView({ state, derived, actions }: FacetViewProps) {
               fontWeight: 500,
               letterSpacing: "-.02em",
               padding: 0,
-              color: "#f3f3f3",
+              color: "var(--c-text)",
             }}
           />
           <div
@@ -301,7 +301,7 @@ export function ComposeView({ state, derived, actions }: FacetViewProps) {
                 alignItems: "center",
                 gap: 5,
                 fontSize: 12,
-                color: "#6b6b6b",
+                color: "var(--c-text4)",
                 fontVariantNumeric: "tabular-nums",
               }}
             >
@@ -334,7 +334,7 @@ export function ComposeView({ state, derived, actions }: FacetViewProps) {
                 alignItems: "center",
                 gap: 5,
                 fontSize: 12,
-                color: "#6b6b6b",
+                color: "var(--c-text4)",
               }}
             >
               <svg
@@ -390,7 +390,7 @@ export function ComposeView({ state, derived, actions }: FacetViewProps) {
               fontFamily: "var(--font-newsreader), serif",
               fontSize: 19,
               lineHeight: 1.7,
-              color: "#d6d6d6",
+              color: "var(--c-text2)",
               minHeight: 320,
               flex: 1,
             }}
@@ -461,11 +461,11 @@ export function ComposeView({ state, derived, actions }: FacetViewProps) {
               style={{
                 background: "none",
                 border: "none",
-                color: "#8f8f8f",
+                color: "var(--c-text3)",
                 fontSize: 12.5,
                 padding: "6px 8px",
               }}
-              hoverStyle={{ color: "#ededed" }}
+              hoverStyle={{ color: "var(--c-text)" }}
             >
               Generate anyway
             </Hoverable>
@@ -499,7 +499,7 @@ export function ComposeView({ state, derived, actions }: FacetViewProps) {
               style={{
                 flex: 1,
                 fontSize: 13.5,
-                color: "#c4c4c4",
+                color: "var(--c-text2)",
                 lineHeight: 1.4,
               }}
             >
@@ -509,8 +509,8 @@ export function ComposeView({ state, derived, actions }: FacetViewProps) {
             <button
               onClick={() => actions.goSettings("keys")}
               style={{
-                background: "#f0f0f0",
-                color: "var(--c-shell)",
+                background: "var(--c-primaryBg)",
+                color: "var(--c-primaryText)",
                 border: "none",
                 borderRadius: 7,
                 fontSize: 12.5,
@@ -548,7 +548,7 @@ export function ComposeView({ state, derived, actions }: FacetViewProps) {
               fontWeight: 600,
               letterSpacing: ".06em",
               textTransform: "uppercase",
-              color: "#565656",
+              color: "var(--c-text5)",
               marginRight: 2,
             }}
           >
@@ -577,11 +577,11 @@ export function ComposeView({ state, derived, actions }: FacetViewProps) {
               borderRadius: 999,
               border: "1px dashed var(--c-borderHover)",
               background: "none",
-              color: "#565656",
+              color: "var(--c-text5)",
               fontSize: 13,
             }}
             hoverStyle={{
-              color: "#9a9a9a",
+              color: "var(--c-text2)",
               borderColor: "var(--c-borderHover)",
             }}
           >
@@ -603,7 +603,7 @@ export function ComposeView({ state, derived, actions }: FacetViewProps) {
               alignItems: "center",
               gap: 8,
               fontSize: 12,
-              color: "#565656",
+              color: "var(--c-text5)",
               whiteSpace: "nowrap",
             }}
           >
@@ -630,10 +630,10 @@ export function ComposeView({ state, derived, actions }: FacetViewProps) {
               fontSize: 14,
               fontWeight: 600,
               ...(derived.canGen
-                ? { background: PRIMARY, color: "var(--c-shell)" }
+                ? { background: PRIMARY, color: "var(--c-primaryText)" }
                 : {
                     background: "var(--c-popover)",
-                    color: "#565656",
+                    color: "var(--c-text5)",
                     cursor: "not-allowed",
                   }),
             }}

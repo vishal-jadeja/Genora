@@ -37,10 +37,10 @@ export function OutputView({ state, derived, actions }: FacetViewProps) {
             gap: 6,
             background: "none",
             border: "none",
-            color: "#8f8f8f",
+            color: "var(--c-text3)",
             fontSize: 13.5,
           }}
-          hoverStyle={{ color: "#ededed" }}
+          hoverStyle={{ color: "var(--c-text)" }}
         >
           <svg
             width="16"
@@ -79,10 +79,10 @@ export function OutputView({ state, derived, actions }: FacetViewProps) {
                 ? "#6cae8e"
                 : derived.quotaLow
                   ? "#d4a960"
-                  : "#ededed",
+                  : "var(--c-text)",
             }}
           />
-          <span style={{ fontSize: 12, color: "#8f8f8f" }}>
+          <span style={{ fontSize: 12, color: "var(--c-text3)" }}>
             {derived.quotaText}
           </span>
         </div>
@@ -107,7 +107,7 @@ export function OutputView({ state, derived, actions }: FacetViewProps) {
               fontSize: 11,
               letterSpacing: ".16em",
               textTransform: "uppercase",
-              color: "#8f8f8f",
+              color: "var(--c-text3)",
               marginBottom: 22,
             }}
           >
@@ -123,7 +123,7 @@ export function OutputView({ state, derived, actions }: FacetViewProps) {
               maxWidth: 600,
               lineHeight: 1.25,
               fontStyle: "italic",
-              color: "#f3f3f3",
+              color: "var(--c-text)",
             }}
           >
             &ldquo;{REJECTS[state.rejectIdx]}&rdquo;
@@ -131,7 +131,7 @@ export function OutputView({ state, derived, actions }: FacetViewProps) {
           <p
             style={{
               margin: "0 0 30px",
-              color: "#8f8f8f",
+              color: "var(--c-text3)",
               fontSize: 14.5,
               maxWidth: 430,
               lineHeight: 1.55,
@@ -144,8 +144,8 @@ export function OutputView({ state, derived, actions }: FacetViewProps) {
           <button
             onClick={actions.backToCompose}
             style={{
-              background: "#f0f0f0",
-              color: "var(--c-shell)",
+              background: "var(--c-primaryBg)",
+              color: "var(--c-primaryText)",
               border: "none",
               borderRadius: 8,
               padding: "11px 20px",
@@ -160,7 +160,7 @@ export function OutputView({ state, derived, actions }: FacetViewProps) {
               marginTop: 44,
               fontFamily: "var(--font-jetbrains-mono), monospace",
               fontSize: 11,
-              color: "#3f3f3f",
+              color: "var(--c-text5)",
               letterSpacing: ".04em",
             }}
           >
@@ -186,7 +186,7 @@ export function OutputView({ state, derived, actions }: FacetViewProps) {
               width: 26,
               height: 26,
               border: "2px solid var(--c-borderStrong)",
-              borderTopColor: "#ededed",
+              borderTopColor: "var(--c-text)",
               borderRadius: "50%",
               animation: "fspin .8s linear infinite",
               marginBottom: 22,
@@ -197,7 +197,7 @@ export function OutputView({ state, derived, actions }: FacetViewProps) {
               fontFamily: "var(--font-newsreader), serif",
               fontSize: 19,
               marginBottom: 26,
-              color: "#d6d6d6",
+              color: "var(--c-text2)",
             }}
           >
             {derived.genCountText}
@@ -218,7 +218,7 @@ export function OutputView({ state, derived, actions }: FacetViewProps) {
                   alignItems: "center",
                   gap: 12,
                   fontSize: 13.5,
-                  color: "#9a9a9a",
+                  color: "var(--c-text2)",
                 }}
               >
                 <span
@@ -244,7 +244,7 @@ export function OutputView({ state, derived, actions }: FacetViewProps) {
                     width: 6,
                     height: 6,
                     borderRadius: "50%",
-                    background: "#ededed",
+                    background: "var(--c-text)",
                     animation: "fpulse 1s ease infinite",
                   }}
                 />
@@ -286,11 +286,11 @@ export function OutputView({ state, derived, actions }: FacetViewProps) {
                     gap: 8,
                     background: "none",
                     border: "none",
-                    borderBottom: `2px solid ${active ? "#ededed" : "transparent"}`,
+                    borderBottom: `2px solid ${active ? "var(--c-text)" : "transparent"}`,
                     padding: "14px 16px 12px",
                     fontSize: 13.5,
                     fontWeight: 500,
-                    color: active ? "#ededed" : "#8f8f8f",
+                    color: active ? "var(--c-text)" : "var(--c-text3)",
                   }}
                 >
                   <span
@@ -305,7 +305,7 @@ export function OutputView({ state, derived, actions }: FacetViewProps) {
                       fontSize: 8,
                       fontWeight: 600,
                       background: active ? PLAT[id].bg : "var(--c-tile)",
-                      color: active ? PLAT[id].color : "#8f8f8f",
+                      color: active ? PLAT[id].color : "var(--c-text3)",
                     }}
                   >
                     {PLAT[id].mono}
@@ -315,7 +315,7 @@ export function OutputView({ state, derived, actions }: FacetViewProps) {
                     style={{
                       fontFamily: "var(--font-jetbrains-mono), monospace",
                       fontSize: 10.5,
-                      color: over ? RED : "#565656",
+                      color: over ? RED : "var(--c-text5)",
                     }}
                   >
                     {limit ? `${content.length}/${limit}` : content.length}
@@ -354,7 +354,7 @@ export function OutputView({ state, derived, actions }: FacetViewProps) {
                   style={{
                     fontFamily: "var(--font-jetbrains-mono), monospace",
                     fontSize: 11,
-                    color: "#6b6b6b",
+                    color: "var(--c-text4)",
                   }}
                 >
                   {FORMAT_HINTS[state.activeTab](derived.alen)}
@@ -370,13 +370,13 @@ export function OutputView({ state, derived, actions }: FacetViewProps) {
                       background: "none",
                       border: "1px solid var(--c-borderStrong)",
                       borderRadius: 7,
-                      color: "#8f8f8f",
+                      color: "var(--c-text3)",
                       fontSize: 12,
                       padding: "5px 10px",
                     }}
                     hoverStyle={{
                       borderColor: "var(--c-borderHover)",
-                      color: "#c4c4c4",
+                      color: "var(--c-text2)",
                     }}
                   >
                     <svg
@@ -407,7 +407,7 @@ export function OutputView({ state, derived, actions }: FacetViewProps) {
                       <div
                         style={{
                           fontSize: 10.5,
-                          color: "#565656",
+                          color: "var(--c-text5)",
                           padding: "5px 9px 7px",
                           letterSpacing: ".06em",
                           textTransform: "uppercase",
@@ -448,14 +448,17 @@ export function OutputView({ state, derived, actions }: FacetViewProps) {
                               }}
                             >
                               <span
-                                style={{ fontSize: 12.5, color: "#d6d6d6" }}
+                                style={{
+                                  fontSize: 12.5,
+                                  color: "var(--c-text2)",
+                                }}
                               >
                                 Version {versionIdx}
                               </span>
                               <span
                                 style={{
                                   fontSize: 11,
-                                  color: "#565656",
+                                  color: "var(--c-text5)",
                                   whiteSpace: "nowrap",
                                   overflow: "hidden",
                                   textOverflow: "ellipsis",
@@ -464,7 +467,9 @@ export function OutputView({ state, derived, actions }: FacetViewProps) {
                                 {t.slice(0, 40).replace(/\n/g, " ")}…
                               </span>
                             </span>
-                            <span style={{ fontSize: 11, color: "#8f8f8f" }}>
+                            <span
+                              style={{ fontSize: 11, color: "var(--c-text3)" }}
+                            >
                               {current ? "current" : "restore"}
                             </span>
                           </button>
@@ -485,7 +490,7 @@ export function OutputView({ state, derived, actions }: FacetViewProps) {
                   fontFamily: "var(--font-newsreader), serif",
                   fontSize: 16.5,
                   lineHeight: 1.6,
-                  color: "#e2e2e2",
+                  color: "var(--c-text)",
                   padding: 20,
                   minHeight: 300,
                   flex: 1,
@@ -509,7 +514,7 @@ export function OutputView({ state, derived, actions }: FacetViewProps) {
                     style={{
                       fontFamily: "var(--font-jetbrains-mono), monospace",
                       fontSize: 13,
-                      color: "#6b6b6b",
+                      color: "var(--c-text4)",
                     }}
                   >
                     r/
@@ -545,7 +550,7 @@ export function OutputView({ state, derived, actions }: FacetViewProps) {
                     background: "none",
                     border: "1px solid var(--c-borderStrong)",
                     borderRadius: 8,
-                    color: "#c4c4c4",
+                    color: "var(--c-text2)",
                     fontSize: 13,
                     padding: "9px 15px",
                   }}
@@ -576,7 +581,7 @@ export function OutputView({ state, derived, actions }: FacetViewProps) {
                     background: "none",
                     border: "1px solid var(--c-borderStrong)",
                     borderRadius: 8,
-                    color: "#c4c4c4",
+                    color: "var(--c-text2)",
                     fontSize: 13,
                     padding: "9px 15px",
                   }}
@@ -591,7 +596,7 @@ export function OutputView({ state, derived, actions }: FacetViewProps) {
                 <span
                   style={{
                     fontSize: 11.5,
-                    color: "#565656",
+                    color: "var(--c-text5)",
                     textAlign: "right",
                     maxWidth: 210,
                     lineHeight: 1.35,
@@ -612,10 +617,10 @@ export function OutputView({ state, derived, actions }: FacetViewProps) {
                     fontSize: 13,
                     fontWeight: 600,
                     ...(derived.shareReady
-                      ? { background: PRIMARY, color: "var(--c-shell)" }
+                      ? { background: PRIMARY, color: "var(--c-primaryText)" }
                       : {
                           background: "var(--c-popover)",
-                          color: "#565656",
+                          color: "var(--c-text5)",
                           cursor: "not-allowed",
                         }),
                   }}
@@ -637,7 +642,7 @@ export function OutputView({ state, derived, actions }: FacetViewProps) {
                     borderRadius: 9,
                     padding: "10px 16px",
                     fontSize: 13,
-                    color: "#ededed",
+                    color: "var(--c-text)",
                     display: "flex",
                     alignItems: "center",
                     gap: 9,

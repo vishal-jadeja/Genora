@@ -22,7 +22,7 @@ export function PlatformIcon({
   const px = size;
   const radius = Math.max(4, Math.round(size * 0.28));
   const bg = active ? BRAND[platform] : "var(--c-tile)";
-  const mark = active ? "#ffffff" : "#8f8f8f";
+  const mark = active ? "#ffffff" : "var(--c-text3)";
   const fontPx = Math.round(size * 0.5);
   const fontPxM = Math.round(size * 0.56);
   const glyphPx = Math.round(size * 0.56);

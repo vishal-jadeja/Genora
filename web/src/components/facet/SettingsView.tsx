@@ -6,6 +6,7 @@ import type {
   ProviderId,
   SettingsTab,
   SlopStrictness,
+  ThemeMode,
 } from "@/lib/facet/types";
 import { Hoverable } from "./Hoverable";
 import { GREEN, PRIMARY, radioStyle } from "./styleHelpers";
@@ -17,6 +18,12 @@ const SETTINGS_TABS: { id: SettingsTab; label: string }[] = [
   { id: "voice", label: "Voice calibration" },
   { id: "slop", label: "Slop Guard" },
   { id: "model", label: "Default model" },
+];
+
+const THEME_MODES: { id: ThemeMode; label: string }[] = [
+  { id: "system", label: "System" },
+  { id: "light", label: "Light" },
+  { id: "dark", label: "Dark" },
 ];
 
 const SLOP_OPTIONS: { id: SlopStrictness; label: string; desc: string }[] = [
@@ -46,7 +53,7 @@ function navTabStyle(active: boolean): CSSProperties {
     borderRadius: 9,
     padding: "9px 11px",
     fontSize: 13.5,
-    color: active ? "#ededed" : "#8f8f8f",
+    color: active ? "var(--c-text)" : "var(--c-text3)",
   };
 }
 
@@ -98,10 +105,10 @@ export function SettingsView({ state, derived, actions }: FacetViewProps) {
             gap: 6,
             background: "none",
             border: "none",
-            color: "#8f8f8f",
+            color: "var(--c-text3)",
             fontSize: 13.5,
           }}
-          hoverStyle={{ color: "#ededed" }}
+          hoverStyle={{ color: "var(--c-text)" }}
         >
           <svg
             width="16"
@@ -122,6 +129,38 @@ export function SettingsView({ state, derived, actions }: FacetViewProps) {
         >
           Settings
         </span>
+        <div style={{ flex: 1 }} />
+        <div
+          style={{
+            display: "flex",
+            gap: 2,
+            padding: 2,
+            background: "var(--c-tile)",
+            border: "1px solid var(--c-border)",
+            borderRadius: 8,
+          }}
+        >
+          {THEME_MODES.map((m) => {
+            const selected = state.themeMode === m.id;
+            return (
+              <button
+                key={m.id}
+                onClick={() => actions.setThemeMode(m.id)}
+                style={{
+                  border: "none",
+                  borderRadius: 6,
+                  padding: "5px 11px",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  background: selected ? "var(--c-surface)" : "transparent",
+                  color: selected ? "var(--c-text)" : "var(--c-text3)",
+                }}
+              >
+                {m.label}
+              </button>
+            );
+          })}
+        </div>
       </header>
 
       <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
@@ -164,7 +203,7 @@ export function SettingsView({ state, derived, actions }: FacetViewProps) {
                 <p
                   style={{
                     margin: "0 0 20px",
-                    color: "#8f8f8f",
+                    color: "var(--c-text3)",
                     fontSize: 14,
                     lineHeight: 1.5,
                   }}
@@ -203,7 +242,7 @@ export function SettingsView({ state, derived, actions }: FacetViewProps) {
                               fontWeight: 600,
                               padding: "2px 8px",
                               borderRadius: 5,
-                              color: k.c ? GREEN : "#8f8f8f",
+                              color: k.c ? GREEN : "var(--c-text3)",
                               background: k.c
                                 ? "rgba(108,174,142,.12)"
                                 : "var(--c-tile)",
@@ -247,7 +286,9 @@ export function SettingsView({ state, derived, actions }: FacetViewProps) {
                             style={{
                               border: `1px solid ${k.c ? "var(--c-borderStrong)" : PRIMARY}`,
                               background: k.c ? "transparent" : PRIMARY,
-                              color: k.c ? "#c4c4c4" : "var(--c-shell)",
+                              color: k.c
+                                ? "var(--c-text2)"
+                                : "var(--c-primaryText)",
                               borderRadius: 8,
                               fontSize: 12.5,
                               fontWeight: 600,
@@ -266,7 +307,7 @@ export function SettingsView({ state, derived, actions }: FacetViewProps) {
                                 background: "none",
                                 border: "1px solid var(--c-borderStrong)",
                                 borderRadius: 8,
-                                color: "#8f8f8f",
+                                color: "var(--c-text3)",
                                 fontSize: 12.5,
                                 padding: "9px 13px",
                               }}
@@ -301,7 +342,7 @@ export function SettingsView({ state, derived, actions }: FacetViewProps) {
                 <p
                   style={{
                     margin: "0 0 20px",
-                    color: "#8f8f8f",
+                    color: "var(--c-text3)",
                     fontSize: 14,
                     lineHeight: 1.5,
                   }}
@@ -362,7 +403,9 @@ export function SettingsView({ state, derived, actions }: FacetViewProps) {
                           >
                             {PLAT[id].label}
                           </span>
-                          <span style={{ color: "#565656", fontSize: 11 }}>
+                          <span
+                            style={{ color: "var(--c-text5)", fontSize: 11 }}
+                          >
                             {open ? "▲" : "▼"}
                           </span>
                         </Hoverable>
@@ -386,7 +429,7 @@ export function SettingsView({ state, derived, actions }: FacetViewProps) {
                                 resize: "vertical",
                                 fontSize: 13.5,
                                 lineHeight: 1.55,
-                                color: "#d6d6d6",
+                                color: "var(--c-text2)",
                                 padding: 13,
                                 minHeight: 96,
                               }}
@@ -415,7 +458,7 @@ export function SettingsView({ state, derived, actions }: FacetViewProps) {
                 <p
                   style={{
                     margin: "0 0 20px",
-                    color: "#8f8f8f",
+                    color: "var(--c-text3)",
                     fontSize: 14,
                     lineHeight: 1.5,
                   }}
@@ -436,13 +479,17 @@ export function SettingsView({ state, derived, actions }: FacetViewProps) {
                     fontFamily: "var(--font-newsreader), serif",
                     fontSize: 15,
                     lineHeight: 1.6,
-                    color: "#d6d6d6",
+                    color: "var(--c-text2)",
                     padding: 18,
                     minHeight: 220,
                   }}
                 />
                 <div
-                  style={{ marginTop: 12, fontSize: 12.5, color: "#6b6b6b" }}
+                  style={{
+                    marginTop: 12,
+                    fontSize: 12.5,
+                    color: "var(--c-text4)",
+                  }}
                 >
                   {derived.voiceStatus}
                 </div>
@@ -464,7 +511,7 @@ export function SettingsView({ state, derived, actions }: FacetViewProps) {
                 <p
                   style={{
                     margin: "0 0 20px",
-                    color: "#8f8f8f",
+                    color: "var(--c-text3)",
                     fontSize: 14,
                     lineHeight: 1.5,
                   }}
@@ -489,7 +536,11 @@ export function SettingsView({ state, derived, actions }: FacetViewProps) {
                       Slop Guard enabled
                     </div>
                     <div
-                      style={{ fontSize: 12.5, color: "#6b6b6b", marginTop: 3 }}
+                      style={{
+                        fontSize: 12.5,
+                        color: "var(--c-text4)",
+                        marginTop: 3,
+                      }}
                     >
                       {state.blockedCount} low-substance drafts turned away so
                       far
@@ -517,7 +568,9 @@ export function SettingsView({ state, derived, actions }: FacetViewProps) {
                         width: 19,
                         height: 19,
                         borderRadius: "50%",
-                        background: "var(--c-shell)",
+                        background: state.slopEnabled
+                          ? "var(--c-primaryText)"
+                          : "var(--c-shell)",
                         transition: "left .16s ease",
                       }}
                     />
@@ -546,7 +599,7 @@ export function SettingsView({ state, derived, actions }: FacetViewProps) {
                             style={{
                               fontSize: 14.5,
                               fontWeight: 500,
-                              color: "#ededed",
+                              color: "var(--c-text)",
                             }}
                           >
                             {o.label}
@@ -554,7 +607,7 @@ export function SettingsView({ state, derived, actions }: FacetViewProps) {
                           <span
                             style={{
                               fontSize: 12.5,
-                              color: "#8f8f8f",
+                              color: "var(--c-text3)",
                               lineHeight: 1.4,
                             }}
                           >
@@ -584,7 +637,7 @@ export function SettingsView({ state, derived, actions }: FacetViewProps) {
                 <p
                   style={{
                     margin: "0 0 20px",
-                    color: "#8f8f8f",
+                    color: "var(--c-text3)",
                     fontSize: 14,
                     lineHeight: 1.5,
                   }}
@@ -614,7 +667,9 @@ export function SettingsView({ state, derived, actions }: FacetViewProps) {
                             style={{
                               fontSize: 14.5,
                               fontWeight: 500,
-                              color: locked ? "#565656" : "#ededed",
+                              color: locked
+                                ? "var(--c-text5)"
+                                : "var(--c-text)",
                             }}
                           >
                             {m.label}
@@ -624,10 +679,10 @@ export function SettingsView({ state, derived, actions }: FacetViewProps) {
                               fontSize: 9.5,
                               fontWeight: 600,
                               color: locked
-                                ? "#565656"
+                                ? "var(--c-text5)"
                                 : m.free
                                   ? GREEN
-                                  : "#c9c9c9",
+                                  : "var(--c-text2)",
                               border: "1px solid var(--c-borderHover)",
                               borderRadius: 4,
                               padding: "1px 6px",
