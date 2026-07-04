@@ -4,6 +4,23 @@ import { CSSProperties, useState } from "react";
 
 type Tag = "button" | "div" | "textarea" | "input" | "span";
 
+// React warns if a rerender removes a shorthand (`border`) while a
+// longhand (`borderColor`) from a hover/focus overlay stays set, or vice
+// versa. Expand `border` to its longhand parts up front so merges never mix
+// shorthand and non-shorthand for the same property.
+function expandBorderShorthand(style: CSSProperties): CSSProperties {
+  if (!style.border) return style;
+  const [width, borderStyle, ...colorParts] = style.border.toString().split(" ");
+  const rest = { ...style };
+  delete rest.border;
+  return {
+    borderWidth: width,
+    borderStyle: borderStyle,
+    borderColor: colorParts.join(" "),
+    ...rest,
+  };
+}
+
 interface HoverableProps {
   as?: Tag;
   style?: CSSProperties;
@@ -32,11 +49,11 @@ export function Hoverable({
   const [focus, setFocus] = useState(false);
   const Tag = as as React.ElementType;
 
-  const merged: CSSProperties = {
+  const merged: CSSProperties = expandBorderShorthand({
     ...style,
     ...(hover ? hoverStyle : null),
     ...(focus ? focusStyle : null),
-  };
+  });
 
   return (
     <Tag

@@ -241,7 +241,7 @@ export const INSTR_DEFAULTS: Record<PlatformId, string> = {
     "Warm, direct-address newsletter voice. Keep it short. Sign off personally.",
 };
 
-export const DEFAULT_THEME = THEMES[0];
+export const DEFAULT_THEME = THEMES[1];
 
 export function createInitialState(): FacetState {
   return {
