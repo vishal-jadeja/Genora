@@ -89,3 +89,48 @@ export const popoverStyle: CSSProperties = {
   minWidth: 180,
   animation: "ffade .12s ease",
 };
+
+export const dialogCardStyle: CSSProperties = {
+  position: "fixed",
+  zIndex: 101,
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%,-50%)",
+  background: "var(--c-popover)",
+  border: "1px solid var(--c-borderStrong)",
+  borderRadius: 14,
+  boxShadow: "0 20px 50px rgba(0,0,0,.55)",
+  padding: 22,
+  minWidth: 380,
+  maxWidth: 440,
+  animation: "dialogPop .15s ease",
+};
+
+export const modalCardStyle: CSSProperties = {
+  position: "fixed",
+  zIndex: 101,
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%,-50%)",
+  background: "var(--c-popover)",
+  border: "1px solid var(--c-borderStrong)",
+  borderRadius: 16,
+  boxShadow: "0 20px 60px rgba(0,0,0,.6)",
+  width: "min(920px, calc(100vw - 48px))",
+  height: "min(640px, calc(100vh - 48px))",
+  display: "flex",
+  flexDirection: "column",
+  overflow: "hidden",
+  animation: "dialogPop .15s ease",
+};
+
+export function glassPanelStyle(extra?: CSSProperties): CSSProperties {
+  return {
+    background: "var(--c-glassBg)",
+    backdropFilter: "blur(20px) saturate(140%)",
+    WebkitBackdropFilter: "blur(20px) saturate(140%)",
+    border: "1px solid var(--c-glassBorder)",
+    borderRadius: 16,
+    ...extra,
+  };
+}
