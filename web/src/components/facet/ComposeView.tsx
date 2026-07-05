@@ -1,6 +1,6 @@
 "use client";
 
-import { MODELS, ORDER, PLAT } from "@/lib/facet/data";
+import { MODELS, ORDER, PLAT, REJECTS } from "@/lib/facet/data";
 import { Hoverable } from "./Hoverable";
 import {
   AMBER,
@@ -253,6 +253,87 @@ export function ComposeView({ state, derived, actions }: FacetViewProps) {
         </div>
       </header>
 
+      {state.slopHard ? (
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            textAlign: "center",
+            padding: 40,
+            animation: "ffade .35s ease",
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "var(--font-jetbrains-mono), monospace",
+              fontSize: 11,
+              letterSpacing: ".16em",
+              textTransform: "uppercase",
+              color: "var(--c-text3)",
+              marginBottom: 22,
+            }}
+          >
+            Slop Guard · blocked
+          </div>
+          <h2
+            style={{
+              margin: "0 0 14px",
+              fontFamily: "var(--font-newsreader), serif",
+              fontWeight: 500,
+              fontSize: 30,
+              letterSpacing: "-.01em",
+              maxWidth: 600,
+              lineHeight: 1.25,
+              fontStyle: "italic",
+              color: "var(--c-text)",
+            }}
+          >
+            &ldquo;{REJECTS[state.rejectIdx]}&rdquo;
+          </h2>
+          <p
+            style={{
+              margin: "0 0 30px",
+              color: "var(--c-text3)",
+              fontSize: 14.5,
+              maxWidth: 430,
+              lineHeight: 1.55,
+            }}
+          >
+            Genora won&rsquo;t repurpose what isn&rsquo;t there yet. Add a
+            stance, a detail, or an example — then we&rsquo;ll happily reshape
+            it for every platform.
+          </p>
+          <button
+            onClick={actions.backToCompose}
+            style={{
+              background: "var(--c-primaryBg)",
+              color: "var(--c-primaryText)",
+              border: "none",
+              borderRadius: 8,
+              padding: "11px 20px",
+              fontSize: 14,
+              fontWeight: 600,
+            }}
+          >
+            ← Back to the draft
+          </button>
+          <div
+            style={{
+              marginTop: 44,
+              fontFamily: "var(--font-jetbrains-mono), monospace",
+              fontSize: 11,
+              color: "var(--c-text5)",
+              letterSpacing: ".04em",
+            }}
+          >
+            {state.blockedCount} attempts blocked · you&rsquo;re welcome
+          </div>
+        </div>
+      ) : (
+        <>
       <div
         style={{
           flex: 1,
@@ -382,7 +463,7 @@ export function ComposeView({ state, derived, actions }: FacetViewProps) {
           <textarea
             value={state.draft}
             onChange={(e) => actions.onDraft(e.target.value)}
-            placeholder="Write the raw thought. One real idea, an opinion, a detail — Facet handles the rest."
+            placeholder="Write the raw thought. One real idea, an opinion, a detail — Genora handles the rest."
             style={{
               background: "none",
               border: "none",
@@ -642,6 +723,8 @@ export function ComposeView({ state, derived, actions }: FacetViewProps) {
           </button>
         </div>
       </footer>
+        </>
+      )}
     </div>
   );
 }

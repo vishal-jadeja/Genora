@@ -11,7 +11,7 @@ body {
 }
 
 body {
-  background: #131316;
+  background: #0a0a0a;
   font-family: var(--font-hanken-grotesk), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   color: #ededed;
@@ -23,9 +23,9 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #3a3a42;
+  background: var(--c-borderStrong, #3a3a42);
   border-radius: 6px;
-  border: 2px solid #131316;
+  border: 2px solid var(--c-shell, #0a0a0a);
 }
 
 ::-webkit-scrollbar-track {
@@ -42,7 +42,7 @@ select {
 
 textarea::placeholder,
 input::placeholder {
-  color: #565656;
+  color: var(--c-text5, #565656);
 }
 
 textarea:focus,
@@ -80,6 +80,31 @@ svg {
   }
   to {
     transform: none;
+  }
+}
+
+@keyframes fslidein {
+  from {
+    transform: translateX(-8px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* Like ffade, but for elements centered via a static translate(-50%,-50%):
+   keyframe transform values replace the base transform for the animation's
+   duration rather than composing with it, so ffade would drop the centering
+   mid-animation and hard-snap back once it completes. Bake the centering
+   into every frame instead. */
+@keyframes dialogPop {
+  from {
+    transform: translate(-50%, calc(-50% + 6px));
+  }
+  to {
+    transform: translate(-50%, -50%);
   }
 }
 

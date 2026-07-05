@@ -39,7 +39,9 @@ export default function RootLayout({
       lang="en"
       className={`${newsreader.variable} ${hankenGrotesk.variable} ${jetbrainsMono.variable} h-full`}
     >
-      <body className="h-full">{children}</body>
+      <body className="h-full" suppressHydrationWarning>
+        {children}
+      </body>
     </html>
   );
 }

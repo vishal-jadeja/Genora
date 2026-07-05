@@ -24,6 +24,7 @@ export const PLAT: Record<PlatformId, PlatformMeta> = {
     share: "copyopen",
     color: "#93a8de",
     bg: "rgba(147,168,222,.14)",
+    brand: "#0A66C2",
   },
   x: {
     label: "X",
@@ -32,6 +33,7 @@ export const PLAT: Record<PlatformId, PlatformMeta> = {
     limit: 280,
     color: "#d8d8dc",
     bg: "rgba(216,216,220,.10)",
+    brand: "#000000",
   },
   reddit: {
     label: "Reddit",
@@ -40,6 +42,7 @@ export const PLAT: Record<PlatformId, PlatformMeta> = {
     sub: true,
     color: "#e2915f",
     bg: "rgba(226,145,95,.15)",
+    brand: "#FF4500",
   },
   medium: {
     label: "Medium",
@@ -47,6 +50,7 @@ export const PLAT: Record<PlatformId, PlatformMeta> = {
     share: "copyopen",
     color: "#8ec2ac",
     bg: "rgba(142,194,172,.14)",
+    brand: "#000000",
   },
   substack: {
     label: "Substack",
@@ -54,6 +58,7 @@ export const PLAT: Record<PlatformId, PlatformMeta> = {
     share: "copyopen",
     color: "#e8b16e",
     bg: "rgba(232,177,110,.15)",
+    brand: "#FF6719",
   },
 };
 
@@ -90,6 +95,8 @@ export const DARK_THEME: ThemeDef = {
     text5: "#565656",
     primaryBg: "#f0f0f0",
     primaryText: "#0a0a0a",
+    glassBg: "rgba(255,255,255,.05)",
+    glassBorder: "rgba(255,255,255,.10)",
   },
 };
 
@@ -112,6 +119,8 @@ export const LIGHT_THEME: ThemeDef = {
     text5: "#b7b7b0",
     primaryBg: "#18181a",
     primaryText: "#f5f5f4",
+    glassBg: "rgba(255,255,255,.5)",
+    glassBorder: "rgba(255,255,255,.7)",
   },
 };
 
@@ -224,10 +233,25 @@ export const INSTR_DEFAULTS: Record<PlatformId, string> = {
 
 export function createInitialState(): FacetState {
   return {
-    view: "dashboard",
     themeMode: "system",
+    sidebarCollapsed: false,
+    isAuthed: false,
+    profileMenuOpen: false,
     activeFolder: null,
     search: "",
+    folderMenu: null,
+    creatingFolder: false,
+    newFolderDraft: "",
+    renamingFolderId: null,
+    renameFolderValue: "",
+    renamingPostId: null,
+    renameDraftValue: "",
+    confirmDialog: null,
+    draftsSearch: "",
+    draftsFolderFilter: "all",
+    draftsStatusFilter: "all",
+    draftsPlatformFilter: "all",
+    draftsSort: "recent",
     folders: [
       { id: "essays", name: "Essays" },
       { id: "threads", name: "Thread ideas" },
@@ -298,6 +322,7 @@ export function createInitialState(): FacetState {
     moveMenu: null,
     dashDraft: "",
     dashFocused: false,
+    composePostId: null,
     composeTitle: "Writing for the dashboard",
     draft:
       "I spent two years letting my analytics dashboard decide what I wrote about. Every time a post did well, I'd drift toward more of that — and the dashboard rewarded certainty, so I slowly stopped publishing anything I was still thinking through. Last month I hid the stats for 30 days and wrote only what I actually wanted to say. Reach dropped about 30%, but the replies got so much better: longer, more specific, from people I'd actually want to talk to. \"What performs\" and \"what's worth writing\" had quietly drifted apart, and I couldn't see it with the numbers in the way.",
@@ -323,7 +348,7 @@ export function createInitialState(): FacetState {
     activeTab: "linkedin",
     content: {},
     versions: {},
-    historyOpen: false,
+    historyOpen: null,
     redditSub: "",
     flashMsg: "",
     freeLeft: 3,

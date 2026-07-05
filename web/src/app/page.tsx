@@ -1,5 +1,5 @@
-import { FacetApp } from "@/components/facet/FacetApp";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return <FacetApp />;
+  redirect("/dashboard");
 }

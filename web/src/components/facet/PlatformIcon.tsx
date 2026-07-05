@@ -1,12 +1,5 @@
+import { PLAT } from "@/lib/facet/data";
 import type { PlatformId } from "@/lib/facet/types";
-
-const BRAND: Record<PlatformId, string> = {
-  linkedin: "#0A66C2",
-  x: "#000000",
-  reddit: "#FF4500",
-  medium: "#000000",
-  substack: "#FF6719",
-};
 
 export interface PlatformIconProps {
   platform: PlatformId;
@@ -21,7 +14,7 @@ export function PlatformIcon({
 }: PlatformIconProps) {
   const px = size;
   const radius = Math.max(4, Math.round(size * 0.28));
-  const bg = active ? BRAND[platform] : "var(--c-tile)";
+  const bg = active ? PLAT[platform].brand : "var(--c-tile)";
   const mark = active ? "#ffffff" : "var(--c-text3)";
   const fontPx = Math.round(size * 0.5);
   const fontPxM = Math.round(size * 0.56);

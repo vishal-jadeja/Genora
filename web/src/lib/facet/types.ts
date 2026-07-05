@@ -6,13 +6,25 @@ export type ProviderId = "anthropic" | "openai" | "gemini" | "groq";
 
 export type PostStatus = "Draft" | "Generated" | "Edited" | "Exported";
 
-export type ViewName = "dashboard" | "compose" | "output" | "settings";
-
 export type ThemeMode = "system" | "light" | "dark";
 
-export type SettingsTab = "keys" | "instructions" | "voice" | "slop" | "model";
+export type SettingsTab =
+  | "usage"
+  | "keys"
+  | "instructions"
+  | "voice"
+  | "slop"
+  | "model";
 
 export type SlopStrictness = "lenient" | "balanced" | "strict";
+
+export type DraftsSort = "recent" | "oldest" | "title";
+
+export type ConfirmDialogState =
+  | { kind: "deletePost"; postId: string }
+  | { kind: "deleteFolder"; folderId: string }
+  | { kind: "removeKey"; providerId: ProviderId }
+  | { kind: "resetInstructions" };
 
 export interface Folder {
   id: string;
@@ -35,6 +47,7 @@ export interface PlatformMeta {
   share: "copyopen" | "prefill";
   color: string;
   bg: string;
+  brand: string;
   limit?: number;
   sub?: boolean;
 }
@@ -71,6 +84,8 @@ export interface ThemeDef {
     text5: string;
     primaryBg: string;
     primaryText: string;
+    glassBg: string;
+    glassBorder: string;
   };
 }
 
@@ -80,19 +95,41 @@ export interface KeyState {
 }
 
 export interface FacetState {
-  view: ViewName;
   themeMode: ThemeMode;
+  sidebarCollapsed: boolean;
+  isAuthed: boolean;
+  profileMenuOpen: boolean;
   activeFolder: string | null;
   search: string;
   folders: Folder[];
   posts: Post[];
   moveMenu: string | null;
 
+  // folder management
+  folderMenu: string | null;
+  creatingFolder: boolean;
+  newFolderDraft: string;
+  renamingFolderId: string | null;
+  renameFolderValue: string;
+
+  // post/draft management
+  renamingPostId: string | null;
+  renameDraftValue: string;
+  confirmDialog: ConfirmDialogState | null;
+
+  // drafts page filters
+  draftsSearch: string;
+  draftsFolderFilter: "all" | "none" | string;
+  draftsStatusFilter: PostStatus | "all";
+  draftsPlatformFilter: PlatformId | "all";
+  draftsSort: DraftsSort;
+
   // dashboard composer
   dashDraft: string;
   dashFocused: boolean;
 
   // compose
+  composePostId: string | null;
   composeTitle: string;
   draft: string;
   platforms: Record<PlatformId, boolean>;
@@ -115,7 +152,7 @@ export interface FacetState {
   activeTab: PlatformId;
   content: Partial<Record<PlatformId, string>>;
   versions: Partial<Record<PlatformId, string[]>>;
-  historyOpen: boolean;
+  historyOpen: PlatformId | null;
   redditSub: string;
   flashMsg: string;
 

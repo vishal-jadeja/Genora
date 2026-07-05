@@ -7,6 +7,7 @@ import {
   MODELS,
   ORDER,
   PLAT,
+  PROVIDERS,
   REJECTS,
   SAMPLES,
   createInitialState,
@@ -14,19 +15,40 @@ import {
 import { thresholds, wordCount } from "./logic";
 import type {
   FacetState,
+  Folder,
   ModelMeta,
   PlatformId,
   Post,
+  PostStatus,
   ProviderId,
   SettingsTab,
   SlopStrictness,
   ThemeMode,
-  ViewName,
 } from "./types";
 
 const THEME_MODE_KEY = "facet-theme-mode";
+const SIDEBAR_COLLAPSED_KEY = "facet-sidebar-collapsed";
 
-export function useFacetController() {
+// Cleared on every route change so a stale popover/menu from one page never
+// bleeds into the next (previously handled by `setView`).
+const NAV_RESET: Partial<FacetState> = {
+  moveMenu: null,
+  modelOpen: false,
+  folderPickerOpen: false,
+  historyOpen: null,
+  folderMenu: null,
+  profileMenuOpen: false,
+  creatingFolder: false,
+  renamingFolderId: null,
+  renamingPostId: null,
+};
+
+export function useFacetController(nav: {
+  push: (path: string) => void;
+  replace: (path: string) => void;
+}) {
+  const navigate = nav.push;
+  const replace = nav.replace;
   const [state, setState] = useState<FacetState>(createInitialState);
   const genTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -46,30 +68,59 @@ export function useFacetController() {
     [patch],
   );
 
+  // ---- sidebar ------------------------------------------------------------
+  const toggleSidebarCollapsed = useCallback(() => {
+    setState((s) => {
+      const next = !s.sidebarCollapsed;
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? "1" : "0");
+      }
+      return {
+        ...s,
+        sidebarCollapsed: next,
+        renamingFolderId: next ? null : s.renamingFolderId,
+        folderMenu: next ? null : s.folderMenu,
+      };
+    });
+  }, []);
+
+  // ---- mock auth (visual only, no backend) --------------------------------
+  const logIn = useCallback(() => {
+    patch({ isAuthed: true });
+  }, [patch]);
+  const logOut = useCallback(() => {
+    patch({ isAuthed: false, profileMenuOpen: false });
+  }, [patch]);
+  const toggleProfileMenu = useCallback(() => {
+    setState((s) => ({ ...s, profileMenuOpen: !s.profileMenuOpen }));
+  }, []);
+
   // ---- navigation -------------------------------------------------------
-  const setView = useCallback((v: ViewName) => {
-    setState((s) => ({
-      ...s,
-      view: v,
-      moveMenu: null,
-      modelOpen: false,
-      folderPickerOpen: false,
-      historyOpen: false,
-    }));
-  }, []);
-  const goDash = useCallback(() => setView("dashboard"), [setView]);
-  const goSettings = useCallback((tab?: SettingsTab) => {
-    setState((s) => ({ ...s, view: "settings", settingsTab: tab ?? "keys" }));
-  }, []);
-  const homeClick = useCallback(
-    () => patch({ activeFolder: null, search: "" }),
-    [patch],
+  const goDash = useCallback(() => {
+    patch(NAV_RESET);
+    navigate("/dashboard");
+  }, [patch, navigate]);
+  const goDrafts = useCallback(() => {
+    patch(NAV_RESET);
+    navigate("/drafts");
+  }, [patch, navigate]);
+  const goSettings = useCallback(
+    (tab?: SettingsTab) => {
+      patch({ ...NAV_RESET, settingsTab: tab ?? "keys" });
+      navigate("/settings");
+    },
+    [patch, navigate],
   );
+  const homeClick = useCallback(() => {
+    patch({ ...NAV_RESET, activeFolder: null, search: "" });
+    navigate("/dashboard");
+  }, [patch, navigate]);
 
   const newPost = useCallback(
     (folder?: string | null) => {
       patch({
-        view: "compose",
+        ...NAV_RESET,
+        composePostId: null,
         composeTitle: "",
         draft: "",
         composeFolder: folder ?? null,
@@ -77,45 +128,65 @@ export function useFacetController() {
         softDismissed: false,
         slopHard: false,
       });
+      navigate("/compose");
     },
-    [patch],
+    [patch, navigate],
   );
 
-  const openPost = useCallback((post: Post) => {
-    if (["Generated", "Edited", "Exported"].includes(post.status)) {
-      const sel = post.platforms.length
-        ? post.platforms
-        : (["linkedin"] as PlatformId[]);
-      const content: Partial<Record<PlatformId, string>> = {};
-      const versions: Partial<Record<PlatformId, string[]>> = {};
-      sel.forEach((id) => {
-        const t = SAMPLES[id] || SAMPLES.linkedin;
-        content[id] = t;
-        versions[id] = [t];
-      });
-      setState((s) => ({
+  // Pure state hydration from an existing post — no navigation. Used both by
+  // openPost (which also navigates) and by /post/[id]'s mount effect (which
+  // must NOT re-trigger navigation on browser back/forward).
+  const loadPost = useCallback((id: string) => {
+    setState((s) => {
+      const post = s.posts.find((p) => p.id === id);
+      if (!post) return s;
+      if (["Generated", "Edited", "Exported"].includes(post.status)) {
+        const sel = post.platforms.length
+          ? post.platforms
+          : (["linkedin"] as PlatformId[]);
+        const content: Partial<Record<PlatformId, string>> = {};
+        const versions: Partial<Record<PlatformId, string[]>> = {};
+        sel.forEach((pid) => {
+          const t = SAMPLES[pid] || SAMPLES.linkedin;
+          content[pid] = t;
+          versions[pid] = [t];
+        });
+        return {
+          ...s,
+          composePostId: post.id,
+          outTitle: post.title,
+          outPlatforms: sel,
+          content,
+          versions,
+          activeTab: sel[0],
+          slopHard: false,
+          generating: false,
+        };
+      }
+      return {
         ...s,
-        view: "output",
-        outTitle: post.title,
-        outPlatforms: sel,
-        content,
-        versions,
-        activeTab: sel[0],
-        slopHard: false,
-        generating: false,
-      }));
-    } else {
-      setState((s) => ({
-        ...s,
-        view: "compose",
+        composePostId: post.id,
         composeTitle: post.title,
         draft: post.snippet || "",
         composeFolder: post.folder,
         softNudge: false,
         softDismissed: false,
-      }));
-    }
+      };
+    });
   }, []);
+
+  const openPost = useCallback(
+    (post: Post) => {
+      patch(NAV_RESET);
+      loadPost(post.id);
+      if (["Generated", "Edited", "Exported"].includes(post.status)) {
+        navigate(`/post/${post.id}`);
+      } else {
+        navigate("/compose");
+      }
+    },
+    [patch, loadPost, navigate],
+  );
 
   const onSearch = useCallback((v: string) => patch({ search: v }), [patch]);
   const selectFolder = useCallback(
@@ -135,6 +206,72 @@ export function useFacetController() {
     }));
   }, []);
 
+  // ---- folder management --------------------------------------------------
+  const startNewFolder = useCallback(() => {
+    setState((s) => ({ ...s, creatingFolder: true, newFolderDraft: "" }));
+  }, []);
+  const onNewFolderInput = useCallback(
+    (v: string) => patch({ newFolderDraft: v }),
+    [patch],
+  );
+  const commitNewFolder = useCallback(() => {
+    setState((s) => {
+      const name = s.newFolderDraft.trim();
+      if (!name) return { ...s, creatingFolder: false, newFolderDraft: "" };
+      const folder: Folder = { id: crypto.randomUUID(), name };
+      return {
+        ...s,
+        folders: [...s.folders, folder],
+        creatingFolder: false,
+        newFolderDraft: "",
+      };
+    });
+  }, []);
+  const cancelNewFolder = useCallback(
+    () => patch({ creatingFolder: false, newFolderDraft: "" }),
+    [patch],
+  );
+
+  const toggleFolderMenu = useCallback((id: string | null) => {
+    setState((s) => ({ ...s, folderMenu: s.folderMenu === id ? null : id }));
+  }, []);
+
+  const startRenameFolder = useCallback((folderId: string) => {
+    setState((s) => {
+      const f = s.folders.find((x) => x.id === folderId);
+      return {
+        ...s,
+        renamingFolderId: folderId,
+        renameFolderValue: f?.name ?? "",
+        folderMenu: null,
+      };
+    });
+  }, []);
+  const onRenameFolderInput = useCallback(
+    (v: string) => patch({ renameFolderValue: v }),
+    [patch],
+  );
+  const commitRenameFolder = useCallback(() => {
+    setState((s) => {
+      const name = s.renameFolderValue.trim();
+      if (!s.renamingFolderId || !name) {
+        return { ...s, renamingFolderId: null, renameFolderValue: "" };
+      }
+      return {
+        ...s,
+        folders: s.folders.map((f) =>
+          f.id === s.renamingFolderId ? { ...f, name } : f,
+        ),
+        renamingFolderId: null,
+        renameFolderValue: "",
+      };
+    });
+  }, []);
+  const cancelRenameFolder = useCallback(
+    () => patch({ renamingFolderId: null, renameFolderValue: "" }),
+    [patch],
+  );
+
   // ---- dashboard composer -------------------------------------------------
   const onDashDraft = useCallback(
     (v: string) => patch({ dashDraft: v, dashFocused: true }),
@@ -146,7 +283,7 @@ export function useFacetController() {
       const title = s.dashDraft.trim().split(/\s+/).slice(0, 6).join(" ");
       return {
         ...s,
-        view: "compose",
+        composePostId: null,
         draft: s.dashDraft,
         composeTitle: title,
         softNudge: false,
@@ -154,7 +291,8 @@ export function useFacetController() {
         slopHard: false,
       };
     });
-  }, []);
+    navigate("/compose");
+  }, [navigate]);
 
   // ---- compose --------------------------------------------------------
   const onTitle = useCallback(
@@ -199,48 +337,84 @@ export function useFacetController() {
   );
 
   // ---- generation -------------------------------------------------------
-  const runGenerate = useCallback(() => {
-    setState((s) => {
-      if (!hasKey(s) && s.freeLeft <= 0) {
-        return { ...s, view: "settings", settingsTab: "keys" };
+  // navMode "replace": /compose was already a committed page the user was
+  // looking at (its own earlier tick) — collapse it into /post so Back skips
+  // the transient compose step. navMode "push": there was no real /compose
+  // visit this tick (e.g. dashboard's quick-generate) — push, so Back still
+  // returns to the page the user was actually on (Next.js otherwise collapses
+  // a same-tick push+replace pair into a single replace of *that* page).
+  const runGenerate = useCallback(
+    (navMode: "push" | "replace" = "replace") => {
+      if (!hasKey(state) && state.freeLeft <= 0) {
+        patch({ settingsTab: "keys" });
+        navigate("/settings");
+        return;
       }
-      const sel = ORDER.filter((id) => s.platforms[id]);
-      const first = sel[0] || "linkedin";
-      return {
-        ...s,
-        view: "output",
-        slopHard: false,
-        softNudge: false,
-        generating: true,
-        activeTab: first,
-        outTitle: s.composeTitle || "Untitled",
-        outPlatforms: sel,
-        content: {},
-        versions: {},
-        redditSub: "",
-      };
-    });
 
-    if (genTimer.current) clearTimeout(genTimer.current);
-    genTimer.current = setTimeout(() => {
+      const postId = state.composePostId ?? crypto.randomUUID();
+      const sel = ORDER.filter((id) => state.platforms[id]);
+      const first = sel[0] || "linkedin";
+      const title = state.composeTitle || "Untitled";
+
       setState((s) => {
-        const sel = s.outPlatforms;
-        const content: Partial<Record<PlatformId, string>> = {};
-        const versions: Partial<Record<PlatformId, string[]>> = {};
-        sel.forEach((id) => {
-          content[id] = SAMPLES[id];
-          versions[id] = [SAMPLES[id]];
-        });
+        const exists = s.posts.some((p) => p.id === postId);
+        const draftPost: Post = {
+          id: postId,
+          title,
+          snippet: s.draft.slice(0, 160),
+          folder: s.composeFolder,
+          status: "Draft",
+          platforms: sel,
+          edited: "just now",
+        };
+        const posts = exists
+          ? s.posts.map((p) => (p.id === postId ? { ...p, ...draftPost } : p))
+          : [draftPost, ...s.posts];
         return {
           ...s,
-          generating: false,
-          content,
-          versions,
-          freeLeft: hasKey(s) ? s.freeLeft : Math.max(0, s.freeLeft - 1),
+          posts,
+          composePostId: postId,
+          slopHard: false,
+          softNudge: false,
+          generating: true,
+          activeTab: first,
+          outTitle: title,
+          outPlatforms: sel,
+          content: {},
+          versions: {},
+          redditSub: "",
         };
       });
-    }, 1800);
-  }, [hasKey]);
+      (navMode === "replace" ? replace : navigate)(`/post/${postId}`);
+
+      if (genTimer.current) clearTimeout(genTimer.current);
+      genTimer.current = setTimeout(() => {
+        setState((s) => {
+          const sel2 = s.outPlatforms;
+          const content: Partial<Record<PlatformId, string>> = {};
+          const versions: Partial<Record<PlatformId, string[]>> = {};
+          sel2.forEach((id) => {
+            content[id] = SAMPLES[id];
+            versions[id] = [SAMPLES[id]];
+          });
+          const posts = s.posts.map((p) =>
+            p.id === postId
+              ? { ...p, status: "Generated" as PostStatus, edited: "just now" }
+              : p,
+          );
+          return {
+            ...s,
+            posts,
+            generating: false,
+            content,
+            versions,
+            freeLeft: hasKey(s) ? s.freeLeft : Math.max(0, s.freeLeft - 1),
+          };
+        });
+      }, 1800);
+    },
+    [hasKey, state, patch, navigate, replace],
+  );
 
   const generate = useCallback(() => {
     const { hard, soft } = thresholds(state.slopStrictness);
@@ -248,7 +422,6 @@ export function useFacetController() {
     if (state.slopEnabled && (state.draft.trim() === "" || words < hard)) {
       setState((s) => ({
         ...s,
-        view: "output",
         slopHard: true,
         generating: false,
         blockedCount: s.blockedCount + 1,
@@ -257,7 +430,7 @@ export function useFacetController() {
       return;
     }
     if (state.slopEnabled && words < soft && !state.softDismissed) {
-      patch({ view: "compose", softNudge: true });
+      patch({ softNudge: true });
       return;
     }
     runGenerate();
@@ -271,9 +444,9 @@ export function useFacetController() {
     }
     const title = t.trim().split(/\s+/).slice(0, 6).join(" ") || "Untitled";
     patch({
+      composePostId: null,
       draft: t,
       composeTitle: title,
-      view: "compose",
       softNudge: false,
       softDismissed: false,
     });
@@ -281,9 +454,11 @@ export function useFacetController() {
     const { hard, soft } = thresholds(state.slopStrictness);
     const words = wordCount(t);
     if (state.slopEnabled && (t.trim() === "" || words < hard)) {
+      // Slop Guard is blocking generation — land on /compose for real, since
+      // the user now has to address the nudge there.
+      navigate("/compose");
       setState((s) => ({
         ...s,
-        view: "output",
         slopHard: true,
         generating: false,
         blockedCount: s.blockedCount + 1,
@@ -292,11 +467,17 @@ export function useFacetController() {
       return;
     }
     if (state.slopEnabled && words < soft && !state.softDismissed) {
-      patch({ view: "compose", softNudge: true });
+      navigate("/compose");
+      patch({ softNudge: true });
       return;
     }
-    runGenerate();
-  }, [state, patch, runGenerate]);
+    // Straight through, no compose page ever shown this tick — push directly
+    // from /dashboard to /post so Back returns to /dashboard, not about:blank.
+    // (Next.js collapses a same-tick push+replace pair into one operation on
+    // whatever page was current, so pushing /compose here and replacing with
+    // /post right after would clobber the /dashboard history entry instead.)
+    runGenerate("push");
+  }, [state, patch, navigate, runGenerate]);
 
   const addDetail = useCallback(() => patch({ softNudge: false }), [patch]);
   const generateAnyway = useCallback(() => {
@@ -305,24 +486,29 @@ export function useFacetController() {
   }, [patch, runGenerate]);
 
   // ---- output -----------------------------------------------------------
-  const backToCompose = useCallback(
-    () => patch({ view: "compose", slopHard: false }),
-    [patch],
-  );
+  const backToCompose = useCallback(() => {
+    patch({ slopHard: false });
+    // Lateral move within the same post's editing session — replace, not
+    // push, so bouncing between compose/output doesn't grow the stack.
+    replace("/compose");
+  }, [patch, replace]);
   const selectTab = useCallback(
-    (id: PlatformId) => patch({ activeTab: id, historyOpen: false }),
+    (id: PlatformId) => patch({ activeTab: id, historyOpen: null }),
     [patch],
   );
-  const onEditContent = useCallback((v: string) => {
-    setState((s) => ({ ...s, content: { ...s.content, [s.activeTab]: v } }));
+  const onEditContent = useCallback((v: string, id?: PlatformId) => {
+    setState((s) => ({
+      ...s,
+      content: { ...s.content, [id ?? s.activeTab]: v },
+    }));
   }, []);
   const onRedditSub = useCallback(
     (v: string) => patch({ redditSub: v }),
     [patch],
   );
-  const regenerate = useCallback(() => {
+  const regenerate = useCallback((id?: PlatformId) => {
     setState((s) => {
-      const tab = s.activeTab;
+      const tab = id ?? s.activeTab;
       const cur = s.content[tab];
       const alt = cur === SAMPLES[tab] ? ALTS[tab] : SAMPLES[tab];
       return {
@@ -332,14 +518,17 @@ export function useFacetController() {
       };
     });
   }, []);
-  const openHistory = useCallback(() => {
-    setState((s) => ({ ...s, historyOpen: !s.historyOpen }));
+  const openHistory = useCallback((id?: PlatformId) => {
+    setState((s) => {
+      const target = id ?? s.activeTab;
+      return { ...s, historyOpen: s.historyOpen === target ? null : target };
+    });
   }, []);
   const restoreVersion = useCallback((tab: PlatformId, text: string) => {
     setState((s) => ({
       ...s,
       content: { ...s.content, [tab]: text },
-      historyOpen: false,
+      historyOpen: null,
     }));
   }, []);
   const flash = useCallback(
@@ -350,33 +539,165 @@ export function useFacetController() {
     },
     [patch],
   );
-  const copyText = useCallback(() => {
-    const t = state.content[state.activeTab] || "";
-    if (typeof navigator !== "undefined" && navigator.clipboard) {
-      navigator.clipboard.writeText(t).catch(() => {});
-    }
-    flash("Copied to clipboard");
-  }, [state, flash]);
-  const doShare = useCallback(() => {
-    const tab = state.activeTab;
-    const m = PLAT[tab];
-    if (m.share === "prefill") {
-      if (m.sub) {
-        if (!state.redditSub.trim()) return;
-        flash(
-          "Opening r/" + state.redditSub.trim() + " with your draft prefilled…",
-        );
-      } else {
-        flash("Opening the X composer with your text already in place…");
-      }
-    } else {
+  const copyText = useCallback(
+    (id?: PlatformId) => {
+      const tab = id ?? state.activeTab;
       const t = state.content[tab] || "";
       if (typeof navigator !== "undefined" && navigator.clipboard) {
         navigator.clipboard.writeText(t).catch(() => {});
       }
-      flash("Copied — opening " + m.label + " in a new tab. Paste to post.");
-    }
-  }, [state, flash]);
+      flash("Copied to clipboard");
+    },
+    [state, flash],
+  );
+  const doShare = useCallback(
+    (id?: PlatformId) => {
+      const tab = id ?? state.activeTab;
+      const m = PLAT[tab];
+      if (m.share === "prefill") {
+        if (m.sub) {
+          if (!state.redditSub.trim()) return;
+          flash(
+            "Opening r/" +
+              state.redditSub.trim() +
+              " with your draft prefilled…",
+          );
+        } else {
+          flash("Opening the X composer with your text already in place…");
+        }
+      } else {
+        const t = state.content[tab] || "";
+        if (typeof navigator !== "undefined" && navigator.clipboard) {
+          navigator.clipboard.writeText(t).catch(() => {});
+        }
+        flash("Copied — opening " + m.label + " in a new tab. Paste to post.");
+      }
+    },
+    [state, flash],
+  );
+
+  // ---- drafts page: post management ---------------------------------------
+  const duplicatePost = useCallback((postId: string) => {
+    setState((s) => {
+      const idx = s.posts.findIndex((p) => p.id === postId);
+      if (idx === -1) return s;
+      const source = s.posts[idx];
+      const copy: Post = {
+        ...source,
+        id: crypto.randomUUID(),
+        title: source.title + " (copy)",
+        edited: "just now",
+      };
+      const posts = [...s.posts];
+      posts.splice(idx + 1, 0, copy);
+      return { ...s, posts, moveMenu: null };
+    });
+  }, []);
+
+  const startRenamePost = useCallback((postId: string) => {
+    setState((s) => {
+      const p = s.posts.find((x) => x.id === postId);
+      return {
+        ...s,
+        renamingPostId: postId,
+        renameDraftValue: p?.title ?? "",
+        moveMenu: null,
+      };
+    });
+  }, []);
+  const onRenameDraftInput = useCallback(
+    (v: string) => patch({ renameDraftValue: v }),
+    [patch],
+  );
+  const commitRenamePost = useCallback(() => {
+    setState((s) => {
+      const title = s.renameDraftValue.trim();
+      if (!s.renamingPostId || !title) {
+        return { ...s, renamingPostId: null, renameDraftValue: "" };
+      }
+      return {
+        ...s,
+        posts: s.posts.map((p) =>
+          p.id === s.renamingPostId ? { ...p, title } : p,
+        ),
+        renamingPostId: null,
+        renameDraftValue: "",
+      };
+    });
+  }, []);
+  const cancelRenamePost = useCallback(
+    () => patch({ renamingPostId: null, renameDraftValue: "" }),
+    [patch],
+  );
+
+  // ---- confirm dialog: single funnel for all destructive actions ---------
+  const openConfirmDialog = useCallback(
+    (payload: NonNullable<FacetState["confirmDialog"]>) => {
+      patch({ confirmDialog: payload });
+    },
+    [patch],
+  );
+  const closeConfirmDialog = useCallback(
+    () => patch({ confirmDialog: null }),
+    [patch],
+  );
+  const confirmDialogAction = useCallback(() => {
+    setState((s) => {
+      const d = s.confirmDialog;
+      if (!d) return s;
+      if (d.kind === "deletePost") {
+        return {
+          ...s,
+          posts: s.posts.filter((p) => p.id !== d.postId),
+          confirmDialog: null,
+        };
+      }
+      if (d.kind === "deleteFolder") {
+        return {
+          ...s,
+          folders: s.folders.filter((f) => f.id !== d.folderId),
+          posts: s.posts.map((p) =>
+            p.folder === d.folderId ? { ...p, folder: null } : p,
+          ),
+          activeFolder: s.activeFolder === d.folderId ? null : s.activeFolder,
+          confirmDialog: null,
+        };
+      }
+      if (d.kind === "removeKey") {
+        return {
+          ...s,
+          keys: { ...s.keys, [d.providerId]: { c: false, v: "" } },
+          confirmDialog: null,
+        };
+      }
+      if (d.kind === "resetInstructions") {
+        return { ...s, instr: { ...INSTR_DEFAULTS }, confirmDialog: null };
+      }
+      return { ...s, confirmDialog: null };
+    });
+  }, []);
+
+  // ---- drafts page: filters/sort ------------------------------------------
+  const setDraftsSearch = useCallback(
+    (v: string) => patch({ draftsSearch: v }),
+    [patch],
+  );
+  const setDraftsFolderFilter = useCallback(
+    (v: "all" | "none" | string) => patch({ draftsFolderFilter: v }),
+    [patch],
+  );
+  const setDraftsStatusFilter = useCallback(
+    (v: PostStatus | "all") => patch({ draftsStatusFilter: v }),
+    [patch],
+  );
+  const setDraftsPlatformFilter = useCallback(
+    (v: PlatformId | "all") => patch({ draftsPlatformFilter: v }),
+    [patch],
+  );
+  const setDraftsSort = useCallback(
+    (v: FacetState["draftsSort"]) => patch({ draftsSort: v }),
+    [patch],
+  );
 
   // ---- settings -----------------------------------------------------------
   const setSettingsTab = useCallback(
@@ -395,9 +716,6 @@ export function useFacetController() {
       keys: { ...s.keys, [id]: { ...s.keys[id], c: true } },
     }));
   }, []);
-  const removeKey = useCallback((id: ProviderId) => {
-    setState((s) => ({ ...s, keys: { ...s.keys, [id]: { c: false, v: "" } } }));
-  }, []);
   const toggleInstr = useCallback((id: PlatformId) => {
     setState((s) => ({ ...s, instrOpen: s.instrOpen === id ? null : id }));
   }, []);
@@ -410,10 +728,6 @@ export function useFacetController() {
   }, []);
   const setSlopStrictness = useCallback(
     (v: SlopStrictness) => patch({ slopStrictness: v }),
-    [patch],
-  );
-  const resetInstrDefaults = useCallback(
-    () => patch({ instr: { ...INSTR_DEFAULTS } }),
     [patch],
   );
 
@@ -450,13 +764,21 @@ export function useFacetController() {
     const q = S.search.trim().toLowerCase();
     let rows = S.posts;
     if (S.activeFolder) rows = rows.filter((p) => p.folder === S.activeFolder);
+    if (S.draftsPlatformFilter !== "all") {
+      rows = rows.filter((p) =>
+        p.platforms.includes(S.draftsPlatformFilter as PlatformId),
+      );
+    }
     if (q)
       rows = rows.filter((p) =>
         (p.title + " " + p.snippet).toLowerCase().includes(q),
       );
     const showEmptyAll = S.posts.length === 0;
     const showEmptyFolder =
-      !showEmptyAll && rows.length === 0 && S.activeFolder !== null && !q;
+      !showEmptyAll &&
+      rows.length === 0 &&
+      (S.activeFolder !== null || S.draftsPlatformFilter !== "all") &&
+      !q;
     const hasRows = rows.length > 0;
     const hasContent = S.posts.length > 0;
 
@@ -490,6 +812,72 @@ export function useFacetController() {
     const modelPageNote = hk
       ? "Your global default. Any folder or post can override it."
       : "Free tier is fixed to Claude Sonnet 4.5. Add a key in API keys to unlock the rest.";
+
+    // ---- drafts page ----
+    const draftsSearchQ = S.draftsSearch.trim().toLowerCase();
+    let draftsRows = S.posts;
+    if (S.draftsFolderFilter === "none") {
+      draftsRows = draftsRows.filter((p) => p.folder === null);
+    } else if (S.draftsFolderFilter !== "all") {
+      draftsRows = draftsRows.filter((p) => p.folder === S.draftsFolderFilter);
+    }
+    if (S.draftsStatusFilter !== "all") {
+      draftsRows = draftsRows.filter((p) => p.status === S.draftsStatusFilter);
+    }
+    if (S.draftsPlatformFilter !== "all") {
+      draftsRows = draftsRows.filter((p) =>
+        p.platforms.includes(S.draftsPlatformFilter as PlatformId),
+      );
+    }
+    if (draftsSearchQ) {
+      draftsRows = draftsRows.filter((p) =>
+        (p.title + " " + p.snippet).toLowerCase().includes(draftsSearchQ),
+      );
+    }
+    draftsRows = [...draftsRows].sort((a, b) => {
+      if (S.draftsSort === "title") return a.title.localeCompare(b.title);
+      return 0;
+    });
+    if (S.draftsSort === "oldest") draftsRows = [...draftsRows].reverse();
+    const draftsEmpty = S.posts.length === 0;
+    const draftsNoMatch = !draftsEmpty && draftsRows.length === 0;
+
+    let confirmDialogContent: {
+      title: string;
+      description: string;
+      confirmLabel: string;
+    } | null = null;
+    const d = S.confirmDialog;
+    if (d?.kind === "deletePost") {
+      const p = S.posts.find((x) => x.id === d.postId);
+      confirmDialogContent = {
+        title: "Delete draft?",
+        description: `"${p?.title ?? "This draft"}" will be permanently deleted. This can't be undone.`,
+        confirmLabel: "Delete",
+      };
+    } else if (d?.kind === "deleteFolder") {
+      const f = S.folders.find((x) => x.id === d.folderId);
+      const count = S.posts.filter((p) => p.folder === d.folderId).length;
+      confirmDialogContent = {
+        title: "Delete folder?",
+        description: `"${f?.name ?? "This folder"}" will be deleted. ${count} post${count === 1 ? "" : "s"} inside will move to No folder.`,
+        confirmLabel: "Delete",
+      };
+    } else if (d?.kind === "removeKey") {
+      const pr = PROVIDERS.find((x) => x.id === d.providerId);
+      confirmDialogContent = {
+        title: "Remove API key?",
+        description: `Your saved ${pr?.name ?? "provider"} key will be removed. You can add it again anytime.`,
+        confirmLabel: "Remove",
+      };
+    } else if (d?.kind === "resetInstructions") {
+      confirmDialogContent = {
+        title: "Reset all instructions?",
+        description:
+          "Every platform's instructions will revert to Genora's defaults, overwriting your custom edits.",
+        confirmLabel: "Reset",
+      };
+    }
 
     return {
       hasKey: hk,
@@ -529,6 +917,10 @@ export function useFacetController() {
       tierBanner,
       voiceStatus,
       modelPageNote,
+      draftsRows,
+      draftsEmpty,
+      draftsNoMatch,
+      confirmDialogContent,
     };
   }, [state]);
 
@@ -542,18 +934,41 @@ export function useFacetController() {
     }
   }, [patch]);
 
+  useEffect(() => {
+    const saved = window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+    if (saved === "1" || saved === "0") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      patch({ sidebarCollapsed: saved === "1" });
+    }
+  }, [patch]);
+
   const actions = useMemo(
     () => ({
       setThemeMode,
+      toggleSidebarCollapsed,
+      logIn,
+      logOut,
+      toggleProfileMenu,
       goDash,
+      goDrafts,
       goSettings,
       homeClick,
       newPost,
+      loadPost,
       openPost,
       onSearch,
       selectFolder,
       toggleMove,
       moveTo,
+      startNewFolder,
+      onNewFolderInput,
+      commitNewFolder,
+      cancelNewFolder,
+      toggleFolderMenu,
+      startRenameFolder,
+      onRenameFolderInput,
+      commitRenameFolder,
+      cancelRenameFolder,
       onDashDraft,
       dashFocus,
       openEditorFromDash,
@@ -577,28 +992,54 @@ export function useFacetController() {
       restoreVersion,
       copyText,
       doShare,
+      duplicatePost,
+      startRenamePost,
+      onRenameDraftInput,
+      commitRenamePost,
+      cancelRenamePost,
+      openConfirmDialog,
+      closeConfirmDialog,
+      confirmDialogAction,
+      setDraftsSearch,
+      setDraftsFolderFilter,
+      setDraftsStatusFilter,
+      setDraftsPlatformFilter,
+      setDraftsSort,
       setSettingsTab,
       onKeyInput,
       validateKey,
-      removeKey,
       toggleInstr,
       onInstr,
       onVoice,
       toggleSlop,
       setSlopStrictness,
-      resetInstrDefaults,
     }),
     [
       setThemeMode,
+      toggleSidebarCollapsed,
+      logIn,
+      logOut,
+      toggleProfileMenu,
       goDash,
+      goDrafts,
       goSettings,
       homeClick,
       newPost,
+      loadPost,
       openPost,
       onSearch,
       selectFolder,
       toggleMove,
       moveTo,
+      startNewFolder,
+      onNewFolderInput,
+      commitNewFolder,
+      cancelNewFolder,
+      toggleFolderMenu,
+      startRenameFolder,
+      onRenameFolderInput,
+      commitRenameFolder,
+      cancelRenameFolder,
       onDashDraft,
       dashFocus,
       openEditorFromDash,
@@ -622,16 +1063,27 @@ export function useFacetController() {
       restoreVersion,
       copyText,
       doShare,
+      duplicatePost,
+      startRenamePost,
+      onRenameDraftInput,
+      commitRenamePost,
+      cancelRenamePost,
+      openConfirmDialog,
+      closeConfirmDialog,
+      confirmDialogAction,
+      setDraftsSearch,
+      setDraftsFolderFilter,
+      setDraftsStatusFilter,
+      setDraftsPlatformFilter,
+      setDraftsSort,
       setSettingsTab,
       onKeyInput,
       validateKey,
-      removeKey,
       toggleInstr,
       onInstr,
       onVoice,
       toggleSlop,
       setSlopStrictness,
-      resetInstrDefaults,
     ],
   );
 

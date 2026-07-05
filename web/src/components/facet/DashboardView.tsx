@@ -1,17 +1,10 @@
 "use client";
 
-import type { CSSProperties } from "react";
-import {
-  MODELS,
-  ORDER,
-  PLAT,
-  STATUS_COLOR,
-  STATUS_ICON,
-} from "@/lib/facet/data";
-import type { Folder } from "@/lib/facet/types";
+import { MODELS, ORDER, PLAT, STATUS_COLOR, STATUS_ICON } from "@/lib/facet/data";
 import { Hoverable } from "./Hoverable";
 import {
   chipStyle,
+  glassPanelStyle,
   monoStyle,
   moveOptStyle,
   optStyle,
@@ -19,339 +12,8 @@ import {
 } from "./styleHelpers";
 import type { FacetViewProps } from "./viewProps";
 
-function folderButtonStyle(active: boolean): CSSProperties {
-  return {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    width: "100%",
-    background: active ? "var(--c-surfaceHover)" : "transparent",
-    border: "none",
-    borderRadius: 9,
-    padding: "8px 10px",
-    fontSize: 13.5,
-    textAlign: "left",
-  };
-}
-
 export function DashboardView({ state, derived, actions }: FacetViewProps) {
-  return (
-    <div style={{ display: "flex", height: "100%" }}>
-      <Sidebar state={state} derived={derived} actions={actions} />
-      <Main state={state} derived={derived} actions={actions} />
-    </div>
-  );
-}
-
-function Sidebar({ state, derived, actions }: FacetViewProps) {
-  return (
-    <aside
-      style={{
-        width: 270,
-        flex: "none",
-        borderRight: "1px solid var(--c-border)",
-        display: "flex",
-        flexDirection: "column",
-        padding: "16px 12px",
-        background: "var(--c-shell)",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 11,
-          padding: "6px 8px 4px",
-        }}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/logo.svg"
-          alt="Genora"
-          width={32}
-          height={32}
-          style={{ borderRadius: 9, flex: "none" }}
-        />
-        <div style={{ flex: 1, minWidth: 0, lineHeight: 1.25 }}>
-          <div
-            style={{
-              fontSize: 13.5,
-              fontWeight: 600,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            Facet
-          </div>
-          <div
-            style={{
-              fontSize: 11.5,
-              color: "var(--c-text4)",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            write once, publish everywhere
-          </div>
-        </div>
-        <Hoverable
-          as="button"
-          title="New folder"
-          style={{
-            width: 28,
-            height: 28,
-            flex: "none",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "none",
-            border: "1px solid var(--c-borderStrong)",
-            borderRadius: 8,
-            color: "var(--c-text3)",
-          }}
-          hoverStyle={{
-            borderColor: "var(--c-borderHover)",
-            color: "var(--c-text)",
-          }}
-        >
-          <svg
-            width="15"
-            height="15"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-            <path d="M12 11v5M9.5 13.5h5" />
-          </svg>
-        </Hoverable>
-      </div>
-
-      <Hoverable
-        as="button"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          marginTop: 14,
-          background: "var(--c-surface)",
-          border: "1px solid var(--c-borderStrong)",
-          borderRadius: 10,
-          padding: "9px 11px",
-          color: "var(--c-text3)",
-          fontSize: 13,
-        }}
-        hoverStyle={{ borderColor: "var(--c-borderStrong)" }}
-      >
-        <svg
-          width="15"
-          height="15"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <circle cx="11" cy="11" r="7" />
-          <path d="M21 21l-4-4" />
-        </svg>
-        <span style={{ flex: 1, textAlign: "left" }}>Search</span>
-        <span
-          style={{
-            fontFamily: "var(--font-jetbrains-mono), monospace",
-            fontSize: 11,
-            color: "var(--c-text5)",
-            border: "1px solid var(--c-borderStrong)",
-            borderRadius: 5,
-            padding: "1px 6px",
-          }}
-        >
-          ⌘K
-        </span>
-      </Hoverable>
-
-      <button
-        onClick={actions.homeClick}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 11,
-          marginTop: 8,
-          background: "var(--c-surfaceHover)",
-          border: "none",
-          borderRadius: 9,
-          padding: "9px 11px",
-          color: "var(--c-text)",
-          fontSize: 13.5,
-          fontWeight: 500,
-          textAlign: "left",
-        }}
-      >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M3 11l9-8 9 8" />
-          <path d="M5 10v10h14V10" />
-        </svg>
-        Home
-      </button>
-
-      <div
-        style={{
-          fontSize: 11,
-          fontWeight: 600,
-          letterSpacing: ".09em",
-          textTransform: "uppercase",
-          color: "var(--c-text5)",
-          padding: "20px 10px 8px",
-        }}
-      >
-        Folders
-      </div>
-      <nav style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-        {state.folders.map((f: Folder) => {
-          const active = state.activeFolder === f.id;
-          return (
-            <button
-              key={f.id}
-              onClick={() => actions.selectFolder(f.id)}
-              style={folderButtonStyle(active)}
-            >
-              <span
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 11,
-                  overflow: "hidden",
-                  color: active ? "var(--c-text)" : "var(--c-text4)",
-                }}
-              >
-                <svg
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  style={{ flex: "none" }}
-                >
-                  <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                </svg>
-                <span
-                  style={{
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    color: active ? "var(--c-text)" : "var(--c-text2)",
-                  }}
-                >
-                  {f.name}
-                </span>
-              </span>
-              <span
-                style={{
-                  fontSize: 12,
-                  color: "var(--c-text5)",
-                  fontVariantNumeric: "tabular-nums",
-                }}
-              >
-                {derived.counts[f.id] ?? 0}
-              </span>
-            </button>
-          );
-        })}
-      </nav>
-
-      <div
-        style={{
-          marginTop: "auto",
-          display: "flex",
-          flexDirection: "column",
-          gap: 6,
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 9,
-            padding: "10px 11px",
-            border: "1px solid var(--c-borderStrong)",
-            borderRadius: 10,
-          }}
-        >
-          <span
-            style={{
-              width: 7,
-              height: 7,
-              borderRadius: "50%",
-              flex: "none",
-              background: derived.hasKey
-                ? "#6cae8e"
-                : derived.quotaLow
-                  ? "#d4a960"
-                  : "var(--c-text)",
-            }}
-          />
-          <span
-            style={{ fontSize: 12, color: "var(--c-text2)", lineHeight: 1.3 }}
-          >
-            {derived.quotaText}
-          </span>
-        </div>
-        <Hoverable
-          as="button"
-          onClick={() => actions.goSettings()}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 11,
-            background: "none",
-            border: "none",
-            color: "var(--c-text3)",
-            fontSize: 13.5,
-            padding: "9px 11px",
-            textAlign: "left",
-            borderRadius: 9,
-          }}
-          hoverStyle={{
-            background: "var(--c-popover)",
-            color: "var(--c-text)",
-          }}
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="12" cy="12" r="3" />
-            <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1" />
-          </svg>
-          Settings
-        </Hoverable>
-      </div>
-    </aside>
-  );
+  return <Main state={state} derived={derived} actions={actions} />;
 }
 
 function Main({ state, derived, actions }: FacetViewProps) {
@@ -392,13 +54,13 @@ function Main({ state, derived, actions }: FacetViewProps) {
 
           {/* inline composer */}
           <div
-            style={{
-              background: "var(--c-surface)",
-              border: `1px solid ${dashExpanded ? "var(--c-borderHover)" : "var(--c-borderStrong)"}`,
-              borderRadius: 16,
+            style={glassPanelStyle({
+              borderColor: dashExpanded
+                ? "var(--c-borderHover)"
+                : "var(--c-glassBorder)",
+              boxShadow: "0 16px 40px rgba(0,0,0,.25)",
               transition: "border-color .2s ease",
-              boxShadow: "0 1px 0 rgba(255,255,255,.02)",
-            }}
+            })}
           >
             <div style={{ display: "flex", gap: 13, padding: "18px 18px 6px" }}>
               <span
@@ -421,7 +83,7 @@ function Main({ state, derived, actions }: FacetViewProps) {
                 value={state.dashDraft}
                 onChange={(e) => actions.onDashDraft(e.target.value)}
                 onFocus={actions.dashFocus}
-                placeholder="What's the thought? Write it once — Facet reshapes it for every platform."
+                placeholder="What's the thought? Write it once — Genora reshapes it for every platform."
                 style={{
                   flex: 1,
                   background: "none",
@@ -762,6 +424,7 @@ function Main({ state, derived, actions }: FacetViewProps) {
                 </div>
                 <Hoverable
                   as="button"
+                  onClick={actions.startNewFolder}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -937,6 +600,50 @@ function Main({ state, derived, actions }: FacetViewProps) {
                 }}
               />
             </div>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 7,
+              flexWrap: "wrap",
+              margin: "0 2px 16px",
+            }}
+          >
+            <button
+              onClick={() => actions.setDraftsPlatformFilter("all")}
+              style={{
+                padding: "6px 12px",
+                borderRadius: 999,
+                border: `1px solid ${state.draftsPlatformFilter === "all" ? "var(--c-borderHover)" : "var(--c-borderStrong)"}`,
+                background:
+                  state.draftsPlatformFilter === "all"
+                    ? "var(--c-surfaceHover)"
+                    : "transparent",
+                color:
+                  state.draftsPlatformFilter === "all"
+                    ? "var(--c-text)"
+                    : "var(--c-text3)",
+                fontSize: 12.5,
+                fontWeight: 500,
+              }}
+            >
+              All platforms
+            </button>
+            {ORDER.map((id) => {
+              const sel = state.draftsPlatformFilter === id;
+              return (
+                <button
+                  key={id}
+                  onClick={() => actions.setDraftsPlatformFilter(id)}
+                  style={chipStyle(id, sel)}
+                >
+                  <span style={monoStyle(id, sel)}>{PLAT[id].mono}</span>
+                  {PLAT[id].label}
+                </button>
+              );
+            })}
           </div>
 
           {derived.hasRows && (
@@ -1203,7 +910,9 @@ function Main({ state, derived, actions }: FacetViewProps) {
                   fontSize: 19,
                 }}
               >
-                Nothing in {derived.folderName(state.activeFolder)} yet
+                {state.activeFolder
+                  ? `Nothing in ${derived.folderName(state.activeFolder)} yet`
+                  : "No posts match this filter"}
               </h2>
               <p
                 style={{
