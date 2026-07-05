@@ -1,6 +1,6 @@
 "use client";
 
-import { MODELS, ORDER, PLAT, STATUS_COLOR, STATUS_ICON } from "@/lib/facet/data";
+import { MODELS, ORDER, PLAT, STATUS_COLOR, STATUS_ICON } from "@/lib/genora/data";
 import { Hoverable } from "./Hoverable";
 import {
   chipStyle,
@@ -10,13 +10,13 @@ import {
   optStyle,
   popoverStyle,
 } from "./styleHelpers";
-import type { FacetViewProps } from "./viewProps";
+import type { GenoraViewProps } from "./viewProps";
 
-export function DashboardView({ state, derived, actions }: FacetViewProps) {
+export function DashboardView({ state, derived, actions }: GenoraViewProps) {
   return <Main state={state} derived={derived} actions={actions} />;
 }
 
-function Main({ state, derived, actions }: FacetViewProps) {
+function Main({ state, derived, actions }: GenoraViewProps) {
   const dashExpanded = derived.dashExpanded;
 
   const composeFolderOptions = [

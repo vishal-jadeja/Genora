@@ -2,13 +2,13 @@
 
 import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useFacet } from "@/components/facet/FacetProvider";
-import { OutputView } from "@/components/facet/OutputView";
+import { useGenora } from "@/components/GenoraProvider";
+import { OutputView } from "@/components/OutputView";
 
 export default function PostPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { state, derived, actions } = useFacet();
+  const { state, derived, actions } = useGenora();
 
   useEffect(() => {
     if (state.composePostId === id) return;

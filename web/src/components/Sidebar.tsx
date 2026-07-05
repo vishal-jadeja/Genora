@@ -2,10 +2,10 @@
 
 import type { CSSProperties, KeyboardEvent } from "react";
 import { usePathname } from "next/navigation";
-import type { Folder } from "@/lib/facet/types";
+import type { Folder } from "@/lib/genora/types";
 import { Hoverable } from "./Hoverable";
 import { moveOptStyle, popoverStyle } from "./styleHelpers";
-import type { FacetViewProps } from "./viewProps";
+import type { GenoraViewProps } from "./viewProps";
 
 function folderButtonStyle(active: boolean): CSSProperties {
   return {
@@ -41,7 +41,7 @@ function navItemStyle(active: boolean): CSSProperties {
   };
 }
 
-export function Sidebar({ state, derived, actions }: FacetViewProps) {
+export function Sidebar({ state, derived, actions }: GenoraViewProps) {
   const pathname = usePathname();
   const isDashboard = pathname === "/dashboard";
   const isDrafts = pathname === "/drafts";

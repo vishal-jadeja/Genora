@@ -14,7 +14,7 @@ import {
 } from "./data";
 import { thresholds, wordCount } from "./logic";
 import type {
-  FacetState,
+  GenoraState,
   Folder,
   ModelMeta,
   PlatformId,
@@ -26,12 +26,12 @@ import type {
   ThemeMode,
 } from "./types";
 
-const THEME_MODE_KEY = "facet-theme-mode";
-const SIDEBAR_COLLAPSED_KEY = "facet-sidebar-collapsed";
+const THEME_MODE_KEY = "genora-theme-mode";
+const SIDEBAR_COLLAPSED_KEY = "genora-sidebar-collapsed";
 
 // Cleared on every route change so a stale popover/menu from one page never
 // bleeds into the next (previously handled by `setView`).
-const NAV_RESET: Partial<FacetState> = {
+const NAV_RESET: Partial<GenoraState> = {
   moveMenu: null,
   modelOpen: false,
   folderPickerOpen: false,
@@ -43,17 +43,17 @@ const NAV_RESET: Partial<FacetState> = {
   renamingPostId: null,
 };
 
-export function useFacetController(nav: {
+export function useGenoraController(nav: {
   push: (path: string) => void;
   replace: (path: string) => void;
 }) {
   const navigate = nav.push;
   const replace = nav.replace;
-  const [state, setState] = useState<FacetState>(createInitialState);
+  const [state, setState] = useState<GenoraState>(createInitialState);
   const genTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const patch = useCallback((p: Partial<FacetState>) => {
+  const patch = useCallback((p: Partial<GenoraState>) => {
     setState((s) => ({ ...s, ...p }));
   }, []);
 
@@ -322,7 +322,7 @@ export function useFacetController(nav: {
   );
 
   const hasKey = useCallback(
-    (s: FacetState = state) => Object.values(s.keys).some((k) => k.c),
+    (s: GenoraState = state) => Object.values(s.keys).some((k) => k.c),
     [state],
   );
 
@@ -632,7 +632,7 @@ export function useFacetController(nav: {
 
   // ---- confirm dialog: single funnel for all destructive actions ---------
   const openConfirmDialog = useCallback(
-    (payload: NonNullable<FacetState["confirmDialog"]>) => {
+    (payload: NonNullable<GenoraState["confirmDialog"]>) => {
       patch({ confirmDialog: payload });
     },
     [patch],
@@ -695,7 +695,7 @@ export function useFacetController(nav: {
     [patch],
   );
   const setDraftsSort = useCallback(
-    (v: FacetState["draftsSort"]) => patch({ draftsSort: v }),
+    (v: GenoraState["draftsSort"]) => patch({ draftsSort: v }),
     [patch],
   );
 
@@ -928,7 +928,7 @@ export function useFacetController(nav: {
     const saved = window.localStorage.getItem(THEME_MODE_KEY);
     if (saved === "light" || saved === "dark" || saved === "system") {
       // Restore the persisted override post-mount, same reasoning as
-      // FacetApp's system-preference read: keeps SSR/first-paint in sync.
+      // GenoraProvider's system-preference read: keeps SSR/first-paint in sync.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       patch({ themeMode: saved });
     }
@@ -1090,5 +1090,5 @@ export function useFacetController(nav: {
   return { state, derived, actions };
 }
 
-export type FacetActions = ReturnType<typeof useFacetController>["actions"];
-export type FacetDerived = ReturnType<typeof useFacetController>["derived"];
+export type GenoraActions = ReturnType<typeof useGenoraController>["actions"];
+export type GenoraDerived = ReturnType<typeof useGenoraController>["derived"];

@@ -1,9 +1,9 @@
 "use client";
 
-import { useFacet } from "@/components/facet/FacetProvider";
-import { DraftsView } from "@/components/facet/DraftsView";
+import { useGenora } from "@/components/GenoraProvider";
+import { DraftsView } from "@/components/DraftsView";
 
 export default function DraftsPage() {
-  const { state, derived, actions } = useFacet();
+  const { state, derived, actions } = useGenora();
   return <DraftsView state={state} derived={derived} actions={actions} />;
 }

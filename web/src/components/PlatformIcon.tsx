@@ -1,5 +1,5 @@
-import { PLAT } from "@/lib/facet/data";
-import type { PlatformId } from "@/lib/facet/types";
+import { PLAT } from "@/lib/genora/data";
+import type { PlatformId } from "@/lib/genora/types";
 
 export interface PlatformIconProps {
   platform: PlatformId;

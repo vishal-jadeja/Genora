@@ -94,7 +94,7 @@ export interface KeyState {
   v: string;
 }
 
-export interface FacetState {
+export interface GenoraState {
   themeMode: ThemeMode;
   sidebarCollapsed: boolean;
   isAuthed: boolean;

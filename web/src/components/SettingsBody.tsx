@@ -1,16 +1,16 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { MODELS, ORDER, PLAT, PROVIDERS } from "@/lib/facet/data";
+import { MODELS, ORDER, PLAT, PROVIDERS } from "@/lib/genora/data";
 import type {
   ProviderId,
   SettingsTab,
   SlopStrictness,
   ThemeMode,
-} from "@/lib/facet/types";
+} from "@/lib/genora/types";
 import { Hoverable } from "./Hoverable";
 import { GREEN, PRIMARY, radioStyle } from "./styleHelpers";
-import type { FacetViewProps } from "./viewProps";
+import type { GenoraViewProps } from "./viewProps";
 
 function TabIcon({ id }: { id: SettingsTab }) {
   const common = {
@@ -80,7 +80,7 @@ export const THEME_MODES: { id: ThemeMode; label: string }[] = [
 export function ThemeToggle({
   state,
   actions,
-}: Pick<FacetViewProps, "state" | "actions">) {
+}: Pick<GenoraViewProps, "state" | "actions">) {
   return (
     <div
       style={{
@@ -187,7 +187,7 @@ function statCardStyle(): CSSProperties {
   };
 }
 
-export function SettingsBody({ state, derived, actions }: FacetViewProps) {
+export function SettingsBody({ state, derived, actions }: GenoraViewProps) {
   return (
     <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
       <nav

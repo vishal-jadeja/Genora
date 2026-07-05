@@ -2,11 +2,11 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { DARK_THEME, LIGHT_THEME } from "@/lib/facet/data";
-import { useFacetController } from "@/lib/facet/useFacetController";
+import { DARK_THEME, LIGHT_THEME } from "@/lib/genora/data";
+import { useGenoraController } from "@/lib/genora/useGenoraController";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { NewFolderDialog } from "./NewFolderDialog";
-import type { FacetViewProps } from "./viewProps";
+import type { GenoraViewProps } from "./viewProps";
 
 function themeVarsFor(t: typeof DARK_THEME.t): React.CSSProperties {
   return {
@@ -31,21 +31,21 @@ function themeVarsFor(t: typeof DARK_THEME.t): React.CSSProperties {
   } as React.CSSProperties;
 }
 
-const FacetContext = createContext<FacetViewProps | null>(null);
+const GenoraContext = createContext<GenoraViewProps | null>(null);
 
-export function useFacet(): FacetViewProps {
-  const ctx = useContext(FacetContext);
-  if (!ctx) throw new Error("useFacet must be used inside <FacetProvider>");
+export function useGenora(): GenoraViewProps {
+  const ctx = useContext(GenoraContext);
+  if (!ctx) throw new Error("useGenora must be used inside <GenoraProvider>");
   return ctx;
 }
 
-export function FacetProvider({ children }: { children: React.ReactNode }) {
+export function GenoraProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const nav = useMemo(
     () => ({ push: router.push, replace: router.replace }),
     [router],
   );
-  const { state, derived, actions } = useFacetController(nav);
+  const { state, derived, actions } = useGenoraController(nav);
   const [systemDark, setSystemDark] = useState(true);
 
   useEffect(() => {
@@ -70,7 +70,7 @@ export function FacetProvider({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <FacetContext.Provider value={{ state, derived, actions }}>
+    <GenoraContext.Provider value={{ state, derived, actions }}>
       <div
         style={{
           height: "100%",
@@ -93,6 +93,6 @@ export function FacetProvider({ children }: { children: React.ReactNode }) {
         />
         <NewFolderDialog state={state} actions={actions} />
       </div>
-    </FacetContext.Provider>
+    </GenoraContext.Provider>
   );
 }

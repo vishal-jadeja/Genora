@@ -1,5 +1,5 @@
 import type {
-  FacetState,
+  GenoraState,
   ModelId,
   ModelMeta,
   PlatformId,
@@ -231,7 +231,7 @@ export const INSTR_DEFAULTS: Record<PlatformId, string> = {
     "Warm, direct-address newsletter voice. Keep it short. Sign off personally.",
 };
 
-export function createInitialState(): FacetState {
+export function createInitialState(): GenoraState {
   return {
     themeMode: "system",
     sidebarCollapsed: false,

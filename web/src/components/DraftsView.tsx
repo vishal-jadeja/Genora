@@ -1,10 +1,10 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { ORDER, PLAT } from "@/lib/facet/data";
-import type { DraftsSort, PlatformId, PostStatus } from "@/lib/facet/types";
+import { ORDER, PLAT } from "@/lib/genora/data";
+import type { DraftsSort, PlatformId, PostStatus } from "@/lib/genora/types";
 import { DraftRow } from "./DraftRow";
-import type { FacetViewProps } from "./viewProps";
+import type { GenoraViewProps } from "./viewProps";
 
 const STATUS_OPTIONS: (PostStatus | "all")[] = [
   "all",
@@ -29,7 +29,7 @@ const selectStyle: CSSProperties = {
   color: "var(--c-text2)",
 };
 
-export function DraftsView({ state, derived, actions }: FacetViewProps) {
+export function DraftsView({ state, derived, actions }: GenoraViewProps) {
   return (
     <main
       style={{

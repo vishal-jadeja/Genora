@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { PLAT } from "@/lib/facet/data";
-import type { FacetState, PlatformId } from "@/lib/facet/types";
-import type { FacetActions } from "@/lib/facet/useFacetController";
+import { PLAT } from "@/lib/genora/data";
+import type { GenoraState, PlatformId } from "@/lib/genora/types";
+import type { GenoraActions } from "@/lib/genora/useGenoraController";
 import { Hoverable } from "./Hoverable";
 import { PRIMARY, RED, popoverStyle } from "./styleHelpers";
-import type { FacetViewProps } from "./viewProps";
+import type { GenoraViewProps } from "./viewProps";
 
 type OutputViewMode = "tabs" | "sideBySide";
 
@@ -18,7 +18,7 @@ const FORMAT_HINTS: Record<PlatformId, (len: number) => string> = {
   substack: () => "Substack · warm newsletter voice",
 };
 
-export function OutputView({ state, derived, actions }: FacetViewProps) {
+export function OutputView({ state, derived, actions }: GenoraViewProps) {
   const showOutput = !state.generating;
   const [viewMode, setViewMode] = useState<OutputViewMode>("tabs");
   const canSideBySide = state.outPlatforms.length > 1;
@@ -724,8 +724,8 @@ function PlatformPanel({
   actions,
 }: {
   id: PlatformId;
-  state: FacetState;
-  actions: FacetActions;
+  state: GenoraState;
+  actions: GenoraActions;
 }) {
   const meta = PLAT[id];
   const content = state.content[id] || "";

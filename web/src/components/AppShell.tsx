@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AppHeader } from "./AppHeader";
-import { useFacet } from "./FacetProvider";
+import { useGenora } from "./GenoraProvider";
 import { Sidebar } from "./Sidebar";
 
 const PEEK_HIDE_DELAY = 150;
@@ -14,7 +14,7 @@ export function AppShell({
   children: ReactNode;
   modal: ReactNode;
 }) {
-  const { state, derived, actions } = useFacet();
+  const { state, derived, actions } = useGenora();
   const collapsed = state.sidebarCollapsed;
   const [peek, setPeek] = useState(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);

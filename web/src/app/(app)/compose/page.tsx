@@ -1,9 +1,9 @@
 "use client";
 
-import { useFacet } from "@/components/facet/FacetProvider";
-import { ComposeView } from "@/components/facet/ComposeView";
+import { useGenora } from "@/components/GenoraProvider";
+import { ComposeView } from "@/components/ComposeView";
 
 export default function ComposePage() {
-  const { state, derived, actions } = useFacet();
+  const { state, derived, actions } = useGenora();
   return <ComposeView state={state} derived={derived} actions={actions} />;
 }

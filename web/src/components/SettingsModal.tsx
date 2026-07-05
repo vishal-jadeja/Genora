@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { Hoverable } from "./Hoverable";
 import { SettingsBody, ThemeToggle } from "./SettingsBody";
 import { modalCardStyle } from "./styleHelpers";
-import type { FacetViewProps } from "./viewProps";
+import type { GenoraViewProps } from "./viewProps";
 
-export function SettingsModal({ state, derived, actions }: FacetViewProps) {
+export function SettingsModal({ state, derived, actions }: GenoraViewProps) {
   const router = useRouter();
   const close = () => {
     // A direct or refreshed visit to /settings has no prior entry in this

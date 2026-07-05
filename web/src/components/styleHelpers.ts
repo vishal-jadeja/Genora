@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
-import { PLAT } from "@/lib/facet/data";
-import type { PlatformId } from "@/lib/facet/types";
+import { PLAT } from "@/lib/genora/data";
+import type { PlatformId } from "@/lib/genora/types";
 
 export const PRIMARY = "var(--c-primaryBg)";
 export const GREEN = "#6cae8e";

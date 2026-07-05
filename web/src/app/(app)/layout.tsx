@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { AppShell } from "@/components/facet/AppShell";
-import { FacetProvider } from "@/components/facet/FacetProvider";
+import { AppShell } from "@/components/AppShell";
+import { GenoraProvider } from "@/components/GenoraProvider";
 
 export default function AppLayout({
   children,
@@ -10,8 +10,8 @@ export default function AppLayout({
   modal: ReactNode;
 }) {
   return (
-    <FacetProvider>
+    <GenoraProvider>
       <AppShell modal={modal}>{children}</AppShell>
-    </FacetProvider>
+    </GenoraProvider>
   );
 }

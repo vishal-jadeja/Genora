@@ -1,6 +1,6 @@
 "use client";
 
-import { MODELS, ORDER, PLAT, REJECTS } from "@/lib/facet/data";
+import { MODELS, ORDER, PLAT, REJECTS } from "@/lib/genora/data";
 import { Hoverable } from "./Hoverable";
 import {
   AMBER,
@@ -12,9 +12,9 @@ import {
   optStyle,
   popoverStyle,
 } from "./styleHelpers";
-import type { FacetViewProps } from "./viewProps";
+import type { GenoraViewProps } from "./viewProps";
 
-export function ComposeView({ state, derived, actions }: FacetViewProps) {
+export function ComposeView({ state, derived, actions }: GenoraViewProps) {
   const composeFolderOptions = [
     { id: null as string | null, name: "No folder" },
     ...state.folders.map((f) => ({ id: f.id, name: f.name })),

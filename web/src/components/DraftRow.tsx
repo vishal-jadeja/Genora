@@ -1,13 +1,13 @@
 "use client";
 
 import type { KeyboardEvent } from "react";
-import { PLAT, STATUS_COLOR, STATUS_ICON } from "@/lib/facet/data";
-import type { Post } from "@/lib/facet/types";
+import { PLAT, STATUS_COLOR, STATUS_ICON } from "@/lib/genora/data";
+import type { Post } from "@/lib/genora/types";
 import { Hoverable } from "./Hoverable";
 import { moveOptStyle, popoverStyle } from "./styleHelpers";
-import type { FacetViewProps } from "./viewProps";
+import type { GenoraViewProps } from "./viewProps";
 
-interface DraftRowProps extends FacetViewProps {
+interface DraftRowProps extends GenoraViewProps {
   post: Post;
 }
 

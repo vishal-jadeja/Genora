@@ -2,14 +2,14 @@
 
 import { Hoverable } from "./Hoverable";
 import { moveOptStyle, popoverStyle } from "./styleHelpers";
-import type { FacetViewProps } from "./viewProps";
+import type { GenoraViewProps } from "./viewProps";
 
 export function AppHeader({
   state,
   actions,
   onToggleMouseEnter,
   onToggleMouseLeave,
-}: FacetViewProps & {
+}: GenoraViewProps & {
   onToggleMouseEnter: () => void;
   onToggleMouseLeave: () => void;
 }) {

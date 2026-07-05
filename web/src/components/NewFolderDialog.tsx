@@ -3,12 +3,12 @@
 import { useEffect, useRef } from "react";
 import { Hoverable } from "./Hoverable";
 import { dialogCardStyle, PRIMARY } from "./styleHelpers";
-import type { FacetActions } from "@/lib/facet/useFacetController";
-import type { FacetState } from "@/lib/facet/types";
+import type { GenoraActions } from "@/lib/genora/useGenoraController";
+import type { GenoraState } from "@/lib/genora/types";
 
 export interface NewFolderDialogProps {
-  state: FacetState;
-  actions: FacetActions;
+  state: GenoraState;
+  actions: GenoraActions;
 }
 
 export function NewFolderDialog({ state, actions }: NewFolderDialogProps) {
