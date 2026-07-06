@@ -34,13 +34,14 @@ export function DraftsView({ state, derived, actions }: GenoraViewProps) {
     <main
       style={{
         flex: 1,
+        minHeight: 0,
         display: "flex",
         flexDirection: "column",
         minWidth: 0,
         background: "var(--c-canvas)",
       }}
     >
-      <div style={{ flex: 1, overflowY: "auto" }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
           <div
             style={{
               borderBottom: "1px solid var(--c-border)",
