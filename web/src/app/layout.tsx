@@ -1,5 +1,11 @@
 import type { Metadata } from "next";
-import { Newsreader, Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
+import {
+  Newsreader,
+  Hanken_Grotesk,
+  JetBrains_Mono,
+  Anton,
+  Space_Grotesk,
+} from "next/font/google";
 import "./globals.css";
 
 const newsreader = Newsreader({
@@ -24,6 +30,20 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
+const anton = Anton({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-anton",
+  display: "swap",
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-space-grotesk",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Genora",
   description: "Write once, publish everywhere.",
@@ -37,7 +57,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${newsreader.variable} ${hankenGrotesk.variable} ${jetbrainsMono.variable} h-full`}
+      className={`${newsreader.variable} ${hankenGrotesk.variable} ${jetbrainsMono.variable} ${anton.variable} ${spaceGrotesk.variable} h-full`}
     >
       <body className="h-full" suppressHydrationWarning>
         {children}

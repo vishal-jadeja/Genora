@@ -118,3 +118,15 @@ svg {
     transform: scaleY(1);
   }
 }
+
+@keyframes cueBob {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateY(7px);
+    opacity: 1;
+  }
+}

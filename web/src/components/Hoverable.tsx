@@ -2,7 +2,7 @@
 
 import { CSSProperties, useState } from "react";
 
-type Tag = "button" | "div" | "textarea" | "input" | "span";
+type Tag = "button" | "div" | "textarea" | "input" | "span" | "a";
 
 // React warns if a rerender removes a shorthand (`border`) while a
 // longhand (`borderColor`) from a hover/focus overlay stays set, or vice
