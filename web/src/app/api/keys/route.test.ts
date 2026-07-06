@@ -72,6 +72,20 @@ describe("POST /api/keys", () => {
     expect(upsertApiKeyMock).not.toHaveBeenCalled();
   });
 
+  it("returns 400 on malformed JSON instead of throwing", async () => {
+    getAuthenticatedUserIdMock.mockResolvedValue("user-1");
+
+    const response = await POST(
+      new Request("http://localhost/api/keys", {
+        method: "POST",
+        body: "{not-json",
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(upsertApiKeyMock).not.toHaveBeenCalled();
+  });
+
   it("returns 400 on invalid body", async () => {
     getAuthenticatedUserIdMock.mockResolvedValue("user-1");
 

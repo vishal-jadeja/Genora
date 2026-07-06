@@ -51,7 +51,10 @@ export async function resolveKeyForGeneration(
     void db
       .update(apiKeys)
       .set({ lastUsedAt: new Date() })
-      .where(eq(apiKeys.id, row.id));
+      .where(eq(apiKeys.id, row.id))
+      .catch((err: unknown) => {
+        console.error("Failed to update api_keys.lastUsedAt", err);
+      });
     return { source: "byok", provider: req.provider, apiKey };
   }
 
