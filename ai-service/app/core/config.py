@@ -6,6 +6,11 @@ class Settings(BaseSettings):
 
     env: str = "development"
     internal_service_secret: str = "dev-secret-change-me"
+    database_url: str = ""
+    # Platform-owned key, independent of a user's BYOK provider choice — keeps
+    # embedding dimensions fixed at 768 regardless of which model a user
+    # picks for generation (see backend-plan.md).
+    gemini_api_key: str = ""
 
 
 settings = Settings()
