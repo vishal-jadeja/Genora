@@ -1,0 +1,139 @@
+import { task, AbortTaskRunError } from "@trigger.dev/sdk";
+import { and, eq } from "drizzle-orm";
+import { db } from "@/db/client";
+import { platformInstructions } from "@/db/schema";
+import { AiServiceError, callAiService } from "@/lib/aiService/client";
+import type {
+  GenerateRequest,
+  GenerateResponse,
+  RagRetrieveResponse,
+} from "@/lib/aiService/types";
+import {
+  getModelCatalogEntry,
+  type ModelId,
+} from "@/lib/generation/modelCatalog";
+import {
+  GenerationKeyError,
+  resolveGenerationKey,
+} from "@/lib/generation/resolveGenerationKey";
+import type { Platform } from "@/lib/generation/types";
+
+export interface GeneratePlatformPostPayload {
+  postId: string;
+  userId: string;
+  platform: Platform;
+  rawText: string;
+  modelId: ModelId;
+}
+
+export interface StageUsageOutput {
+  stage: "writer" | "critic" | "reviser";
+  promptTokens: number;
+  completionTokens: number;
+}
+
+export type GeneratePlatformPostOutput =
+  | {
+      status: "success";
+      content: string;
+      revisionCount: number;
+      usage: StageUsageOutput[];
+    }
+  | { status: "failed"; errorReason: string };
+
+export const generatePlatformPost = task({
+  id: "generate-platform-post",
+  retry: {
+    maxAttempts: 3,
+    minTimeoutInMs: 1000,
+    maxTimeoutInMs: 10_000,
+    factor: 2,
+  },
+  run: async (
+    payload: GeneratePlatformPostPayload,
+  ): Promise<GeneratePlatformPostOutput> => {
+    const catalogEntry = getModelCatalogEntry(payload.modelId);
+    if (!catalogEntry) {
+      // Payload came from generatePost, which validates against the same
+      // catalog — reaching here means a real bug, not a transient failure.
+      throw new AbortTaskRunError(`unknown model id: ${payload.modelId}`);
+    }
+
+    let generationKey;
+    try {
+      generationKey = await resolveGenerationKey(
+        payload.userId,
+        payload.modelId,
+      );
+    } catch (err) {
+      if (err instanceof GenerationKeyError) {
+        return { status: "failed", errorReason: err.message };
+      }
+      throw err;
+    }
+
+    const [instructionsRow] = await db
+      .select({ instructions: platformInstructions.instructions })
+      .from(platformInstructions)
+      .where(
+        and(
+          eq(platformInstructions.userId, payload.userId),
+          eq(platformInstructions.platform, payload.platform),
+        ),
+      );
+
+    let ragContext: string[] = [];
+    try {
+      const ragResult = await callAiService<RagRetrieveResponse>(
+        "/rag/retrieve",
+        {
+          user_id: payload.userId,
+          query_text: payload.rawText,
+          limit: 5,
+        },
+      );
+      ragContext = ragResult.matches.map((m) => m.content);
+    } catch {
+      // RAG is a quality enhancement, not a hard dependency — a flaky
+      // embedding call shouldn't sink an otherwise-good generation.
+      ragContext = [];
+    }
+
+    const generateRequest: GenerateRequest = {
+      raw_text: payload.rawText,
+      platform: payload.platform,
+      platform_instructions: instructionsRow?.instructions ?? "",
+      rag_context: ragContext,
+      provider: generationKey.provider,
+      api_key: generationKey.apiKey,
+      model: generationKey.apiModel,
+    };
+
+    let result: GenerateResponse;
+    try {
+      result = await callAiService<GenerateResponse>(
+        "/generate",
+        generateRequest,
+      );
+    } catch (err) {
+      if (err instanceof AiServiceError && err.status < 500) {
+        // Bad request / invalid model / provider auth failure — retrying
+        // would just fail the same way again.
+        return { status: "failed", errorReason: err.message };
+      }
+      // Network error or 5xx — rethrow so the task's retry/backoff applies.
+      throw err;
+    }
+
+    return {
+      status: "success",
+      content: result.content,
+      revisionCount: result.revision_count,
+      usage: result.usage.map((u) => ({
+        stage: u.stage,
+        promptTokens: u.prompt_tokens,
+        completionTokens: u.completion_tokens,
+      })),
+    };
+  },
+});
