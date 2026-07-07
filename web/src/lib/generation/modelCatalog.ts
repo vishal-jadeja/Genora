@@ -14,11 +14,12 @@ export interface ModelCatalogEntry {
 // codegen between them — keep in sync by hand. `apiModel` strings should be
 // confirmed against each provider's current model list before going live.
 export const MODEL_CATALOG: Record<ModelId, ModelCatalogEntry> = {
+  // No platform-owned Anthropic key — both Anthropic models require BYOK.
   sonnet: {
     id: "sonnet",
     provider: "anthropic",
     apiModel: "claude-sonnet-4-5",
-    free: true,
+    free: false,
   },
   opus: {
     id: "opus",
@@ -27,17 +28,21 @@ export const MODEL_CATALOG: Record<ModelId, ModelCatalogEntry> = {
     free: false,
   },
   gpt5: { id: "gpt5", provider: "openai", apiModel: "gpt-5", free: false },
+  // Free tier: Gemini 2.5 Flash (not Pro) to stay within free-tier rate
+  // limits, and Groq — both use a platform-owned key (resolveGenerationKey).
   gemini: {
     id: "gemini",
     provider: "gemini",
-    apiModel: "gemini-2.5-pro",
-    free: false,
+    apiModel: "gemini-2.5-flash",
+    free: true,
   },
+  // llama-3.3-70b-versatile deprecates on Groq 2026-08-16; using its
+  // documented replacement up front rather than shipping a dead model id.
   groq: {
     id: "groq",
     provider: "groq",
-    apiModel: "llama-3.3-70b-versatile",
-    free: false,
+    apiModel: "openai/gpt-oss-120b",
+    free: true,
   },
 };
 

@@ -10,9 +10,8 @@ describe("getModelCatalogEntry", () => {
     expect(getModelCatalogEntry("not-a-model")).toBeUndefined();
   });
 
-  it("marks exactly one model as free", () => {
+  it("marks exactly the two free-tier models as free", () => {
     const freeModels = Object.values(MODEL_CATALOG).filter((m) => m.free);
-    expect(freeModels).toHaveLength(1);
-    expect(freeModels[0].id).toBe("sonnet");
+    expect(freeModels.map((m) => m.id).sort()).toEqual(["gemini", "groq"]);
   });
 });

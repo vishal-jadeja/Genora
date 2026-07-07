@@ -12,7 +12,8 @@ const { resolveGenerationKey, GenerationKeyError } =
 
 beforeEach(() => {
   resolveKeyForGenerationMock.mockReset();
-  delete process.env.PLATFORM_ANTHROPIC_API_KEY;
+  delete process.env.PLATFORM_GROQ_API_KEY;
+  delete process.env.PLATFORM_GEMINI_API_KEY;
 });
 
 describe("resolveGenerationKey", () => {
@@ -23,45 +24,76 @@ describe("resolveGenerationKey", () => {
     expect(resolveKeyForGenerationMock).not.toHaveBeenCalled();
   });
 
-  it("uses the user's BYOK key when present, even for the free model", async () => {
+  it("uses the user's BYOK key when present, even for a free model", async () => {
     resolveKeyForGenerationMock.mockResolvedValue({
       source: "byok",
-      provider: "anthropic",
-      apiKey: "sk-ant-user-key",
+      provider: "groq",
+      apiKey: "gsk-user-key",
     });
 
-    const result = await resolveGenerationKey("user-1", "sonnet");
+    const result = await resolveGenerationKey("user-1", "groq");
 
     expect(resolveKeyForGenerationMock).toHaveBeenCalledWith({
       userId: "user-1",
-      provider: "anthropic",
+      provider: "groq",
     });
     expect(result).toEqual({
-      provider: "anthropic",
-      apiModel: "claude-sonnet-4-5",
-      apiKey: "sk-ant-user-key",
+      provider: "groq",
+      apiModel: "openai/gpt-oss-120b",
+      apiKey: "gsk-user-key",
     });
   });
 
-  it("falls back to the platform key for the free model when no BYOK key exists", async () => {
+  it("falls back to the platform Groq key for the groq free model when no BYOK key exists", async () => {
     resolveKeyForGenerationMock.mockResolvedValue({
       source: "free-tier",
-      provider: "anthropic",
+      provider: "groq",
       model: "TBD",
       quota: { remaining: null, limit: null, resetAt: null },
     });
-    process.env.PLATFORM_ANTHROPIC_API_KEY = "sk-ant-platform-key";
+    process.env.PLATFORM_GROQ_API_KEY = "gsk-platform-key";
 
-    const result = await resolveGenerationKey("user-1", "sonnet");
+    const result = await resolveGenerationKey("user-1", "groq");
 
     expect(result).toEqual({
-      provider: "anthropic",
-      apiModel: "claude-sonnet-4-5",
-      apiKey: "sk-ant-platform-key",
+      provider: "groq",
+      apiModel: "openai/gpt-oss-120b",
+      apiKey: "gsk-platform-key",
     });
   });
 
-  it("throws if the platform key is missing for the free model", async () => {
+  it("falls back to the platform Gemini key for the gemini free model when no BYOK key exists", async () => {
+    resolveKeyForGenerationMock.mockResolvedValue({
+      source: "free-tier",
+      provider: "gemini",
+      model: "TBD",
+      quota: { remaining: null, limit: null, resetAt: null },
+    });
+    process.env.PLATFORM_GEMINI_API_KEY = "aiza-platform-key";
+
+    const result = await resolveGenerationKey("user-1", "gemini");
+
+    expect(result).toEqual({
+      provider: "gemini",
+      apiModel: "gemini-2.5-flash",
+      apiKey: "aiza-platform-key",
+    });
+  });
+
+  it("throws if the platform key is missing for a free model", async () => {
+    resolveKeyForGenerationMock.mockResolvedValue({
+      source: "free-tier",
+      provider: "groq",
+      model: "TBD",
+      quota: { remaining: null, limit: null, resetAt: null },
+    });
+
+    await expect(resolveGenerationKey("user-1", "groq")).rejects.toThrow(
+      GenerationKeyError,
+    );
+  });
+
+  it("throws for a paid model with no BYOK key on file, rather than falling back", async () => {
     resolveKeyForGenerationMock.mockResolvedValue({
       source: "free-tier",
       provider: "anthropic",
@@ -70,20 +102,7 @@ describe("resolveGenerationKey", () => {
     });
 
     await expect(resolveGenerationKey("user-1", "sonnet")).rejects.toThrow(
-      GenerationKeyError,
-    );
-  });
-
-  it("throws for a paid model with no BYOK key on file, rather than falling back", async () => {
-    resolveKeyForGenerationMock.mockResolvedValue({
-      source: "free-tier",
-      provider: "openai",
-      model: "TBD",
-      quota: { remaining: null, limit: null, resetAt: null },
-    });
-
-    await expect(resolveGenerationKey("user-1", "gpt5")).rejects.toThrow(
-      /requires a BYOK openai key/,
+      /requires a BYOK anthropic key/,
     );
   });
 });

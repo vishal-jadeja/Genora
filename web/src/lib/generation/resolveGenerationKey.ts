@@ -10,6 +10,13 @@ export interface GenerationKey {
   apiKey: string;
 }
 
+// Platform-owned keys backing the free-tier models (see modelCatalog.ts).
+// No Anthropic entry — Anthropic models are BYOK-only.
+const PLATFORM_KEY_ENV_VAR: Partial<Record<Provider, string>> = {
+  groq: "PLATFORM_GROQ_API_KEY",
+  gemini: "PLATFORM_GEMINI_API_KEY",
+};
+
 /**
  * Resolves which key + model string to send to ai-service for a given
  * (user, model) pair: the user's own BYOK key if they've added one for that
@@ -45,11 +52,16 @@ export async function resolveGenerationKey(
     );
   }
 
-  const platformKey = process.env.PLATFORM_ANTHROPIC_API_KEY;
-  if (!platformKey) {
+  const envVar = PLATFORM_KEY_ENV_VAR[entry.provider];
+  if (!envVar) {
     throw new GenerationKeyError(
-      "PLATFORM_ANTHROPIC_API_KEY is not configured",
+      `no platform-owned key configured for free provider "${entry.provider}"`,
     );
+  }
+
+  const platformKey = process.env[envVar];
+  if (!platformKey) {
+    throw new GenerationKeyError(`${envVar} is not configured`);
   }
 
   return {

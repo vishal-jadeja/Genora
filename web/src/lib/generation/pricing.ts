@@ -10,8 +10,8 @@ const PRICING_PER_MILLION_TOKENS: Record<
   sonnet: { prompt: 3, completion: 15 },
   opus: { prompt: 15, completion: 75 },
   gpt5: { prompt: 5, completion: 15 },
-  gemini: { prompt: 1.25, completion: 10 },
-  groq: { prompt: 0.59, completion: 0.79 },
+  gemini: { prompt: 0.3, completion: 2.5 },
+  groq: { prompt: 0.15, completion: 0.6 },
 };
 
 export function calculateCostUsd(
