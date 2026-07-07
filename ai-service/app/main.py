@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, FastAPI
 
 from app.core.db import close_pool, init_pool
 from app.core.security import require_internal_secret
+from app.routers.generate import router as generate_router
 from app.routers.rag import router as rag_router
 from app.routers.slop_guard import router as slop_guard_router
 
@@ -23,6 +24,7 @@ app = FastAPI(title="Genora AI Service", lifespan=lifespan)
 internal_router = APIRouter(dependencies=[Depends(require_internal_secret)])
 internal_router.include_router(slop_guard_router)
 internal_router.include_router(rag_router)
+internal_router.include_router(generate_router)
 app.include_router(internal_router)
 
 
