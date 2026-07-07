@@ -31,7 +31,7 @@ const jsonLd = {
   description: DESCRIPTION,
   offers: {
     "@type": "Offer",
-    category: "Early access waitlist",
+    category: "Free tier, BYOK",
   },
 };
 

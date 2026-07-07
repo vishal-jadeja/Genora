@@ -3,8 +3,15 @@
   "configurations": [
     {
       "name": "web-dev",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--prefix", "/Users/vishalmac/Desktop/Genora/web"],
+      "runtimeExecutable": "/usr/bin/env",
+      "runtimeArgs": [
+        "PATH=/Users/vishalmac/.nvm/versions/node/v22.20.0/bin:/usr/bin:/bin",
+        "npm",
+        "run",
+        "dev",
+        "--prefix",
+        "/Users/vishalmac/Desktop/Genora/web"
+      ],
       "port": 3000
     }
   ]

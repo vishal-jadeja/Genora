@@ -1,7 +1,7 @@
 "use client";
 
 import { Hoverable } from "@/components/Hoverable";
-import { WaitlistForm } from "./WaitlistForm";
+import { CtaButton } from "./CtaButton";
 import { ANTON, MONO, MUTED, ORANGE, TEXT } from "./constants";
 
 const footerLinkStyle = {
@@ -44,7 +44,7 @@ export function CtaSection() {
             marginBottom: 26,
           }}
         >
-          Early access · summer 2026
+          Bring your own key · start free
         </div>
         <h2
           data-reveal=""
@@ -65,7 +65,7 @@ export function CtaSection() {
           id="pricing"
           style={{ margin: "44px auto 0", maxWidth: 480 }}
         >
-          <WaitlistForm />
+          <CtaButton />
           <div
             style={{
               marginTop: 14,
