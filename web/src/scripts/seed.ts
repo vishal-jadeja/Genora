@@ -7,7 +7,7 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 import { and, eq } from "drizzle-orm";
 import { folders, posts, users } from "../db/schema";
 
-const SEED_EMAIL = "seed@genora.test";
+const SEED_EMAIL = "vishaljadeja.work@gmail.com";
 const SEED_FOLDER_NAME = "Essays";
 const SEED_POST_TITLE = "My first raw thought";
 

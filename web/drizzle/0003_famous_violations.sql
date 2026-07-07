@@ -1,0 +1,1 @@
+ALTER TABLE "posts" ADD COLUMN "trigger_run_id" text;
