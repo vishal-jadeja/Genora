@@ -1,4 +1,4 @@
-import { and, eq, max } from "drizzle-orm";
+import { and, eq, max, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { platformOutputs, usageLogs } from "@/db/schema";
 import type { Provider } from "@/lib/keys/service";
@@ -34,6 +34,22 @@ interface PersistFailureInput {
   provider: Provider;
   apiModel: string;
   errorReason: string;
+}
+
+// Serializes concurrent persistSuccess/persistFailure calls for the same
+// post+platform so nextVersion/supersedeCurrent's read-then-write can't race
+// under READ COMMITTED — without this, two concurrent generations for the
+// same post+platform could both compute the same next version and one insert
+// would hit the unique constraint as an unhandled error. Transaction-scoped:
+// releases automatically at commit/rollback, no retry loop needed.
+async function lockPostPlatform(
+  tx: Tx,
+  postId: string,
+  platform: Platform,
+): Promise<void> {
+  await tx.execute(
+    sql`SELECT pg_advisory_xact_lock(hashtext(${postId} || ':' || ${platform}))`,
+  );
 }
 
 async function nextVersion(
@@ -74,6 +90,7 @@ export async function persistSuccess(
   input: PersistSuccessInput,
 ): Promise<void> {
   await db.transaction(async (tx) => {
+    await lockPostPlatform(tx, input.postId, input.platform);
     await supersedeCurrent(tx, input.postId, input.platform);
     const version = await nextVersion(tx, input.postId, input.platform);
 
@@ -119,6 +136,7 @@ export async function persistFailure(
   input: PersistFailureInput,
 ): Promise<void> {
   await db.transaction(async (tx) => {
+    await lockPostPlatform(tx, input.postId, input.platform);
     await supersedeCurrent(tx, input.postId, input.platform);
     const version = await nextVersion(tx, input.postId, input.platform);
 

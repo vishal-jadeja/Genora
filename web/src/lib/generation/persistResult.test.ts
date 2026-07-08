@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const selectMock = vi.fn();
 const insertMock = vi.fn();
 const updateMock = vi.fn();
+const executeMock = vi.fn();
 const transactionMock = vi.fn();
 
 vi.mock("@/db/client", () => ({
@@ -17,14 +18,17 @@ const tx = {
   select: (...args: unknown[]) => selectMock(...args),
   insert: (...args: unknown[]) => insertMock(...args),
   update: (...args: unknown[]) => updateMock(...args),
+  execute: (...args: unknown[]) => executeMock(...args),
 };
 
 beforeEach(() => {
   selectMock.mockReset();
   insertMock.mockReset();
   updateMock.mockReset();
+  executeMock.mockReset();
   transactionMock.mockReset();
   transactionMock.mockImplementation((cb) => cb(tx));
+  executeMock.mockResolvedValue(undefined);
 
   const where = vi.fn().mockResolvedValue([{ maxVersion: 2 }]);
   const from = vi.fn().mockReturnValue({ where });
@@ -59,7 +63,16 @@ describe("persistSuccess", () => {
       ],
     });
 
+    expect(executeMock).toHaveBeenCalledTimes(1);
     expect(updateMock).toHaveBeenCalledTimes(1);
+    // Lock must be taken before the read-then-write (supersede + next
+    // version) that it's protecting, not after.
+    expect(executeMock.mock.invocationCallOrder[0]).toBeLessThan(
+      updateMock.mock.invocationCallOrder[0],
+    );
+    expect(executeMock.mock.invocationCallOrder[0]).toBeLessThan(
+      selectMock.mock.invocationCallOrder[0],
+    );
 
     const outputsRow = outputsValues.mock.calls[0][0];
     expect(outputsRow).toMatchObject({
@@ -115,6 +128,7 @@ describe("persistFailure", () => {
       errorReason: "ai-service generate failed: 503",
     });
 
+    expect(executeMock).toHaveBeenCalledTimes(1);
     expect(updateMock).toHaveBeenCalledTimes(1);
     expect(insertMock).toHaveBeenCalledTimes(1);
     expect(values.mock.calls[0][0]).toMatchObject({
@@ -126,3 +140,10 @@ describe("persistFailure", () => {
     });
   });
 });
+
+// Note: these are unit tests against mocked tx.select/insert/update/execute
+// calls, so they can only prove the advisory lock is *invoked* in the right
+// order — they can't prove the race is actually closed under real concurrent
+// writes. That requires an integration test against a real Postgres
+// instance, which this repo's web test suite doesn't have a harness for yet
+// (see backend-plan.md's phased roadmap — no such harness has been built).
