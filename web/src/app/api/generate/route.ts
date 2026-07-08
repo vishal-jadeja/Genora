@@ -3,6 +3,7 @@ import { getAuthenticatedUserId } from "@/lib/auth/session";
 import {
   FolderNotOwnedError,
   runGenerate,
+  SlopGuardUnavailableError,
 } from "@/lib/generation/generateService";
 import { generatePostSchema } from "@/lib/generation/schema";
 
@@ -35,6 +36,12 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "folderId does not belong to this user" },
         { status: 400 },
+      );
+    }
+    if (err instanceof SlopGuardUnavailableError) {
+      return NextResponse.json(
+        { error: "content check is temporarily unavailable, please try again" },
+        { status: 502 },
       );
     }
     throw err;

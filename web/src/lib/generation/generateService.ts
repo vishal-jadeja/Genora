@@ -8,6 +8,7 @@ import { generatePost } from "../../../trigger/generatePost";
 import type { GeneratePostInput } from "./schema";
 
 export class FolderNotOwnedError extends Error {}
+export class SlopGuardUnavailableError extends Error {}
 
 export type GenerateOutcome =
   | { status: "rejected"; slopGuard: SlopGuardResult }
@@ -29,9 +30,16 @@ export async function runGenerate(
     throw new FolderNotOwnedError(input.folderId);
   }
 
-  const slopGuard = await callAiService<SlopGuardResult>("/slop-guard", {
-    raw_text: input.rawText,
-  });
+  let slopGuard: SlopGuardResult;
+  try {
+    slopGuard = await callAiService<SlopGuardResult>("/slop-guard", {
+      raw_text: input.rawText,
+    });
+  } catch (err) {
+    throw new SlopGuardUnavailableError(
+      err instanceof Error ? err.message : "slop guard call failed",
+    );
+  }
 
   if (slopGuard.verdict === "hard_reject") {
     return { status: "rejected", slopGuard };

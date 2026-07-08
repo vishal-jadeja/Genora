@@ -10,6 +10,7 @@ vi.mock("@/lib/auth/session", () => ({
 vi.mock("@/lib/generation/generateService", () => ({
   runGenerate: (...args: unknown[]) => runGenerateMock(...args),
   FolderNotOwnedError: class FolderNotOwnedError extends Error {},
+  SlopGuardUnavailableError: class SlopGuardUnavailableError extends Error {},
 }));
 
 const { POST } = await import("./route");
@@ -146,5 +147,23 @@ describe("POST /api/generate", () => {
     );
 
     expect(response.status).toBe(400);
+  });
+
+  it("returns 502 when the slop guard call is unavailable", async () => {
+    const { SlopGuardUnavailableError } =
+      await import("@/lib/generation/generateService");
+    getAuthenticatedUserIdMock.mockResolvedValue("user-1");
+    runGenerateMock.mockRejectedValue(
+      new SlopGuardUnavailableError("network error"),
+    );
+
+    const response = await POST(
+      new Request("http://localhost/api/generate", {
+        method: "POST",
+        body: JSON.stringify(validBody),
+      }),
+    );
+
+    expect(response.status).toBe(502);
   });
 });

@@ -32,7 +32,8 @@ vi.mock("@trigger.dev/sdk", () => ({
   },
 }));
 
-const { runGenerate, FolderNotOwnedError } = await import("./generateService");
+const { runGenerate, FolderNotOwnedError, SlopGuardUnavailableError } =
+  await import("./generateService");
 
 const validInput = {
   rawText: "a genuinely substantive raw thought",
@@ -138,5 +139,15 @@ describe("runGenerate", () => {
 
     expect(folderBelongsToUserMock).toHaveBeenCalledWith("user-1", "folder-1");
     expect(result.status).toBe("accepted");
+  });
+
+  it("throws SlopGuardUnavailableError without creating a post when the slop guard call fails", async () => {
+    callAiServiceMock.mockRejectedValue(new Error("network error"));
+
+    await expect(runGenerate("user-1", validInput)).rejects.toThrow(
+      SlopGuardUnavailableError,
+    );
+    expect(insertMock).not.toHaveBeenCalled();
+    expect(triggerMock).not.toHaveBeenCalled();
   });
 });
