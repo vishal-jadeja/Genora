@@ -1,3 +1,4 @@
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -11,6 +12,19 @@ class Settings(BaseSettings):
     # embedding dimensions fixed at 768 regardless of which model a user
     # picks for generation (see backend-plan.md).
     gemini_api_key: str = ""
+
+    @model_validator(mode="after")
+    def _require_real_secret_outside_dev(self) -> "Settings":
+        if self.env != "development" and (
+            not self.internal_service_secret
+            or self.internal_service_secret == "dev-secret-change-me"
+        ):
+            raise ValueError(
+                "INTERNAL_SERVICE_SECRET must be set to a real value when ENV is "
+                "not 'development' — refusing to start with the public default "
+                "secret."
+            )
+        return self
 
 
 settings = Settings()
