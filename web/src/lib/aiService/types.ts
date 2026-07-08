@@ -44,3 +44,15 @@ export interface RagMatch {
 export interface RagRetrieveResponse {
   matches: RagMatch[];
 }
+
+// Mirrors ai-service/app/schemas/slop_guard.py
+export type SlopGuardVerdict = "pass" | "soft_nudge" | "hard_reject";
+
+export interface SlopGuardRequest {
+  raw_text: string;
+}
+
+export interface SlopGuardResult {
+  verdict: SlopGuardVerdict;
+  reason: string;
+}
