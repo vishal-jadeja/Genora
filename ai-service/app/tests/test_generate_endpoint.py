@@ -115,3 +115,68 @@ def test_generate_endpoint_maps_provider_bad_request_error_to_400(monkeypatch):
     response = client.post("/generate", json=VALID_BODY, headers=AUTH_HEADERS)
 
     assert response.status_code == 400
+
+
+def test_generate_endpoint_rejects_platform_instructions_over_cap():
+    response = client.post(
+        "/generate",
+        json={**VALID_BODY, "platform_instructions": "x" * 12_001},
+        headers=AUTH_HEADERS,
+    )
+    assert response.status_code == 422
+
+
+def test_generate_endpoint_accepts_platform_instructions_at_cap(monkeypatch):
+    fake_adapter = _FakeAdapter(
+        [
+            CompletionResult(text="draft", prompt_tokens=1, completion_tokens=1),
+            CompletionResult(
+                text='{"approved": true, "feedback": ""}', prompt_tokens=1, completion_tokens=1
+            ),
+        ]
+    )
+    monkeypatch.setattr(generate_module, "build_adapter", lambda provider, api_key: fake_adapter)
+
+    response = client.post(
+        "/generate",
+        json={**VALID_BODY, "platform_instructions": "x" * 12_000},
+        headers=AUTH_HEADERS,
+    )
+    assert response.status_code == 200
+
+
+def test_generate_endpoint_rejects_too_many_rag_context_entries():
+    response = client.post(
+        "/generate",
+        json={**VALID_BODY, "rag_context": ["a"] * 21},
+        headers=AUTH_HEADERS,
+    )
+    assert response.status_code == 422
+
+
+def test_generate_endpoint_accepts_rag_context_at_max_entries(monkeypatch):
+    fake_adapter = _FakeAdapter(
+        [
+            CompletionResult(text="draft", prompt_tokens=1, completion_tokens=1),
+            CompletionResult(
+                text='{"approved": true, "feedback": ""}', prompt_tokens=1, completion_tokens=1
+            ),
+        ]
+    )
+    monkeypatch.setattr(generate_module, "build_adapter", lambda provider, api_key: fake_adapter)
+
+    response = client.post(
+        "/generate",
+        json={**VALID_BODY, "rag_context": ["a"] * 20},
+        headers=AUTH_HEADERS,
+    )
+    assert response.status_code == 200
+
+
+def test_generate_endpoint_rejects_an_oversized_rag_context_entry():
+    response = client.post(
+        "/generate",
+        json={**VALID_BODY, "rag_context": ["x" * 20_001]},
+        headers=AUTH_HEADERS,
+    )
+    assert response.status_code == 422
