@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedUserId } from "@/lib/auth/session";
 import { platformEnum } from "@/db/schema";
+import { getAuthenticatedUserId } from "@/lib/auth/session";
+import type { Platform } from "@/lib/generation/types";
 import { upsertPlatformInstructionsSchema } from "@/lib/platformInstructions/schema";
 import {
   deletePlatformInstructions,
   upsertPlatformInstructions,
 } from "@/lib/platformInstructions/service";
-import type { Platform } from "@/lib/generation/types";
 
 function isPlatform(value: string): value is Platform {
   return (platformEnum.enumValues as readonly string[]).includes(value);
@@ -41,11 +41,12 @@ export async function PUT(
     );
   }
 
-  await upsertPlatformInstructions(userId, platform, parsed.data.instructions);
-  return NextResponse.json({
+  const row = await upsertPlatformInstructions(
+    userId,
     platform,
-    instructions: parsed.data.instructions,
-  });
+    parsed.data.instructions,
+  );
+  return NextResponse.json(row);
 }
 
 export async function DELETE(

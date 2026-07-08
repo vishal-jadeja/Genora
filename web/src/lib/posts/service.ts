@@ -1,39 +1,52 @@
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db/client";
-import { platformOutputs, postStatusEnum, posts } from "@/db/schema";
+import { platformOutputs, posts } from "@/db/schema";
+import { folderBelongsToUser } from "@/lib/folders/service";
 
-export type PostStatus = (typeof postStatusEnum.enumValues)[number];
+export class PostNotFoundError extends Error {}
+export class FolderNotOwnedError extends Error {}
 
-export interface CreatePostInput {
-  userId: string;
+export interface PostSummary {
+  id: string;
+  folderId: string | null;
+  title: string | null;
   rawContent: string;
-  title?: string;
-  folderId?: string;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export interface UpdatePostInput {
-  title?: string;
-  rawContent?: string;
-  folderId?: string | null;
-  status?: PostStatus;
+export interface PlatformOutputSummary {
+  id: string;
+  platform: string;
+  version: number;
+  content: string | null;
+  status: string;
+  revisionCount: number;
+  errorReason: string | null;
+  provider: string | null;
+  model: string | null;
+  createdAt: Date;
 }
 
-export async function createPost(input: CreatePostInput) {
-  const [post] = await db
-    .insert(posts)
-    .values({
-      userId: input.userId,
-      rawContent: input.rawContent,
-      title: input.title,
-      folderId: input.folderId,
-    })
-    .returning();
-  return post;
+export interface PostDetail extends PostSummary {
+  platformOutputs: PlatformOutputSummary[];
 }
 
-export async function listPosts(userId: string, folderId?: string) {
+export async function listPosts(
+  userId: string,
+  folderId?: string,
+): Promise<PostSummary[]> {
   return db
-    .select()
+    .select({
+      id: posts.id,
+      folderId: posts.folderId,
+      title: posts.title,
+      rawContent: posts.rawContent,
+      status: posts.status,
+      createdAt: posts.createdAt,
+      updatedAt: posts.updatedAt,
+    })
     .from(posts)
     .where(
       folderId
@@ -43,20 +56,68 @@ export async function listPosts(userId: string, folderId?: string) {
     .orderBy(desc(posts.createdAt));
 }
 
-export async function getPost(userId: string, postId: string) {
+export async function createPost(
+  userId: string,
+  input: { rawContent: string; title?: string; folderId?: string },
+): Promise<PostSummary> {
+  if (input.folderId && !(await folderBelongsToUser(userId, input.folderId))) {
+    throw new FolderNotOwnedError(input.folderId);
+  }
+
   const [post] = await db
-    .select()
-    .from(posts)
-    .where(and(eq(posts.id, postId), eq(posts.userId, userId)));
-  return post ?? null;
+    .insert(posts)
+    .values({
+      userId,
+      rawContent: input.rawContent,
+      title: input.title,
+      folderId: input.folderId,
+    })
+    .returning({
+      id: posts.id,
+      folderId: posts.folderId,
+      title: posts.title,
+      rawContent: posts.rawContent,
+      status: posts.status,
+      createdAt: posts.createdAt,
+      updatedAt: posts.updatedAt,
+    });
+  return post;
 }
 
-export async function getPostOutputs(userId: string, postId: string) {
-  const post = await getPost(userId, postId);
-  if (!post) return null;
+export async function getPost(
+  userId: string,
+  postId: string,
+): Promise<PostDetail> {
+  const [post] = await db
+    .select({
+      id: posts.id,
+      folderId: posts.folderId,
+      title: posts.title,
+      rawContent: posts.rawContent,
+      status: posts.status,
+      createdAt: posts.createdAt,
+      updatedAt: posts.updatedAt,
+    })
+    .from(posts)
+    .where(and(eq(posts.id, postId), eq(posts.userId, userId)));
 
-  return db
-    .select()
+  if (!post) {
+    throw new PostNotFoundError(postId);
+  }
+
+  const outputs = await db
+    .select({
+      id: platformOutputs.id,
+      platform: platformOutputs.platform,
+      version: platformOutputs.version,
+      content: platformOutputs.content,
+      status: platformOutputs.status,
+      revisionCount: platformOutputs.revisionCount,
+      errorReason: platformOutputs.errorReason,
+      provider: platformOutputs.provider,
+      model: platformOutputs.model,
+      createdAt: platformOutputs.createdAt,
+    })
     .from(platformOutputs)
     .where(
       and(
@@ -64,46 +125,56 @@ export async function getPostOutputs(userId: string, postId: string) {
         eq(platformOutputs.isCurrent, true),
       ),
     );
+
+  return { ...post, platformOutputs: outputs };
+}
+
+export interface UpdatePostInput {
+  rawContent?: string;
+  title?: string | null;
+  folderId?: string | null;
+  status?: "draft" | "generated" | "edited" | "exported";
 }
 
 export async function updatePost(
   userId: string,
   postId: string,
   input: UpdatePostInput,
-) {
+): Promise<PostSummary> {
+  if (input.folderId && !(await folderBelongsToUser(userId, input.folderId))) {
+    throw new FolderNotOwnedError(input.folderId);
+  }
+
   const [post] = await db
     .update(posts)
     .set({ ...input, updatedAt: new Date() })
     .where(and(eq(posts.id, postId), eq(posts.userId, userId)))
-    .returning();
-  return post ?? null;
+    .returning({
+      id: posts.id,
+      folderId: posts.folderId,
+      title: posts.title,
+      rawContent: posts.rawContent,
+      status: posts.status,
+      createdAt: posts.createdAt,
+      updatedAt: posts.updatedAt,
+    });
+
+  if (!post) {
+    throw new PostNotFoundError(postId);
+  }
+  return post;
 }
 
 export async function deletePost(
   userId: string,
   postId: string,
-): Promise<boolean> {
+): Promise<void> {
   const deleted = await db
     .delete(posts)
     .where(and(eq(posts.id, postId), eq(posts.userId, userId)))
     .returning({ id: posts.id });
-  return deleted.length > 0;
-}
 
-export async function setPostTriggerRunId(
-  postId: string,
-  triggerRunId: string,
-): Promise<void> {
-  await db.update(posts).set({ triggerRunId }).where(eq(posts.id, postId));
-}
-
-export async function getPostByTriggerRunId(
-  userId: string,
-  triggerRunId: string,
-) {
-  const [post] = await db
-    .select()
-    .from(posts)
-    .where(and(eq(posts.triggerRunId, triggerRunId), eq(posts.userId, userId)));
-  return post ?? null;
+  if (deleted.length === 0) {
+    throw new PostNotFoundError(postId);
+  }
 }

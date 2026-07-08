@@ -16,10 +16,6 @@ export const posts = pgTable(
     title: text("title"),
     rawContent: text("raw_content").notNull(),
     status: postStatusEnum("status").notNull().default("draft"),
-    // Trigger.dev run id for the in-flight (or most recent) generation, used
-    // to scope /api/runs/[runId] to its owner — a run id alone isn't proof
-    // of ownership, this row is.
-    triggerRunId: text("trigger_run_id"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

@@ -28,16 +28,17 @@ describe("GET /api/platform-instructions", () => {
     expect(response.status).toBe(401);
   });
 
-  it("returns the user's instructions per platform", async () => {
+  it("returns the user's platform instructions", async () => {
     getAuthenticatedUserIdMock.mockResolvedValue("user-1");
     listPlatformInstructionsMock.mockResolvedValue([
-      { platform: "linkedin", instructions: "" },
+      { platform: "linkedin", instructions: "Be terse" },
     ]);
 
     const response = await GET();
     const body = await response.json();
 
+    expect(response.status).toBe(200);
     expect(listPlatformInstructionsMock).toHaveBeenCalledWith("user-1");
-    expect(body).toEqual([{ platform: "linkedin", instructions: "" }]);
+    expect(body).toEqual([{ platform: "linkedin", instructions: "Be terse" }]);
   });
 });

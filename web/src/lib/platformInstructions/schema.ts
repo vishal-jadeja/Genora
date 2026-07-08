@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const upsertPlatformInstructionsSchema = z.object({
-  instructions: z.string().max(5_000),
+  instructions: z.string().min(1).max(10_000),
 });
 
 export type UpsertPlatformInstructionsInput = z.infer<

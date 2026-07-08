@@ -15,10 +15,10 @@ vi.mock("@/lib/platformInstructions/service", () => ({
     deletePlatformInstructionsMock(...args),
 }));
 
-const { DELETE, PUT } = await import("./route");
+const { PUT, DELETE } = await import("./route");
 
-function ctxFor(platform: string) {
-  return { params: Promise.resolve({ platform }) };
+function ctx(platform: string) {
+  return { params: Promise.resolve({ platform }) } as never;
 }
 
 beforeEach(() => {
@@ -28,15 +28,29 @@ beforeEach(() => {
 });
 
 describe("PUT /api/platform-instructions/[platform]", () => {
-  it("returns 400 for an invalid platform", async () => {
+  it("returns 401 when there is no session", async () => {
+    getAuthenticatedUserIdMock.mockResolvedValue(null);
+
+    const response = await PUT(
+      new Request("http://localhost", {
+        method: "PUT",
+        body: JSON.stringify({ instructions: "Be terse" }),
+      }),
+      ctx("linkedin"),
+    );
+
+    expect(response.status).toBe(401);
+  });
+
+  it("returns 400 for a platform not in the enum", async () => {
     getAuthenticatedUserIdMock.mockResolvedValue("user-1");
 
     const response = await PUT(
       new Request("http://localhost", {
         method: "PUT",
-        body: JSON.stringify({ instructions: "Be punchy." }),
+        body: JSON.stringify({ instructions: "Be terse" }),
       }),
-      ctxFor("not-a-platform"),
+      ctx("not-a-real-platform"),
     );
 
     expect(response.status).toBe(400);
@@ -49,62 +63,69 @@ describe("PUT /api/platform-instructions/[platform]", () => {
     const response = await PUT(
       new Request("http://localhost", {
         method: "PUT",
-        body: JSON.stringify({}),
+        body: JSON.stringify({ instructions: "" }),
       }),
-      ctxFor("linkedin"),
+      ctx("linkedin"),
     );
 
     expect(response.status).toBe(400);
     expect(upsertPlatformInstructionsMock).not.toHaveBeenCalled();
   });
 
-  it("upserts the instructions for a valid platform", async () => {
+  it("upserts and returns the record", async () => {
     getAuthenticatedUserIdMock.mockResolvedValue("user-1");
+    upsertPlatformInstructionsMock.mockResolvedValue({
+      platform: "linkedin",
+      instructions: "Be terse",
+    });
 
     const response = await PUT(
       new Request("http://localhost", {
         method: "PUT",
-        body: JSON.stringify({ instructions: "Be punchy." }),
+        body: JSON.stringify({ instructions: "Be terse" }),
       }),
-      ctxFor("linkedin"),
+      ctx("linkedin"),
     );
     const body = await response.json();
 
+    expect(response.status).toBe(200);
     expect(upsertPlatformInstructionsMock).toHaveBeenCalledWith(
       "user-1",
       "linkedin",
-      "Be punchy.",
+      "Be terse",
     );
-    expect(body).toEqual({ platform: "linkedin", instructions: "Be punchy." });
+    expect(body).toEqual({ platform: "linkedin", instructions: "Be terse" });
   });
 });
 
 describe("DELETE /api/platform-instructions/[platform]", () => {
-  it("returns 400 for an invalid platform", async () => {
+  it("returns 400 for a platform not in the enum", async () => {
     getAuthenticatedUserIdMock.mockResolvedValue("user-1");
 
     const response = await DELETE(
       new Request("http://localhost"),
-      ctxFor("bogus"),
+      ctx("not-a-real-platform"),
     );
 
     expect(response.status).toBe(400);
     expect(deletePlatformInstructionsMock).not.toHaveBeenCalled();
   });
 
-  it("resets the instructions for a valid platform", async () => {
+  it("deletes the instructions", async () => {
     getAuthenticatedUserIdMock.mockResolvedValue("user-1");
+    deletePlatformInstructionsMock.mockResolvedValue(undefined);
 
     const response = await DELETE(
       new Request("http://localhost"),
-      ctxFor("linkedin"),
+      ctx("linkedin"),
     );
     const body = await response.json();
 
+    expect(response.status).toBe(200);
+    expect(body).toEqual({ ok: true });
     expect(deletePlatformInstructionsMock).toHaveBeenCalledWith(
       "user-1",
       "linkedin",
     );
-    expect(body).toEqual({ ok: true });
   });
 });

@@ -13,9 +13,9 @@ vi.mock("@/db/client", () => ({
 }));
 
 const {
-  deletePlatformInstructions,
   listPlatformInstructions,
   upsertPlatformInstructions,
+  deletePlatformInstructions,
 } = await import("./service");
 
 beforeEach(() => {
@@ -25,49 +25,58 @@ beforeEach(() => {
 });
 
 describe("listPlatformInstructions", () => {
-  it("returns exactly one entry per platform, defaulting unset ones to an empty string", async () => {
+  it("fills in every platform, defaulting unset ones to empty instructions", async () => {
     const where = vi
       .fn()
       .mockResolvedValue([
-        { platform: "linkedin", instructions: "Keep it punchy." },
+        { platform: "linkedin", instructions: "Be terse", updatedAt: null },
       ]);
     const from = vi.fn().mockReturnValue({ where });
     selectMock.mockReturnValue({ from });
 
     const result = await listPlatformInstructions("user-1");
 
-    expect(result).toHaveLength(5);
-    expect(result).toContainEqual({
-      platform: "linkedin",
-      instructions: "Keep it punchy.",
-    });
-    expect(result).toContainEqual({ platform: "x", instructions: "" });
+    expect(result).toEqual([
+      { platform: "linkedin", instructions: "Be terse", updatedAt: null },
+      { platform: "x", instructions: "", updatedAt: null },
+      { platform: "reddit", instructions: "", updatedAt: null },
+      { platform: "medium", instructions: "", updatedAt: null },
+      { platform: "substack", instructions: "", updatedAt: null },
+    ]);
   });
 });
 
 describe("upsertPlatformInstructions", () => {
-  it("upserts scoped to (userId, platform)", async () => {
-    const onConflictDoUpdate = vi.fn().mockResolvedValue(undefined);
+  it("upserts on the (userId, platform) conflict target", async () => {
+    const returning = vi
+      .fn()
+      .mockResolvedValue([{ platform: "x", instructions: "Short posts" }]);
+    const onConflictDoUpdate = vi.fn().mockReturnValue({ returning });
     const values = vi.fn().mockReturnValue({ onConflictDoUpdate });
     insertMock.mockReturnValue({ values });
 
-    await upsertPlatformInstructions("user-1", "reddit", "Be blunt.");
+    const result = await upsertPlatformInstructions(
+      "user-1",
+      "x",
+      "Short posts",
+    );
 
     expect(values).toHaveBeenCalledWith({
       userId: "user-1",
-      platform: "reddit",
-      instructions: "Be blunt.",
+      platform: "x",
+      instructions: "Short posts",
     });
+    expect(result).toEqual({ platform: "x", instructions: "Short posts" });
   });
 });
 
 describe("deletePlatformInstructions", () => {
-  it("deletes the row scoped to (userId, platform)", async () => {
+  it("deletes scoped to the user and platform", async () => {
     const where = vi.fn().mockResolvedValue(undefined);
     deleteMock.mockReturnValue({ where });
 
     await deletePlatformInstructions("user-1", "reddit");
 
-    expect(deleteMock).toHaveBeenCalledTimes(1);
+    expect(deleteMock).toHaveBeenCalled();
   });
 });

@@ -1,127 +1,150 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getAuthenticatedUserIdMock = vi.fn();
-const checkSlopGuardMock = vi.fn();
-const createPostMock = vi.fn();
-const setPostTriggerRunIdMock = vi.fn();
-const triggerMock = vi.fn();
+const runGenerateMock = vi.fn();
 
 vi.mock("@/lib/auth/session", () => ({
   getAuthenticatedUserId: () => getAuthenticatedUserIdMock(),
 }));
 
-vi.mock("@/lib/generation/slopGuard", () => ({
-  checkSlopGuard: (...args: unknown[]) => checkSlopGuardMock(...args),
-}));
-
-vi.mock("@/lib/posts/service", () => ({
-  createPost: (...args: unknown[]) => createPostMock(...args),
-  setPostTriggerRunId: (...args: unknown[]) => setPostTriggerRunIdMock(...args),
-}));
-
-vi.mock("@/trigger/generatePost", () => ({
-  generatePost: { trigger: (...args: unknown[]) => triggerMock(...args) },
+vi.mock("@/lib/generation/generateService", () => ({
+  runGenerate: (...args: unknown[]) => runGenerateMock(...args),
+  FolderNotOwnedError: class FolderNotOwnedError extends Error {},
 }));
 
 const { POST } = await import("./route");
 
-function requestWith(body: unknown) {
-  return new Request("http://localhost/api/generate", {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
-}
-
 const validBody = {
-  rawText: "a".repeat(100),
+  rawText: "a genuinely substantive raw thought",
   platforms: [{ platform: "linkedin", modelId: "groq" }],
 };
 
 beforeEach(() => {
   getAuthenticatedUserIdMock.mockReset();
-  checkSlopGuardMock.mockReset();
-  createPostMock.mockReset();
-  setPostTriggerRunIdMock.mockReset();
-  triggerMock.mockReset();
+  runGenerateMock.mockReset();
 });
 
 describe("POST /api/generate", () => {
   it("returns 401 when there is no session", async () => {
     getAuthenticatedUserIdMock.mockResolvedValue(null);
 
-    const response = await POST(requestWith(validBody));
+    const response = await POST(
+      new Request("http://localhost/api/generate", {
+        method: "POST",
+        body: JSON.stringify(validBody),
+      }),
+    );
 
     expect(response.status).toBe(401);
-    expect(checkSlopGuardMock).not.toHaveBeenCalled();
+    expect(runGenerateMock).not.toHaveBeenCalled();
   });
 
-  it("returns 400 on invalid body", async () => {
+  it("returns 400 on malformed JSON", async () => {
     getAuthenticatedUserIdMock.mockResolvedValue("user-1");
 
-    const response = await POST(requestWith({ rawText: "" }));
+    const response = await POST(
+      new Request("http://localhost/api/generate", {
+        method: "POST",
+        body: "{not-json",
+      }),
+    );
 
     expect(response.status).toBe(400);
-    expect(checkSlopGuardMock).not.toHaveBeenCalled();
   });
 
-  it("rejects with 422 on a hard_reject verdict, without creating a post or a job", async () => {
+  it("returns 400 when platforms is empty", async () => {
     getAuthenticatedUserIdMock.mockResolvedValue("user-1");
-    checkSlopGuardMock.mockResolvedValue({
-      verdict: "hard_reject",
-      reason: "too short",
+
+    const response = await POST(
+      new Request("http://localhost/api/generate", {
+        method: "POST",
+        body: JSON.stringify({ ...validBody, platforms: [] }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(runGenerateMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 for an unknown model id", async () => {
+    getAuthenticatedUserIdMock.mockResolvedValue("user-1");
+
+    const response = await POST(
+      new Request("http://localhost/api/generate", {
+        method: "POST",
+        body: JSON.stringify({
+          ...validBody,
+          platforms: [{ platform: "linkedin", modelId: "made-up" }],
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(runGenerateMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 422 with the reason on a slop guard rejection, without a job", async () => {
+    getAuthenticatedUserIdMock.mockResolvedValue("user-1");
+    runGenerateMock.mockResolvedValue({
+      status: "rejected",
+      slopGuard: { verdict: "hard_reject", reason: "too short" },
     });
 
-    const response = await POST(requestWith(validBody));
+    const response = await POST(
+      new Request("http://localhost/api/generate", {
+        method: "POST",
+        body: JSON.stringify(validBody),
+      }),
+    );
     const body = await response.json();
 
     expect(response.status).toBe(422);
-    expect(body).toEqual({ rejected: true, reason: "too short" });
-    expect(createPostMock).not.toHaveBeenCalled();
-    expect(triggerMock).not.toHaveBeenCalled();
+    expect(body.slopGuard).toEqual({
+      verdict: "hard_reject",
+      reason: "too short",
+    });
   });
 
-  it("creates a post, triggers a run, and persists the run id on a pass", async () => {
+  it("returns 202 with the run info on success", async () => {
     getAuthenticatedUserIdMock.mockResolvedValue("user-1");
-    checkSlopGuardMock.mockResolvedValue({ verdict: "pass", reason: "fine" });
-    createPostMock.mockResolvedValue({ id: "post-1" });
-    triggerMock.mockResolvedValue({ id: "run-1" });
+    runGenerateMock.mockResolvedValue({
+      status: "accepted",
+      postId: "post-1",
+      runId: "run-1",
+      publicAccessToken: "token",
+      slopGuard: { verdict: "pass", reason: "" },
+    });
 
-    const response = await POST(requestWith(validBody));
+    const response = await POST(
+      new Request("http://localhost/api/generate", {
+        method: "POST",
+        body: JSON.stringify(validBody),
+      }),
+    );
     const body = await response.json();
 
     expect(response.status).toBe(202);
-    expect(createPostMock).toHaveBeenCalledWith({
-      userId: "user-1",
-      rawContent: validBody.rawText,
-      title: undefined,
-      folderId: undefined,
-    });
-    expect(triggerMock).toHaveBeenCalledWith({
-      postId: "post-1",
-      userId: "user-1",
-      rawText: validBody.rawText,
-      platforms: validBody.platforms,
-    });
-    expect(setPostTriggerRunIdMock).toHaveBeenCalledWith("post-1", "run-1");
     expect(body).toEqual({
       postId: "post-1",
       runId: "run-1",
-      slopGuard: { verdict: "pass", reason: "fine" },
+      publicAccessToken: "token",
+      slopGuard: { verdict: "pass", reason: "" },
     });
   });
 
-  it("proceeds through on a soft_nudge verdict, same as a pass", async () => {
+  it("returns 400 when the folder isn't the user's", async () => {
+    const { FolderNotOwnedError } =
+      await import("@/lib/generation/generateService");
     getAuthenticatedUserIdMock.mockResolvedValue("user-1");
-    checkSlopGuardMock.mockResolvedValue({
-      verdict: "soft_nudge",
-      reason: "a bit thin",
-    });
-    createPostMock.mockResolvedValue({ id: "post-1" });
-    triggerMock.mockResolvedValue({ id: "run-1" });
+    runGenerateMock.mockRejectedValue(new FolderNotOwnedError("folder-1"));
 
-    const response = await POST(requestWith(validBody));
+    const response = await POST(
+      new Request("http://localhost/api/generate", {
+        method: "POST",
+        body: JSON.stringify({ ...validBody, folderId: "folder-1" }),
+      }),
+    );
 
-    expect(response.status).toBe(202);
-    expect(createPostMock).toHaveBeenCalled();
+    expect(response.status).toBe(400);
   });
 });

@@ -1,4 +1,7 @@
 import { task, AbortTaskRunError } from "@trigger.dev/sdk";
+import { and, eq } from "drizzle-orm";
+import { db } from "@/db/client";
+import { posts } from "@/db/schema";
 import { persistFailure, persistSuccess } from "@/lib/generation/persistResult";
 import {
   getModelCatalogEntry,
@@ -99,6 +102,15 @@ export const generatePost = task({
         },
       ),
     );
+
+    // Only flip status forward from "draft" — a post the user has since
+    // edited or exported shouldn't be silently reset by a later generation.
+    if (results.some((r) => r.status === "success")) {
+      await db
+        .update(posts)
+        .set({ status: "generated", updatedAt: new Date() })
+        .where(and(eq(posts.id, payload.postId), eq(posts.status, "draft")));
+    }
 
     return { results };
   },

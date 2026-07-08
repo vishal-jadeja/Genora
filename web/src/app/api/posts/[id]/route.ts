@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedUserId } from "@/lib/auth/session";
+import {
+  deletePost,
+  FolderNotOwnedError,
+  getPost,
+  PostNotFoundError,
+  updatePost,
+} from "@/lib/posts/service";
 import { updatePostSchema } from "@/lib/posts/schema";
-import { deletePost, getPost, updatePost } from "@/lib/posts/service";
 
 export async function GET(
   _request: Request,
@@ -13,12 +19,16 @@ export async function GET(
   }
 
   const { id } = await ctx.params;
-  const post = await getPost(userId, id);
-  if (!post) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
 
-  return NextResponse.json(post);
+  try {
+    const post = await getPost(userId, id);
+    return NextResponse.json(post);
+  } catch (err) {
+    if (err instanceof PostNotFoundError) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    throw err;
+  }
 }
 
 export async function PATCH(
@@ -46,12 +56,22 @@ export async function PATCH(
   }
 
   const { id } = await ctx.params;
-  const post = await updatePost(userId, id, parsed.data);
-  if (!post) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
 
-  return NextResponse.json(post);
+  try {
+    const post = await updatePost(userId, id, parsed.data);
+    return NextResponse.json(post);
+  } catch (err) {
+    if (err instanceof PostNotFoundError) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    if (err instanceof FolderNotOwnedError) {
+      return NextResponse.json(
+        { error: "folderId does not belong to this user" },
+        { status: 400 },
+      );
+    }
+    throw err;
+  }
 }
 
 export async function DELETE(
@@ -64,10 +84,14 @@ export async function DELETE(
   }
 
   const { id } = await ctx.params;
-  const deleted = await deletePost(userId, id);
-  if (!deleted) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
 
-  return NextResponse.json({ ok: true });
+  try {
+    await deletePost(userId, id);
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    if (err instanceof PostNotFoundError) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    throw err;
+  }
 }

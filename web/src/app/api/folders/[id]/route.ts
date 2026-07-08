@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedUserId } from "@/lib/auth/session";
+import {
+  deleteFolder,
+  FolderNameTakenError,
+  FolderNotFoundError,
+  renameFolder,
+} from "@/lib/folders/service";
 import { renameFolderSchema } from "@/lib/folders/schema";
-import { deleteFolder, renameFolder } from "@/lib/folders/service";
 
 export async function PATCH(
   request: Request,
@@ -28,12 +33,22 @@ export async function PATCH(
   }
 
   const { id } = await ctx.params;
-  const folder = await renameFolder(userId, id, parsed.data.name);
-  if (!folder) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
 
-  return NextResponse.json(folder);
+  try {
+    const folder = await renameFolder(userId, id, parsed.data.name);
+    return NextResponse.json(folder);
+  } catch (err) {
+    if (err instanceof FolderNotFoundError) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    if (err instanceof FolderNameTakenError) {
+      return NextResponse.json(
+        { error: "A folder with this name already exists" },
+        { status: 409 },
+      );
+    }
+    throw err;
+  }
 }
 
 export async function DELETE(
@@ -46,10 +61,14 @@ export async function DELETE(
   }
 
   const { id } = await ctx.params;
-  const deleted = await deleteFolder(userId, id);
-  if (!deleted) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
 
-  return NextResponse.json({ ok: true });
+  try {
+    await deleteFolder(userId, id);
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    if (err instanceof FolderNotFoundError) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    throw err;
+  }
 }

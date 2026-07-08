@@ -1,0 +1,1 @@
+ALTER TABLE "posts" DROP COLUMN "trigger_run_id";

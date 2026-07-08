@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedUserId } from "@/lib/auth/session";
+import {
+  createFolder,
+  FolderNameTakenError,
+  listFolders,
+} from "@/lib/folders/service";
 import { createFolderSchema } from "@/lib/folders/schema";
-import { createFolder, listFolders } from "@/lib/folders/service";
 
 export async function GET() {
   const userId = await getAuthenticatedUserId();
@@ -34,6 +38,16 @@ export async function POST(request: Request) {
     );
   }
 
-  const folder = await createFolder(userId, parsed.data.name);
-  return NextResponse.json(folder, { status: 201 });
+  try {
+    const folder = await createFolder(userId, parsed.data.name);
+    return NextResponse.json(folder, { status: 201 });
+  } catch (err) {
+    if (err instanceof FolderNameTakenError) {
+      return NextResponse.json(
+        { error: "A folder with this name already exists" },
+        { status: 409 },
+      );
+    }
+    throw err;
+  }
 }

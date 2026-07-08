@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedUserId } from "@/lib/auth/session";
-import { generateRequestSchema } from "@/lib/generation/schema";
-import { checkSlopGuard } from "@/lib/generation/slopGuard";
-import { createPost, setPostTriggerRunId } from "@/lib/posts/service";
-import { generatePost } from "@/trigger/generatePost";
+import {
+  FolderNotOwnedError,
+  runGenerate,
+} from "@/lib/generation/generateService";
+import { generatePostSchema } from "@/lib/generation/schema";
 
 export async function POST(request: Request) {
   const userId = await getAuthenticatedUserId();
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const parsed = generateRequestSchema.safeParse(body);
+  const parsed = generatePostSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: parsed.error.flatten() },
@@ -26,39 +27,32 @@ export async function POST(request: Request) {
     );
   }
 
-  const { rawText, title, folderId, platforms } = parsed.data;
+  let outcome;
+  try {
+    outcome = await runGenerate(userId, parsed.data);
+  } catch (err) {
+    if (err instanceof FolderNotOwnedError) {
+      return NextResponse.json(
+        { error: "folderId does not belong to this user" },
+        { status: 400 },
+      );
+    }
+    throw err;
+  }
 
-  // Synchronous, pre-generation gate — runs before any paid model call and
-  // before a job (or even a posts row) is created for a rejected input.
-  const slopGuard = await checkSlopGuard(rawText);
-  if (slopGuard.verdict === "hard_reject") {
+  if (outcome.status === "rejected") {
     return NextResponse.json(
-      { rejected: true, reason: slopGuard.reason },
+      { error: "rejected", slopGuard: outcome.slopGuard },
       { status: 422 },
     );
   }
 
-  const post = await createPost({
-    userId,
-    rawContent: rawText,
-    title,
-    folderId,
-  });
-
-  const handle = await generatePost.trigger({
-    postId: post.id,
-    userId,
-    rawText,
-    platforms,
-  });
-
-  await setPostTriggerRunId(post.id, handle.id);
-
   return NextResponse.json(
     {
-      postId: post.id,
-      runId: handle.id,
-      slopGuard,
+      postId: outcome.postId,
+      runId: outcome.runId,
+      publicAccessToken: outcome.publicAccessToken,
+      slopGuard: outcome.slopGuard,
     },
     { status: 202 },
   );

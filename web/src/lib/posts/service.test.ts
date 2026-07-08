@@ -4,6 +4,7 @@ const selectMock = vi.fn();
 const insertMock = vi.fn();
 const updateMock = vi.fn();
 const deleteMock = vi.fn();
+const folderBelongsToUserMock = vi.fn();
 
 vi.mock("@/db/client", () => ({
   db: {
@@ -14,14 +15,18 @@ vi.mock("@/db/client", () => ({
   },
 }));
 
+vi.mock("@/lib/folders/service", () => ({
+  folderBelongsToUser: (...args: unknown[]) => folderBelongsToUserMock(...args),
+}));
+
 const {
+  listPosts,
   createPost,
-  deletePost,
   getPost,
-  getPostByTriggerRunId,
-  getPostOutputs,
-  setPostTriggerRunId,
   updatePost,
+  deletePost,
+  PostNotFoundError,
+  FolderNotOwnedError,
 } = await import("./service");
 
 beforeEach(() => {
@@ -29,89 +34,158 @@ beforeEach(() => {
   insertMock.mockReset();
   updateMock.mockReset();
   deleteMock.mockReset();
+  folderBelongsToUserMock.mockReset();
+});
+
+describe("listPosts", () => {
+  it("orders by createdAt desc", async () => {
+    const orderBy = vi.fn().mockResolvedValue([{ id: "p1" }]);
+    const where = vi.fn().mockReturnValue({ orderBy });
+    const from = vi.fn().mockReturnValue({ where });
+    selectMock.mockReturnValue({ from });
+
+    const result = await listPosts("user-1");
+
+    expect(result).toEqual([{ id: "p1" }]);
+    expect(orderBy).toHaveBeenCalled();
+  });
 });
 
 describe("createPost", () => {
-  it("inserts a draft post scoped to the user", async () => {
-    const returning = vi
-      .fn()
-      .mockResolvedValue([{ id: "p1", rawContent: "hello" }]);
+  it("inserts and returns the new post", async () => {
+    const returning = vi.fn().mockResolvedValue([{ id: "p1" }]);
     const values = vi.fn().mockReturnValue({ returning });
     insertMock.mockReturnValue({ values });
 
-    const post = await createPost({ userId: "user-1", rawContent: "hello" });
+    const result = await createPost("user-1", { rawContent: "hello" });
 
-    expect(post).toEqual({ id: "p1", rawContent: "hello" });
+    expect(values).toHaveBeenCalledWith({
+      userId: "user-1",
+      rawContent: "hello",
+      title: undefined,
+      folderId: undefined,
+    });
+    expect(result).toEqual({ id: "p1" });
+  });
+
+  it("throws FolderNotOwnedError without inserting when the folder isn't the user's", async () => {
+    folderBelongsToUserMock.mockResolvedValue(false);
+
+    await expect(
+      createPost("user-1", { rawContent: "hello", folderId: "folder-1" }),
+    ).rejects.toThrow(FolderNotOwnedError);
+    expect(insertMock).not.toHaveBeenCalled();
+  });
+
+  it("inserts when the folder belongs to the user", async () => {
+    folderBelongsToUserMock.mockResolvedValue(true);
+    const returning = vi.fn().mockResolvedValue([{ id: "p1" }]);
+    const values = vi.fn().mockReturnValue({ returning });
+    insertMock.mockReturnValue({ values });
+
+    await createPost("user-1", { rawContent: "hello", folderId: "folder-1" });
+
+    expect(folderBelongsToUserMock).toHaveBeenCalledWith("user-1", "folder-1");
+    expect(insertMock).toHaveBeenCalled();
   });
 });
 
 describe("getPost", () => {
-  it("returns null when the post isn't owned by the user", async () => {
+  it("throws PostNotFoundError when the post doesn't exist", async () => {
     const where = vi.fn().mockResolvedValue([]);
     const from = vi.fn().mockReturnValue({ where });
     selectMock.mockReturnValue({ from });
+
+    await expect(getPost("user-1", "missing")).rejects.toThrow(
+      PostNotFoundError,
+    );
+  });
+
+  it("returns the post with its current platform outputs", async () => {
+    const postWhere = vi.fn().mockResolvedValue([{ id: "p1" }]);
+    const outputsWhere = vi
+      .fn()
+      .mockResolvedValue([{ id: "o1", platform: "linkedin" }]);
+    selectMock
+      .mockReturnValueOnce({
+        from: vi.fn().mockReturnValue({ where: postWhere }),
+      })
+      .mockReturnValueOnce({
+        from: vi.fn().mockReturnValue({ where: outputsWhere }),
+      });
 
     const result = await getPost("user-1", "p1");
 
-    expect(result).toBeNull();
-  });
-});
-
-describe("getPostOutputs", () => {
-  it("returns null (not an empty array) when the post isn't owned by the user", async () => {
-    const where = vi.fn().mockResolvedValue([]);
-    const from = vi.fn().mockReturnValue({ where });
-    selectMock.mockReturnValue({ from });
-
-    const result = await getPostOutputs("user-1", "p1");
-
-    expect(result).toBeNull();
+    expect(result).toEqual({
+      id: "p1",
+      platformOutputs: [{ id: "o1", platform: "linkedin" }],
+    });
   });
 });
 
 describe("updatePost", () => {
-  it("returns null when the post isn't owned by the user", async () => {
+  it("throws PostNotFoundError when nothing matched", async () => {
     const returning = vi.fn().mockResolvedValue([]);
     const where = vi.fn().mockReturnValue({ returning });
     const set = vi.fn().mockReturnValue({ where });
     updateMock.mockReturnValue({ set });
 
-    const result = await updatePost("user-1", "p1", { title: "New title" });
+    await expect(
+      updatePost("user-1", "missing", { title: "New" }),
+    ).rejects.toThrow(PostNotFoundError);
+  });
 
-    expect(result).toBeNull();
+  it("updates and returns the post", async () => {
+    const returning = vi.fn().mockResolvedValue([{ id: "p1", title: "New" }]);
+    const where = vi.fn().mockReturnValue({ returning });
+    const set = vi.fn().mockReturnValue({ where });
+    updateMock.mockReturnValue({ set });
+
+    const result = await updatePost("user-1", "p1", { title: "New" });
+
+    expect(result).toEqual({ id: "p1", title: "New" });
+  });
+
+  it("throws FolderNotOwnedError without updating when the folder isn't the user's", async () => {
+    folderBelongsToUserMock.mockResolvedValue(false);
+
+    await expect(
+      updatePost("user-1", "p1", { folderId: "folder-1" }),
+    ).rejects.toThrow(FolderNotOwnedError);
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it("allows clearing the folder without an ownership check", async () => {
+    const returning = vi.fn().mockResolvedValue([{ id: "p1", folderId: null }]);
+    const where = vi.fn().mockReturnValue({ returning });
+    const set = vi.fn().mockReturnValue({ where });
+    updateMock.mockReturnValue({ set });
+
+    await updatePost("user-1", "p1", { folderId: null });
+
+    expect(folderBelongsToUserMock).not.toHaveBeenCalled();
+    expect(updateMock).toHaveBeenCalled();
   });
 });
 
 describe("deletePost", () => {
-  it("returns false when nothing was deleted", async () => {
+  it("deletes scoped to the user", async () => {
+    const returning = vi.fn().mockResolvedValue([{ id: "p1" }]);
+    const where = vi.fn().mockReturnValue({ returning });
+    deleteMock.mockReturnValue({ where });
+
+    await deletePost("user-1", "p1");
+
+    expect(deleteMock).toHaveBeenCalled();
+  });
+
+  it("throws PostNotFoundError when nothing matched", async () => {
     const returning = vi.fn().mockResolvedValue([]);
     const where = vi.fn().mockReturnValue({ returning });
     deleteMock.mockReturnValue({ where });
 
-    const result = await deletePost("user-1", "p1");
-
-    expect(result).toBe(false);
-  });
-});
-
-describe("setPostTriggerRunId / getPostByTriggerRunId", () => {
-  it("stores the run id on the post", async () => {
-    const where = vi.fn().mockResolvedValue(undefined);
-    const set = vi.fn().mockReturnValue({ where });
-    updateMock.mockReturnValue({ set });
-
-    await setPostTriggerRunId("p1", "run_123");
-
-    expect(set).toHaveBeenCalledWith({ triggerRunId: "run_123" });
-  });
-
-  it("scopes run-id lookup to the requesting user, not just the run id", async () => {
-    const where = vi.fn().mockResolvedValue([]);
-    const from = vi.fn().mockReturnValue({ where });
-    selectMock.mockReturnValue({ from });
-
-    const result = await getPostByTriggerRunId("attacker", "run_123");
-
-    expect(result).toBeNull();
+    await expect(deletePost("user-1", "missing")).rejects.toThrow(
+      PostNotFoundError,
+    );
   });
 });

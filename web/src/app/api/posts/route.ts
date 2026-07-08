@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedUserId } from "@/lib/auth/session";
+import {
+  createPost,
+  FolderNotOwnedError,
+  listPosts,
+} from "@/lib/posts/service";
 import { createPostSchema } from "@/lib/posts/schema";
-import { createPost, listPosts } from "@/lib/posts/service";
 
 export async function GET(request: Request) {
   const userId = await getAuthenticatedUserId();
@@ -9,8 +13,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const folderId =
-    new URL(request.url).searchParams.get("folderId") ?? undefined;
+  const { searchParams } = new URL(request.url);
+  const folderId = searchParams.get("folderId") ?? undefined;
+
   const posts = await listPosts(userId, folderId);
   return NextResponse.json(posts);
 }
@@ -36,6 +41,16 @@ export async function POST(request: Request) {
     );
   }
 
-  const post = await createPost({ userId, ...parsed.data });
-  return NextResponse.json(post, { status: 201 });
+  try {
+    const post = await createPost(userId, parsed.data);
+    return NextResponse.json(post, { status: 201 });
+  } catch (err) {
+    if (err instanceof FolderNotOwnedError) {
+      return NextResponse.json(
+        { error: "folderId does not belong to this user" },
+        { status: 400 },
+      );
+    }
+    throw err;
+  }
 }
