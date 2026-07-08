@@ -1,12 +1,28 @@
 from types import SimpleNamespace
 
+import anthropic
+import groq
+import httpx
+import openai
 import pytest
+from google.genai.errors import ClientError
 
 from app.services.providers.anthropic_adapter import AnthropicAdapter
+from app.services.providers.errors import (
+    ProviderAuthError,
+    ProviderBadRequestError,
+    ProviderRateLimitError,
+)
 from app.services.providers.gemini_adapter import GeminiAdapter
 from app.services.providers.groq_adapter import GroqAdapter
 from app.services.providers.openai_adapter import OpenAIAdapter
 from app.services.providers.registry import build_adapter
+
+
+def _http_error_response(status_code: int) -> httpx.Response:
+    return httpx.Response(
+        status_code=status_code, request=httpx.Request("POST", "https://example.com")
+    )
 
 
 def _openai_shaped_response(content: str, prompt_tokens: int, completion_tokens: int):
@@ -144,6 +160,154 @@ async def test_gemini_adapter_handles_missing_usage_metadata():
     assert result.text == ""
     assert result.prompt_tokens == 0
     assert result.completion_tokens == 0
+
+
+async def test_anthropic_adapter_maps_auth_error():
+    adapter = AnthropicAdapter(api_key="unused")
+
+    async def fake_create(**kwargs):
+        raise anthropic.AuthenticationError(
+            "bad key", response=_http_error_response(401), body=None
+        )
+
+    adapter._client = SimpleNamespace(messages=SimpleNamespace(create=fake_create))
+
+    with pytest.raises(ProviderAuthError):
+        await adapter.complete(model="claude-x", system="sys", user="hi", max_tokens=100)
+
+
+async def test_anthropic_adapter_maps_rate_limit_error():
+    adapter = AnthropicAdapter(api_key="unused")
+
+    async def fake_create(**kwargs):
+        raise anthropic.RateLimitError(
+            "too many requests", response=_http_error_response(429), body=None
+        )
+
+    adapter._client = SimpleNamespace(messages=SimpleNamespace(create=fake_create))
+
+    with pytest.raises(ProviderRateLimitError):
+        await adapter.complete(model="claude-x", system="sys", user="hi", max_tokens=100)
+
+
+async def test_anthropic_adapter_maps_bad_request_error():
+    adapter = AnthropicAdapter(api_key="unused")
+
+    async def fake_create(**kwargs):
+        raise anthropic.BadRequestError(
+            "bad model", response=_http_error_response(400), body=None
+        )
+
+    adapter._client = SimpleNamespace(messages=SimpleNamespace(create=fake_create))
+
+    with pytest.raises(ProviderBadRequestError):
+        await adapter.complete(model="claude-x", system="sys", user="hi", max_tokens=100)
+
+
+async def test_openai_adapter_maps_auth_error():
+    adapter = OpenAIAdapter(api_key="unused")
+
+    async def fake_create(**kwargs):
+        raise openai.AuthenticationError(
+            "bad key", response=_http_error_response(401), body=None
+        )
+
+    adapter._client = SimpleNamespace(
+        chat=SimpleNamespace(completions=SimpleNamespace(create=fake_create))
+    )
+
+    with pytest.raises(ProviderAuthError):
+        await adapter.complete(model="gpt-x", system="sys", user="hi", max_tokens=100)
+
+
+async def test_openai_adapter_maps_rate_limit_error():
+    adapter = OpenAIAdapter(api_key="unused")
+
+    async def fake_create(**kwargs):
+        raise openai.RateLimitError(
+            "too many requests", response=_http_error_response(429), body=None
+        )
+
+    adapter._client = SimpleNamespace(
+        chat=SimpleNamespace(completions=SimpleNamespace(create=fake_create))
+    )
+
+    with pytest.raises(ProviderRateLimitError):
+        await adapter.complete(model="gpt-x", system="sys", user="hi", max_tokens=100)
+
+
+async def test_groq_adapter_maps_auth_error():
+    adapter = GroqAdapter(api_key="unused")
+
+    async def fake_create(**kwargs):
+        raise groq.AuthenticationError(
+            "bad key", response=_http_error_response(401), body=None
+        )
+
+    adapter._client = SimpleNamespace(
+        chat=SimpleNamespace(completions=SimpleNamespace(create=fake_create))
+    )
+
+    with pytest.raises(ProviderAuthError):
+        await adapter.complete(model="llama-x", system="sys", user="hi", max_tokens=100)
+
+
+async def test_groq_adapter_maps_rate_limit_error():
+    adapter = GroqAdapter(api_key="unused")
+
+    async def fake_create(**kwargs):
+        raise groq.RateLimitError(
+            "too many requests", response=_http_error_response(429), body=None
+        )
+
+    adapter._client = SimpleNamespace(
+        chat=SimpleNamespace(completions=SimpleNamespace(create=fake_create))
+    )
+
+    with pytest.raises(ProviderRateLimitError):
+        await adapter.complete(model="llama-x", system="sys", user="hi", max_tokens=100)
+
+
+async def test_gemini_adapter_maps_auth_error():
+    adapter = GeminiAdapter(api_key="unused")
+
+    async def fake_generate_content(**kwargs):
+        raise ClientError(401, {"error": {"message": "bad key"}})
+
+    adapter._client = SimpleNamespace(
+        aio=SimpleNamespace(models=SimpleNamespace(generate_content=fake_generate_content))
+    )
+
+    with pytest.raises(ProviderAuthError):
+        await adapter.complete(model="gemini-x", system="sys", user="hi", max_tokens=100)
+
+
+async def test_gemini_adapter_maps_rate_limit_error():
+    adapter = GeminiAdapter(api_key="unused")
+
+    async def fake_generate_content(**kwargs):
+        raise ClientError(429, {"error": {"message": "rate limited"}})
+
+    adapter._client = SimpleNamespace(
+        aio=SimpleNamespace(models=SimpleNamespace(generate_content=fake_generate_content))
+    )
+
+    with pytest.raises(ProviderRateLimitError):
+        await adapter.complete(model="gemini-x", system="sys", user="hi", max_tokens=100)
+
+
+async def test_gemini_adapter_maps_other_client_error_to_bad_request():
+    adapter = GeminiAdapter(api_key="unused")
+
+    async def fake_generate_content(**kwargs):
+        raise ClientError(400, {"error": {"message": "bad model"}})
+
+    adapter._client = SimpleNamespace(
+        aio=SimpleNamespace(models=SimpleNamespace(generate_content=fake_generate_content))
+    )
+
+    with pytest.raises(ProviderBadRequestError):
+        await adapter.complete(model="gemini-x", system="sys", user="hi", max_tokens=100)
 
 
 def test_registry_builds_the_right_adapter_type():

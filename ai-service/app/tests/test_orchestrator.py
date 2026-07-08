@@ -1,5 +1,8 @@
+import pytest
+
 from app.services.pipeline.orchestrator import MAX_REVISIONS, run_pipeline
 from app.services.providers.base import CompletionResult
+from app.services.providers.errors import ProviderAuthError
 
 
 class _ScriptedAdapter:
@@ -11,7 +14,10 @@ class _ScriptedAdapter:
 
     async def complete(self, *, model: str, system: str, user: str, max_tokens: int):
         self.calls.append({"model": model, "system": system, "user": user})
-        return self._script.pop(0)
+        item = self._script.pop(0)
+        if isinstance(item, Exception):
+            raise item
+        return item
 
 
 def _result(text: str, prompt_tokens: int = 10, completion_tokens: int = 20) -> CompletionResult:
@@ -91,3 +97,15 @@ async def test_pipeline_aggregates_token_usage_per_stage():
     assert writer_usage.prompt_tokens == 100
     assert writer_usage.completion_tokens == 50
     assert writer_usage.total_tokens == 150
+
+
+async def test_pipeline_tags_the_failing_stage_on_provider_error():
+    adapter = _ScriptedAdapter(
+        [
+            _result("first draft"),
+            ProviderAuthError("bad key"),
+        ]
+    )
+
+    with pytest.raises(ProviderAuthError, match="critic stage"):
+        await run_pipeline(adapter, "model-x", "raw thought", "linkedin", "", [])

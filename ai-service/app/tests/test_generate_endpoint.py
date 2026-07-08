@@ -5,6 +5,11 @@ import app.routers.generate as generate_module
 from app.core.config import settings
 from app.main import app
 from app.services.providers.base import CompletionResult
+from app.services.providers.errors import (
+    ProviderAuthError,
+    ProviderBadRequestError,
+    ProviderRateLimitError,
+)
 
 client = TestClient(app)
 AUTH_HEADERS = {"x-internal-secret": settings.internal_service_secret}
@@ -75,3 +80,38 @@ def test_generate_endpoint_rejects_unsupported_provider():
 def test_generate_endpoint_rejects_empty_raw_text():
     response = client.post("/generate", json={**VALID_BODY, "raw_text": ""}, headers=AUTH_HEADERS)
     assert response.status_code == 422
+
+
+class _FailingAdapter:
+    def __init__(self, exc: Exception) -> None:
+        self._exc = exc
+
+    async def complete(self, *, model, system, user, max_tokens):
+        raise self._exc
+
+
+def test_generate_endpoint_maps_provider_auth_error_to_401(monkeypatch):
+    fake_adapter = _FailingAdapter(ProviderAuthError("bad key"))
+    monkeypatch.setattr(generate_module, "build_adapter", lambda provider, api_key: fake_adapter)
+
+    response = client.post("/generate", json=VALID_BODY, headers=AUTH_HEADERS)
+
+    assert response.status_code == 401
+
+
+def test_generate_endpoint_maps_provider_rate_limit_error_to_429(monkeypatch):
+    fake_adapter = _FailingAdapter(ProviderRateLimitError("too many requests"))
+    monkeypatch.setattr(generate_module, "build_adapter", lambda provider, api_key: fake_adapter)
+
+    response = client.post("/generate", json=VALID_BODY, headers=AUTH_HEADERS)
+
+    assert response.status_code == 429
+
+
+def test_generate_endpoint_maps_provider_bad_request_error_to_400(monkeypatch):
+    fake_adapter = _FailingAdapter(ProviderBadRequestError("bad model"))
+    monkeypatch.setattr(generate_module, "build_adapter", lambda provider, api_key: fake_adapter)
+
+    response = client.post("/generate", json=VALID_BODY, headers=AUTH_HEADERS)
+
+    assert response.status_code == 400
