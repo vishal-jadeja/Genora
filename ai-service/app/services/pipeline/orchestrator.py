@@ -86,7 +86,12 @@ async def run_pipeline(
             draft, verdict.feedback, platform, platform_instructions
         )
         reviser_result = await _complete_stage(
-            adapter, "reviser", model=model, system=system, user=user, max_tokens=MAX_TOKENS_PER_CALL
+            adapter,
+            "reviser",
+            model=model,
+            system=system,
+            user=user,
+            max_tokens=MAX_TOKENS_PER_CALL,
         )
         _record_usage(usage, "reviser", reviser_result)
         draft = reviser_result.text

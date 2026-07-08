@@ -194,9 +194,7 @@ async def test_anthropic_adapter_maps_bad_request_error():
     adapter = AnthropicAdapter(api_key="unused")
 
     async def fake_create(**kwargs):
-        raise anthropic.BadRequestError(
-            "bad model", response=_http_error_response(400), body=None
-        )
+        raise anthropic.BadRequestError("bad model", response=_http_error_response(400), body=None)
 
     adapter._client = SimpleNamespace(messages=SimpleNamespace(create=fake_create))
 
@@ -208,9 +206,7 @@ async def test_openai_adapter_maps_auth_error():
     adapter = OpenAIAdapter(api_key="unused")
 
     async def fake_create(**kwargs):
-        raise openai.AuthenticationError(
-            "bad key", response=_http_error_response(401), body=None
-        )
+        raise openai.AuthenticationError("bad key", response=_http_error_response(401), body=None)
 
     adapter._client = SimpleNamespace(
         chat=SimpleNamespace(completions=SimpleNamespace(create=fake_create))
@@ -240,9 +236,7 @@ async def test_groq_adapter_maps_auth_error():
     adapter = GroqAdapter(api_key="unused")
 
     async def fake_create(**kwargs):
-        raise groq.AuthenticationError(
-            "bad key", response=_http_error_response(401), body=None
-        )
+        raise groq.AuthenticationError("bad key", response=_http_error_response(401), body=None)
 
     adapter._client = SimpleNamespace(
         chat=SimpleNamespace(completions=SimpleNamespace(create=fake_create))

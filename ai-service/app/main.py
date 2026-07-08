@@ -44,9 +44,7 @@ async def _provider_auth_error(request: Request, exc: ProviderAuthError) -> JSON
 
 
 @app.exception_handler(ProviderRateLimitError)
-async def _provider_rate_limit_error(
-    request: Request, exc: ProviderRateLimitError
-) -> JSONResponse:
+async def _provider_rate_limit_error(request: Request, exc: ProviderRateLimitError) -> JSONResponse:
     return JSONResponse(status_code=429, content={"detail": str(exc)})
 
 
