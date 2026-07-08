@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { getAuthenticatedUserId } from "@/lib/auth/session";
 import {
   createPost,
@@ -7,6 +8,8 @@ import {
 } from "@/lib/posts/service";
 import { createPostSchema } from "@/lib/posts/schema";
 
+const folderIdQuerySchema = z.string().uuid().optional();
+
 export async function GET(request: Request) {
   const userId = await getAuthenticatedUserId();
   if (!userId) {
@@ -14,9 +17,17 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const folderId = searchParams.get("folderId") ?? undefined;
+  const parsedFolderId = folderIdQuerySchema.safeParse(
+    searchParams.get("folderId") ?? undefined,
+  );
+  if (!parsedFolderId.success) {
+    return NextResponse.json(
+      { error: "folderId must be a valid UUID" },
+      { status: 400 },
+    );
+  }
 
-  const posts = await listPosts(userId, folderId);
+  const posts = await listPosts(userId, parsedFolderId.data);
   return NextResponse.json(posts);
 }
 

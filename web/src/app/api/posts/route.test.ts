@@ -34,10 +34,22 @@ describe("GET /api/posts", () => {
   it("passes the folderId query param through", async () => {
     getAuthenticatedUserIdMock.mockResolvedValue("user-1");
     listPostsMock.mockResolvedValue([]);
+    const folderId = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
 
-    await GET(new Request("http://localhost/api/posts?folderId=f1"));
+    await GET(new Request(`http://localhost/api/posts?folderId=${folderId}`));
 
-    expect(listPostsMock).toHaveBeenCalledWith("user-1", "f1");
+    expect(listPostsMock).toHaveBeenCalledWith("user-1", folderId);
+  });
+
+  it("returns 400 when folderId isn't a valid UUID", async () => {
+    getAuthenticatedUserIdMock.mockResolvedValue("user-1");
+
+    const response = await GET(
+      new Request("http://localhost/api/posts?folderId=not-a-uuid"),
+    );
+
+    expect(response.status).toBe(400);
+    expect(listPostsMock).not.toHaveBeenCalled();
   });
 
   it("returns the user's posts", async () => {
