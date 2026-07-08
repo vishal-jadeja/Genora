@@ -59,6 +59,37 @@ def test_passes_genuine_substance():
     assert result.verdict == SlopGuardVerdict.PASS
 
 
+def test_accepts_cyrillic_input():
+    result = evaluate_slop_guard(
+        "Сегодня я запустил новую функцию, которую никто не просил, "
+        "и она внезапно стала самой популярной частью продукта."
+    )
+    assert result.verdict == SlopGuardVerdict.PASS
+
+
+def test_accepts_accented_latin_input():
+    result = evaluate_slop_guard(
+        "J'ai créé une fonctionnalité très útil, ñoño mais über cool, "
+        "et personne ne l'avait demandée au départ."
+    )
+    assert result.verdict == SlopGuardVerdict.PASS
+    assert "no readable words" not in result.reason
+
+
+def test_accepts_arabic_input():
+    result = evaluate_slop_guard(
+        "أطلقت ميزة جديدة لم يطلبها أحد وأصبحت الأكثر استخدامًا في "
+        "التطبيق بأكمله خلال أسابيع قليلة فقط"
+    )
+    assert result.verdict == SlopGuardVerdict.PASS
+
+
+def test_still_hard_rejects_short_non_ascii_input():
+    result = evaluate_slop_guard("Привет всем")
+    assert result.verdict == SlopGuardVerdict.HARD_REJECT
+    assert "too short" in result.reason
+
+
 def test_endpoint_requires_internal_secret():
     response = client.post("/slop-guard", json={"raw_text": GENUINE_THOUGHT})
     assert response.status_code == 401

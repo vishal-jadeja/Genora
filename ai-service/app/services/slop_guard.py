@@ -23,7 +23,12 @@ _HARD_REJECT_REPETITION_RATIO = 0.6
 _SOFT_NUDGE_REPETITION_RATIO = 0.35
 _REPETITION_MIN_WORDS = 5
 
-_WORD_RE = re.compile(r"[A-Za-z']+")
+# Python's `re` matches Unicode by default for str patterns — this covers
+# Cyrillic/CJK/Arabic/Devanagari/accented Latin, not just ASCII. Known
+# residual gap: CJK scripts don't use whitespace word-boundaries, so a long
+# unbroken CJK run can still trip _MASH_MIN_TOKEN_CHARS below — same known
+# trade-off as the camelCase-hashtag false positive already noted there.
+_WORD_RE = re.compile(r"[^\W\d_]+(?:['’][^\W\d_]+)*")
 
 
 def evaluate_slop_guard(raw_text: str) -> SlopGuardResult:
