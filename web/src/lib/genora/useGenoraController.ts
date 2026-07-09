@@ -1,6 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useApiKeys, useDeleteKey, useSaveKey } from "@/hooks/useApiKeys";
+import {
+  usePlatformInstructions,
+  useResetAllInstructions,
+  useSaveInstructions,
+} from "@/hooks/usePlatformInstructions";
+import { useQuota } from "@/hooks/useQuota";
 import {
   ALTS,
   GEN_ERROR_REASONS,
@@ -62,9 +69,30 @@ export function useGenoraController(nav: {
     Partial<Record<PlatformId, ReturnType<typeof setTimeout>>>
   >({});
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const keyValidateTimers = useRef<
-    Partial<Record<ProviderId, ReturnType<typeof setTimeout>>>
-  >({});
+
+  // ---- real backend: BYOK keys, per-platform instructions, quota ---------
+  const apiKeysQuery = useApiKeys();
+  const saveKeyMutation = useSaveKey();
+  const deleteKeyMutation = useDeleteKey();
+  const instructionsQuery = usePlatformInstructions();
+  const saveInstructionsMutation = useSaveInstructions();
+  const resetAllInstructionsMutation = useResetAllInstructions();
+  const quotaQuery = useQuota();
+
+  // instr is user-edited free text with no explicit save-per-keystroke UX
+  // (see SettingsBody's Save button) — hydrate it from the server exactly
+  // once when the query first resolves, then it's locally owned until the
+  // user saves or resets, so typing doesn't fight a background refetch.
+  const instrHydrated = useRef(false);
+  useEffect(() => {
+    if (instrHydrated.current || !instructionsQuery.data) return;
+    instrHydrated.current = true;
+    const fromServer: Partial<Record<PlatformId, string>> = {};
+    for (const row of instructionsQuery.data) {
+      fromServer[row.platform as PlatformId] = row.instructions;
+    }
+    setState((s) => ({ ...s, instr: { ...s.instr, ...fromServer } }));
+  }, [instructionsQuery.data]);
 
   const patch = useCallback((p: Partial<GenoraState>) => {
     setState((s) => ({ ...s, ...p }));
@@ -333,14 +361,14 @@ export function useGenoraController(nav: {
   );
 
   const hasKey = useCallback(
-    (s: GenoraState = state) => Object.values(s.keys).some((k) => k.c),
-    [state],
+    () => (apiKeysQuery.data ?? []).some((k) => k.connected),
+    [apiKeysQuery.data],
   );
 
   const pickModel = useCallback(
     (m: ModelMeta) => {
       setState((s) => {
-        if (m.free || hasKey(s)) return { ...s, model: m.id, modelOpen: false };
+        if (m.free || hasKey()) return { ...s, model: m.id, modelOpen: false };
         return s;
       });
     },
@@ -404,7 +432,7 @@ export function useGenoraController(nav: {
           generating: stillPending,
           freeLeft: stillPending
             ? s.freeLeft
-            : hasKey(s)
+            : hasKey()
               ? s.freeLeft
               : Math.max(0, s.freeLeft - 1),
         };
@@ -455,7 +483,7 @@ export function useGenoraController(nav: {
   // a same-tick push+replace pair into a single replace of *that* page).
   const runGenerate = useCallback(
     (navMode: "push" | "replace" = "replace") => {
-      if (!hasKey(state) && state.freeLeft <= 0) {
+      if (!hasKey() && (quotaQuery.data?.remaining ?? 0) <= 0) {
         // No silent redirect — the caller's screen already shows an inline
         // "out of free generations" banner (derived.quotaExhausted) with its
         // own explicit "Add a key" action. Pre-select the right settings tab
@@ -510,7 +538,7 @@ export function useGenoraController(nav: {
       platformTimers.current = {};
       sel.forEach((id, index) => schedulePlatform(postId, id, index));
     },
-    [hasKey, state, patch, navigate, replace, schedulePlatform],
+    [hasKey, quotaQuery.data, state, patch, navigate, replace, schedulePlatform],
   );
 
   const generate = useCallback(() => {
@@ -738,41 +766,50 @@ export function useGenoraController(nav: {
     () => patch({ confirmDialog: null }),
     [patch],
   );
-  const confirmDialogAction = useCallback(() => {
-    setState((s) => {
-      const d = s.confirmDialog;
-      if (!d) return s;
-      if (d.kind === "deletePost") {
-        return {
-          ...s,
-          posts: s.posts.filter((p) => p.id !== d.postId),
-          confirmDialog: null,
-        };
-      }
-      if (d.kind === "deleteFolder") {
-        return {
-          ...s,
-          folders: s.folders.filter((f) => f.id !== d.folderId),
-          posts: s.posts.map((p) =>
-            p.folder === d.folderId ? { ...p, folder: null } : p,
-          ),
-          activeFolder: s.activeFolder === d.folderId ? null : s.activeFolder,
-          confirmDialog: null,
-        };
-      }
-      if (d.kind === "removeKey") {
-        return {
-          ...s,
-          keys: { ...s.keys, [d.providerId]: { c: false, v: "" } },
-          confirmDialog: null,
-        };
-      }
-      if (d.kind === "resetInstructions") {
-        return { ...s, instr: { ...INSTR_DEFAULTS }, confirmDialog: null };
-      }
-      return { ...s, confirmDialog: null };
-    });
-  }, []);
+  const confirmDialogAction = useCallback(async () => {
+    const d = state.confirmDialog;
+    if (!d) return;
+
+    if (d.kind === "deletePost") {
+      setState((s) => ({
+        ...s,
+        posts: s.posts.filter((p) => p.id !== d.postId),
+        confirmDialog: null,
+      }));
+      return;
+    }
+    if (d.kind === "deleteFolder") {
+      setState((s) => ({
+        ...s,
+        folders: s.folders.filter((f) => f.id !== d.folderId),
+        posts: s.posts.map((p) =>
+          p.folder === d.folderId ? { ...p, folder: null } : p,
+        ),
+        activeFolder: s.activeFolder === d.folderId ? null : s.activeFolder,
+        confirmDialog: null,
+      }));
+      return;
+    }
+    if (d.kind === "removeKey") {
+      await deleteKeyMutation.mutateAsync(d.providerId);
+      setState((s) => ({
+        ...s,
+        keys: { ...s.keys, [d.providerId]: { c: false, v: "" } },
+        confirmDialog: null,
+      }));
+      return;
+    }
+    if (d.kind === "resetInstructions") {
+      await resetAllInstructionsMutation.mutateAsync();
+      setState((s) => ({
+        ...s,
+        instr: { ...INSTR_DEFAULTS },
+        confirmDialog: null,
+      }));
+      return;
+    }
+    setState((s) => ({ ...s, confirmDialog: null }));
+  }, [state.confirmDialog, deleteKeyMutation, resetAllInstructionsMutation]);
 
   // ---- drafts page: filters/sort ------------------------------------------
   const setDraftsSearch = useCallback(
@@ -807,47 +844,41 @@ export function useGenoraController(nav: {
       keys: { ...s.keys, [id]: { ...s.keys[id], v } },
     }));
   }, []);
-  // Prototype-only: simulates a real key-validation network call with a
-  // loading state and a plausible failure mode (per backend-plan.md's BYOK
-  // adapter, a bad key surfaces as a 401 — modeled here as a crude length
-  // heuristic since there's no real provider to call yet).
+  // Save-and-trust: POST /api/keys just encrypts and stores — there's no
+  // live provider validation call. A bad key surfaces later as a classified
+  // 401 when a generation actually runs with it, not here.
   const validateKey = useCallback(
-    (id: ProviderId) => {
+    async (id: ProviderId) => {
       const value = state.keys[id]?.v ?? "";
+      if (!value.trim()) return;
       setState((s) => ({
         ...s,
         keyValidating: { ...s.keyValidating, [id]: true },
-        keyError: (() => {
-          const e = { ...s.keyError };
-          delete e[id];
-          return e;
-        })(),
       }));
-      if (keyValidateTimers.current[id]) {
-        clearTimeout(keyValidateTimers.current[id]);
-      }
-      keyValidateTimers.current[id] = setTimeout(() => {
-        const looksValid = value.trim().length >= 10;
+      try {
+        await saveKeyMutation.mutateAsync({ provider: id, key: value });
+        setState((s) => ({
+          ...s,
+          keys: { ...s.keys, [id]: { c: true, v: "" } },
+          keyValidating: { ...s.keyValidating, [id]: false },
+          keyError: (() => {
+            const e = { ...s.keyError };
+            delete e[id];
+            return e;
+          })(),
+        }));
+      } catch (err) {
         setState((s) => ({
           ...s,
           keyValidating: { ...s.keyValidating, [id]: false },
-          keys: looksValid
-            ? { ...s.keys, [id]: { ...s.keys[id], c: true } }
-            : s.keys,
-          keyError: looksValid
-            ? (() => {
-                const e = { ...s.keyError };
-                delete e[id];
-                return e;
-              })()
-            : {
-                ...s.keyError,
-                [id]: "That key doesn't look right — check you copied the whole thing.",
-              },
+          keyError: {
+            ...s.keyError,
+            [id]: err instanceof Error ? err.message : "Could not save key",
+          },
         }));
-      }, 900);
+      }
     },
-    [state.keys],
+    [state.keys, saveKeyMutation],
   );
   const toggleInstr = useCallback((id: PlatformId) => {
     setState((s) => ({ ...s, instrOpen: s.instrOpen === id ? null : id }));
@@ -855,6 +886,12 @@ export function useGenoraController(nav: {
   const onInstr = useCallback((id: PlatformId, v: string) => {
     setState((s) => ({ ...s, instr: { ...s.instr, [id]: v } }));
   }, []);
+  const saveInstr = useCallback(
+    (id: PlatformId) => {
+      saveInstructionsMutation.mutate({ platform: id, instructions: state.instr[id] });
+    },
+    [state.instr, saveInstructionsMutation],
+  );
   const onVoice = useCallback((v: string) => patch({ voice: v }), [patch]);
   const toggleSlop = useCallback(() => {
     setState((s) => ({ ...s, slopEnabled: !s.slopEnabled }));
@@ -867,13 +904,14 @@ export function useGenoraController(nav: {
   // ---- derived (pure data, no styling) ------------------------------------
   const derived = useMemo(() => {
     const S = state;
-    const hk = Object.values(S.keys).some((k) => k.c);
+    const hk = hasKey();
+    const freeLeft = quotaQuery.data?.remaining ?? 0;
 
     const quotaText = hk
       ? "BYOK · unlimited"
-      : `${S.freeLeft} free generation${S.freeLeft === 1 ? "" : "s"} left today`;
-    const quotaLow = !hk && S.freeLeft <= 1;
-    const quotaExhausted = !hk && S.freeLeft <= 0;
+      : `${freeLeft} free generation${freeLeft === 1 ? "" : "s"} left today`;
+    const quotaLow = !hk && freeLeft <= 1;
+    const quotaExhausted = !hk && freeLeft <= 0;
 
     const hr = new Date().getHours();
     const greeting =
@@ -939,7 +977,7 @@ export function useGenoraController(nav: {
 
     const tierBanner = hk
       ? "BYOK active — the daily cap is lifted and full model selection is unlocked."
-      : `You're on the free tier: ${S.freeLeft} generations left today on Claude Sonnet 4.5. Add any key to remove the cap and choose models.`;
+      : `You're on the free tier: ${freeLeft} generations left today on Claude Sonnet 4.5. Add any key to remove the cap and choose models.`;
     const voiceStatus = S.voice.trim()
       ? `Calibrated on ${wordCount(S.voice)} words of your writing.`
       : "Not calibrated yet — generations use platform defaults.";
@@ -1057,14 +1095,13 @@ export function useGenoraController(nav: {
       draftsNoMatch,
       confirmDialogContent,
     };
-  }, [state]);
+  }, [state, hasKey, quotaQuery.data]);
 
   useEffect(() => {
     const saved = window.localStorage.getItem(THEME_MODE_KEY);
     if (saved === "light" || saved === "dark" || saved === "system") {
       // Restore the persisted override post-mount, same reasoning as
       // GenoraProvider's system-preference read: keeps SSR/first-paint in sync.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       patch({ themeMode: saved });
     }
   }, [patch]);
@@ -1072,10 +1109,23 @@ export function useGenoraController(nav: {
   useEffect(() => {
     const saved = window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
     if (saved === "1" || saved === "0") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       patch({ sidebarCollapsed: saved === "1" });
     }
   }, [patch]);
+
+  // SettingsBody reads state.keys[id].c per provider — .v stays purely local
+  // (BYOK keys are never returned by GET /api/keys), .c reflects the real
+  // connected/stored status from the server.
+  const displayState = useMemo(() => {
+    const connected = new Set(
+      (apiKeysQuery.data ?? []).filter((k) => k.connected).map((k) => k.provider),
+    );
+    const keys = { ...state.keys };
+    (Object.keys(keys) as ProviderId[]).forEach((id) => {
+      keys[id] = { ...keys[id], c: connected.has(id) };
+    });
+    return { ...state, keys, freeLeft: quotaQuery.data?.remaining ?? state.freeLeft };
+  }, [state, apiKeysQuery.data, quotaQuery.data]);
 
   const actions = useMemo(
     () => ({
@@ -1144,6 +1194,7 @@ export function useGenoraController(nav: {
       validateKey,
       toggleInstr,
       onInstr,
+      saveInstr,
       onVoice,
       toggleSlop,
       setSlopStrictness,
@@ -1214,13 +1265,14 @@ export function useGenoraController(nav: {
       validateKey,
       toggleInstr,
       onInstr,
+      saveInstr,
       onVoice,
       toggleSlop,
       setSlopStrictness,
     ],
   );
 
-  return { state, derived, actions };
+  return { state: displayState, derived, actions };
 }
 
 export type GenoraActions = ReturnType<typeof useGenoraController>["actions"];

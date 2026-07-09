@@ -389,7 +389,7 @@ export function SettingsBody({ state, derived, actions }: GenoraViewProps) {
                             padding: "9px 15px",
                           }}
                         >
-                          {k.c ? "Re-validate" : "Validate"}
+                          {k.c ? "Update key" : "Save key"}
                         </button>
                         {k.c && (
                           <Hoverable
@@ -539,6 +539,9 @@ export function SettingsBody({ state, derived, actions }: GenoraViewProps) {
                           style={{
                             padding: "0 16px 16px",
                             animation: "ffade .15s ease",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 8,
                           }}
                         >
                           <textarea
@@ -557,6 +560,23 @@ export function SettingsBody({ state, derived, actions }: GenoraViewProps) {
                               minHeight: 96,
                             }}
                           />
+                          <Hoverable
+                            as="button"
+                            onClick={() => actions.saveInstr(id)}
+                            style={{
+                              alignSelf: "flex-start",
+                              border: `1px solid ${PRIMARY}`,
+                              background: PRIMARY,
+                              color: "var(--c-primaryText)",
+                              borderRadius: 7,
+                              fontSize: 12,
+                              fontWeight: 600,
+                              padding: "7px 13px",
+                            }}
+                            hoverStyle={{ opacity: 0.9 }}
+                          >
+                            Save
+                          </Hoverable>
                         </div>
                       )}
                     </div>
