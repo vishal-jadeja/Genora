@@ -1,4 +1,5 @@
 import { auth as triggerAuth } from "@trigger.dev/sdk";
+import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { posts } from "@/db/schema";
 import { callAiService } from "@/lib/aiService/client";
@@ -16,7 +17,11 @@ export type GenerateOutcome =
       status: "accepted";
       postId: string;
       runId: string;
-      publicAccessToken: string;
+      // null if the job was successfully triggered but the realtime-token
+      // call itself failed — the job is genuinely running; the client falls
+      // back to session-authenticated polling on GET /api/generate/[runId]
+      // instead of the Trigger.dev realtime SDK.
+      publicAccessToken: string | null;
       slopGuard: SlopGuardResult;
     };
 
@@ -56,20 +61,37 @@ export async function runGenerate(
     })
     .returning({ id: posts.id });
 
-  const handle = await generatePost.trigger(
-    {
-      postId: post.id,
-      userId,
-      rawText: input.rawText,
-      platforms: input.platforms,
-    },
-    { tags: [`user:${userId}`] },
-  );
+  let handle;
+  try {
+    handle = await generatePost.trigger(
+      {
+        postId: post.id,
+        userId,
+        rawText: input.rawText,
+        platforms: input.platforms,
+      },
+      { tags: [`user:${userId}`] },
+    );
+  } catch (err) {
+    // No job was ever created for this post — don't leave an orphaned draft
+    // row with nothing that will ever generate for it.
+    await db.delete(posts).where(eq(posts.id, post.id));
+    throw err;
+  }
 
-  const publicAccessToken = await triggerAuth.createPublicToken({
-    scopes: { read: { runs: [handle.id] } },
-    expirationTime: "1h",
-  });
+  let publicAccessToken: string | null;
+  try {
+    publicAccessToken = await triggerAuth.createPublicToken({
+      scopes: { read: { runs: [handle.id] } },
+      expirationTime: "1h",
+    });
+  } catch (err) {
+    // The job is already running server-side at this point — failing the
+    // whole request would hide that from the caller. Degrade instead of
+    // throwing; the client can still poll GET /api/generate/[runId].
+    console.error(`createPublicToken failed for run ${handle.id}`, err);
+    publicAccessToken = null;
+  }
 
   return {
     status: "accepted",

@@ -36,9 +36,20 @@ export async function callAiService<TResponse>(
 
     if (!response.ok) {
       const text = await response.text().catch(() => "");
+      // 5xx bodies are infra/proxy-level detail, not a reason meant for end
+      // users — keep the full text server-side only. 4xx bodies are genuine
+      // provider-returned reasons (e.g. "invalid API key") and are safe to
+      // forward, capped so an oversized body can't bloat storage/responses.
+      if (response.status >= 500) {
+        console.error(`ai-service ${path} failed: ${response.status} ${text}`);
+        throw new AiServiceError(
+          response.status,
+          `ai-service ${path} request failed`,
+        );
+      }
       throw new AiServiceError(
         response.status,
-        `ai-service ${path} failed: ${response.status} ${text}`,
+        `ai-service ${path} failed: ${response.status} ${text.slice(0, 300)}`,
       );
     }
 

@@ -111,11 +111,21 @@ export const generatePlatformPost = task({
 
     let result: GenerateResponse;
     try {
+      // /generate can run up to 5 sequential LLM calls (writer + up to 2
+      // rounds of critic+reviser) — the 15s client default is sized for a
+      // single-shot call like /slop-guard, not this pipeline.
       result = await callAiService<GenerateResponse>(
         "/generate",
         generateRequest,
+        { timeoutMs: 90_000 },
       );
     } catch (err) {
+      if (err instanceof AiServiceError && err.status === 429) {
+        // Rate limit — free-tier models share a platform-owned key across
+        // all users, so this is expected under load, not permanent. Rethrow
+        // so the task's existing retry/backoff applies.
+        throw err;
+      }
       if (err instanceof AiServiceError && err.status < 500) {
         // Bad request / invalid model / provider auth failure — retrying
         // would just fail the same way again.

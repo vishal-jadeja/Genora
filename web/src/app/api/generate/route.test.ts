@@ -183,6 +183,28 @@ describe("POST /api/generate", () => {
     expect(runGenerateMock).not.toHaveBeenCalled();
   });
 
+  it("fails open (proceeds) when the rate limit check itself throws", async () => {
+    getAuthenticatedUserIdMock.mockResolvedValue("user-1");
+    checkRateLimitMock.mockRejectedValue(new Error("ECONNREFUSED"));
+    runGenerateMock.mockResolvedValue({
+      status: "accepted",
+      postId: "post-1",
+      runId: "run-1",
+      publicAccessToken: "token",
+      slopGuard: { verdict: "pass", reason: "" },
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/generate", {
+        method: "POST",
+        body: JSON.stringify(validBody),
+      }),
+    );
+
+    expect(response.status).toBe(202);
+    expect(runGenerateMock).toHaveBeenCalled();
+  });
+
   it("returns 502 when the slop guard call is unavailable", async () => {
     const { SlopGuardUnavailableError } =
       await import("@/lib/generation/generateService");

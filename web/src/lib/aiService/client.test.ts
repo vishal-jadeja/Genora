@@ -51,6 +51,32 @@ describe("callAiService", () => {
 
     await expect(
       callAiService("/slop-guard", { raw_text: "hi" }),
-    ).rejects.toMatchObject({ status: 400 });
+    ).rejects.toMatchObject({
+      status: 400,
+      message: expect.stringContaining("bad request"),
+    });
+  });
+
+  it("does not forward the raw response body to callers on a 5xx", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 502,
+      text: async () =>
+        "<html>internal gateway error, upstream=10.0.4.2</html>",
+    }) as unknown as typeof fetch;
+
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    await expect(
+      callAiService("/generate", { raw_text: "hi" }),
+    ).rejects.toMatchObject({
+      status: 502,
+      message: expect.not.stringContaining("upstream=10.0.4.2"),
+    });
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("upstream=10.0.4.2"),
+    );
   });
 });

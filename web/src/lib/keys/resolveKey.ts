@@ -30,6 +30,12 @@ export interface ResolvedFreeTier {
 
 export type ResolvedKey = ResolvedByok | ResolvedFreeTier;
 
+// Distinct from a generic thrown error so callers (resolveGenerationKey.ts)
+// can tell "this key will never decrypt" (permanent — e.g. ENCRYPTION_KEY
+// rotated out from under an old row) apart from a transient DB failure,
+// which should still be retried rather than fast-failed.
+export class KeyDecryptionError extends Error {}
+
 const FREE_TIER_MODEL_PLACEHOLDER = "TBD";
 
 export async function resolveKeyForGeneration(
@@ -43,11 +49,20 @@ export async function resolveKeyForGeneration(
     );
 
   if (row) {
-    const apiKey = decryptSecret({
-      encryptedKey: row.encryptedKey,
-      iv: row.iv,
-      authTag: row.authTag,
-    });
+    let apiKey: string;
+    try {
+      apiKey = decryptSecret({
+        encryptedKey: row.encryptedKey,
+        iv: row.iv,
+        authTag: row.authTag,
+      });
+    } catch (err) {
+      throw new KeyDecryptionError(
+        `stored key for ${req.provider} could not be decrypted, please re-add it: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
     void db
       .update(apiKeys)
       .set({ lastUsedAt: new Date() })

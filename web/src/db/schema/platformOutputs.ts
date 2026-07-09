@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -6,6 +7,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { outputStatusEnum, platformEnum, providerEnum } from "./enums";
@@ -42,6 +44,12 @@ export const platformOutputs = pgTable(
       table.platform,
       table.isCurrent,
     ),
+    // Backs the "at most one current row per post+platform" invariant at the
+    // DB level — persistResult.ts's advisory lock enforces this today, but
+    // this constraint means no future write path can silently violate it.
+    uniqueIndex("platform_outputs_one_current")
+      .on(table.postId, table.platform)
+      .where(sql`${table.isCurrent}`),
     index("platform_outputs_post_id_idx").on(table.postId),
   ],
 );

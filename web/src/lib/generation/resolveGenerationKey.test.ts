@@ -2,9 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const resolveKeyForGenerationMock = vi.fn();
 
+class MockKeyDecryptionError extends Error {}
+
 vi.mock("@/lib/keys/resolveKey", () => ({
   resolveKeyForGeneration: (...args: unknown[]) =>
     resolveKeyForGenerationMock(...args),
+  KeyDecryptionError: MockKeyDecryptionError,
 }));
 
 const { resolveGenerationKey, GenerationKeyError } =
@@ -89,6 +92,27 @@ describe("resolveGenerationKey", () => {
     });
 
     await expect(resolveGenerationKey("user-1", "groq")).rejects.toThrow(
+      GenerationKeyError,
+    );
+  });
+
+  it("maps a KeyDecryptionError to GenerationKeyError instead of an unhandled retryable error", async () => {
+    resolveKeyForGenerationMock.mockRejectedValue(
+      new MockKeyDecryptionError("stored key for groq could not be decrypted"),
+    );
+
+    await expect(resolveGenerationKey("user-1", "groq")).rejects.toThrow(
+      GenerationKeyError,
+    );
+  });
+
+  it("rethrows a plain (non-decryption) error from resolveKeyForGeneration unchanged", async () => {
+    resolveKeyForGenerationMock.mockRejectedValue(new Error("db unavailable"));
+
+    await expect(resolveGenerationKey("user-1", "groq")).rejects.toThrow(
+      "db unavailable",
+    );
+    await expect(resolveGenerationKey("user-1", "groq")).rejects.not.toThrow(
       GenerationKeyError,
     );
   });

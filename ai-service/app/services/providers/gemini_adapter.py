@@ -9,10 +9,18 @@ from app.services.providers.errors import (
     ProviderRateLimitError,
 )
 
+# Bounds a single provider call well under the SDK's default timeout, so a
+# stuck request fails fast enough for Trigger.dev's retry budget rather than
+# outliving the caller's abandoned attempt (see web/src/lib/aiService/client.ts).
+ADAPTER_TIMEOUT_MS = 30_000
+
 
 class GeminiAdapter:
     def __init__(self, api_key: str) -> None:
-        self._client = genai.Client(api_key=api_key)
+        self._client = genai.Client(
+            api_key=api_key,
+            http_options=types.HttpOptions(timeout=ADAPTER_TIMEOUT_MS),
+        )
 
     async def complete(
         self, *, model: str, system: str, user: str, max_tokens: int

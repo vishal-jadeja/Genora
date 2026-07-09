@@ -90,15 +90,10 @@ describe("generatePlatformPost", () => {
     });
   });
 
-  it("fails fast (no retry) on a 429 from ai-service /generate", async () => {
+  it("rethrows a 429 from ai-service /generate so Trigger.dev retries (shared free-tier key)", async () => {
     mockRagThenGenerateRejection(new MockAiServiceError(429, "rate limited"));
 
-    const result = await run(basePayload);
-
-    expect(result).toEqual({
-      status: "failed",
-      errorReason: "rate limited",
-    });
+    await expect(run(basePayload)).rejects.toThrow("rate limited");
   });
 
   it("rethrows a 503 from ai-service /generate so Trigger.dev retries", async () => {
@@ -113,9 +108,7 @@ describe("generatePlatformPost", () => {
       .mockResolvedValueOnce({
         content: "final",
         revision_count: 1,
-        usage: [
-          { stage: "writer", prompt_tokens: 10, completion_tokens: 20 },
-        ],
+        usage: [{ stage: "writer", prompt_tokens: 10, completion_tokens: 20 }],
       });
 
     const result = await run(basePayload);
@@ -126,5 +119,10 @@ describe("generatePlatformPost", () => {
       revisionCount: 1,
       usage: [{ stage: "writer", promptTokens: 10, completionTokens: 20 }],
     });
+    expect(callAiServiceMock).toHaveBeenCalledWith(
+      "/generate",
+      expect.anything(),
+      { timeoutMs: 90_000 },
+    );
   });
 });

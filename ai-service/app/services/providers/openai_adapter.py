@@ -1,4 +1,11 @@
-from openai import AsyncOpenAI, AuthenticationError, BadRequestError, NotFoundError, RateLimitError
+from openai import (
+    AsyncOpenAI,
+    AuthenticationError,
+    BadRequestError,
+    NotFoundError,
+    PermissionDeniedError,
+    RateLimitError,
+)
 
 from app.services.providers.base import CompletionResult
 from app.services.providers.errors import (
@@ -7,10 +14,15 @@ from app.services.providers.errors import (
     ProviderRateLimitError,
 )
 
+# Bounds a single provider call well under the SDK's ~10min default, so a
+# stuck request fails fast enough for Trigger.dev's retry budget rather than
+# outliving the caller's abandoned attempt (see web/src/lib/aiService/client.ts).
+ADAPTER_TIMEOUT_SECONDS = 30.0
+
 
 class OpenAIAdapter:
     def __init__(self, api_key: str) -> None:
-        self._client = AsyncOpenAI(api_key=api_key)
+        self._client = AsyncOpenAI(api_key=api_key, timeout=ADAPTER_TIMEOUT_SECONDS)
 
     async def complete(
         self, *, model: str, system: str, user: str, max_tokens: int
@@ -24,7 +36,7 @@ class OpenAIAdapter:
                 ],
                 max_completion_tokens=max_tokens,
             )
-        except AuthenticationError as exc:
+        except (AuthenticationError, PermissionDeniedError) as exc:
             raise ProviderAuthError(str(exc)) from exc
         except RateLimitError as exc:
             raise ProviderRateLimitError(str(exc)) from exc

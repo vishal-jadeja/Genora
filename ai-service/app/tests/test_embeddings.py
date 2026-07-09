@@ -32,12 +32,21 @@ class _FakeGenaiClient:
 
 
 async def test_embed_returns_values_from_first_embedding():
-    client = _FakeGenaiClient(_FakeEmbedResponse([_FakeContentEmbedding([0.1, 0.2, 0.3])]))
+    values = [0.1] * 768
+    client = _FakeGenaiClient(_FakeEmbedResponse([_FakeContentEmbedding(values)]))
     embedder = GeminiEmbedder(client)
 
     result = await embedder.embed("hello world")
 
-    assert result == [0.1, 0.2, 0.3]
+    assert result == values
+
+
+async def test_embed_raises_when_dimension_mismatches():
+    client = _FakeGenaiClient(_FakeEmbedResponse([_FakeContentEmbedding([0.1, 0.2, 0.3])]))
+    embedder = GeminiEmbedder(client)
+
+    with pytest.raises(RuntimeError, match="768"):
+        await embedder.embed("hello world")
 
 
 async def test_embed_raises_when_gemini_returns_no_embeddings():

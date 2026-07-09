@@ -26,5 +26,17 @@ class Settings(BaseSettings):
             )
         return self
 
+    @model_validator(mode="after")
+    def _require_database_url_and_gemini_key_outside_dev(self) -> "Settings":
+        # A missing value here would otherwise only surface as an opaque
+        # asyncpg/Gemini error the first time something tries to use it —
+        # fail fast at startup instead, same as the secret check above.
+        if self.env != "development":
+            if not self.database_url:
+                raise ValueError("DATABASE_URL must be set when ENV is not 'development'.")
+            if not self.gemini_api_key:
+                raise ValueError("GEMINI_API_KEY must be set when ENV is not 'development'.")
+        return self
+
 
 settings = Settings()

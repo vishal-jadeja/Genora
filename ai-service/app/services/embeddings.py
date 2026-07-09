@@ -21,7 +21,13 @@ class GeminiEmbedder:
         )
         if not response.embeddings:
             raise RuntimeError("Gemini returned no embedding for the given text")
-        return response.embeddings[0].values
+        values = response.embeddings[0].values
+        if len(values) != EMBEDDING_DIMENSIONS:
+            raise RuntimeError(
+                f"Gemini returned a {len(values)}-dim embedding, expected "
+                f"{EMBEDDING_DIMENSIONS} (pgvector column is fixed-width)"
+            )
+        return values
 
 
 _embedder: GeminiEmbedder | None = None

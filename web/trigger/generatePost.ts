@@ -35,6 +35,21 @@ export interface GeneratePostOutput {
   results: GeneratePostResult[];
 }
 
+// persistFailure itself must never be allowed to reject the parent
+// Promise.all either — same reasoning as the persistSuccess catch above.
+async function persistFailureSafe(
+  input: Parameters<typeof persistFailure>[0],
+): Promise<void> {
+  try {
+    await persistFailure(input);
+  } catch (err) {
+    console.error(
+      `persistFailure failed for post ${input.postId} platform ${input.platform}`,
+      err,
+    );
+  }
+}
+
 export const generatePost = task({
   id: "generate-post",
   run: async (payload: GeneratePostPayload): Promise<GeneratePostOutput> => {
@@ -68,18 +83,41 @@ export const generatePost = task({
           const run = await generatePlatformPost.triggerAndWait(childPayload);
 
           if (run.ok && run.output.status === "success") {
-            await persistSuccess({
-              postId: payload.postId,
-              userId: payload.userId,
-              platform: selection.platform,
-              provider: catalogEntry.provider,
-              apiModel: catalogEntry.apiModel,
-              modelId: catalogEntry.id,
-              content: run.output.content,
-              revisionCount: run.output.revisionCount,
-              usage: run.output.usage,
-            });
-            return { platform: selection.platform, status: "success" };
+            try {
+              await persistSuccess({
+                postId: payload.postId,
+                userId: payload.userId,
+                platform: selection.platform,
+                provider: catalogEntry.provider,
+                apiModel: catalogEntry.apiModel,
+                modelId: catalogEntry.id,
+                content: run.output.content,
+                revisionCount: run.output.revisionCount,
+                usage: run.output.usage,
+              });
+              return { platform: selection.platform, status: "success" };
+            } catch (err) {
+              // A persistence failure here must never escape this callback —
+              // letting it reject the parent Promise.all would retry the
+              // *entire* run, including platforms that already succeeded and
+              // paid for a real generation. Degrade to a recorded failure
+              // for this platform only.
+              console.error(
+                `persistSuccess failed for post ${payload.postId} platform ${selection.platform}`,
+                err,
+              );
+              await persistFailureSafe({
+                postId: payload.postId,
+                userId: payload.userId,
+                platform: selection.platform,
+                provider: catalogEntry.provider,
+                apiModel: catalogEntry.apiModel,
+                errorReason: `generation succeeded but result could not be saved: ${
+                  err instanceof Error ? err.message : String(err)
+                }`,
+              });
+              return { platform: selection.platform, status: "failed" };
+            }
           }
 
           const errorReason = !run.ok
@@ -90,7 +128,7 @@ export const generatePost = task({
               ? run.output.errorReason
               : "unknown generation failure";
 
-          await persistFailure({
+          await persistFailureSafe({
             postId: payload.postId,
             userId: payload.userId,
             platform: selection.platform,

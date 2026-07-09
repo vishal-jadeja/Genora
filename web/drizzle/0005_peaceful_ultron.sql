@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "platform_outputs_one_current" ON "platform_outputs" USING btree ("post_id","platform") WHERE "platform_outputs"."is_current";

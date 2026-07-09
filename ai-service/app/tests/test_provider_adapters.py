@@ -190,6 +190,20 @@ async def test_anthropic_adapter_maps_rate_limit_error():
         await adapter.complete(model="claude-x", system="sys", user="hi", max_tokens=100)
 
 
+async def test_anthropic_adapter_maps_permission_denied_error_to_auth_error():
+    adapter = AnthropicAdapter(api_key="unused")
+
+    async def fake_create(**kwargs):
+        raise anthropic.PermissionDeniedError(
+            "no access to this model", response=_http_error_response(403), body=None
+        )
+
+    adapter._client = SimpleNamespace(messages=SimpleNamespace(create=fake_create))
+
+    with pytest.raises(ProviderAuthError):
+        await adapter.complete(model="claude-x", system="sys", user="hi", max_tokens=100)
+
+
 async def test_anthropic_adapter_maps_bad_request_error():
     adapter = AnthropicAdapter(api_key="unused")
 
@@ -232,6 +246,22 @@ async def test_openai_adapter_maps_rate_limit_error():
         await adapter.complete(model="gpt-x", system="sys", user="hi", max_tokens=100)
 
 
+async def test_openai_adapter_maps_permission_denied_error_to_auth_error():
+    adapter = OpenAIAdapter(api_key="unused")
+
+    async def fake_create(**kwargs):
+        raise openai.PermissionDeniedError(
+            "no access to this model", response=_http_error_response(403), body=None
+        )
+
+    adapter._client = SimpleNamespace(
+        chat=SimpleNamespace(completions=SimpleNamespace(create=fake_create))
+    )
+
+    with pytest.raises(ProviderAuthError):
+        await adapter.complete(model="gpt-x", system="sys", user="hi", max_tokens=100)
+
+
 async def test_groq_adapter_maps_auth_error():
     adapter = GroqAdapter(api_key="unused")
 
@@ -262,11 +292,41 @@ async def test_groq_adapter_maps_rate_limit_error():
         await adapter.complete(model="llama-x", system="sys", user="hi", max_tokens=100)
 
 
+async def test_groq_adapter_maps_permission_denied_error_to_auth_error():
+    adapter = GroqAdapter(api_key="unused")
+
+    async def fake_create(**kwargs):
+        raise groq.PermissionDeniedError(
+            "no access to this model", response=_http_error_response(403), body=None
+        )
+
+    adapter._client = SimpleNamespace(
+        chat=SimpleNamespace(completions=SimpleNamespace(create=fake_create))
+    )
+
+    with pytest.raises(ProviderAuthError):
+        await adapter.complete(model="llama-x", system="sys", user="hi", max_tokens=100)
+
+
 async def test_gemini_adapter_maps_auth_error():
     adapter = GeminiAdapter(api_key="unused")
 
     async def fake_generate_content(**kwargs):
         raise ClientError(401, {"error": {"message": "bad key"}})
+
+    adapter._client = SimpleNamespace(
+        aio=SimpleNamespace(models=SimpleNamespace(generate_content=fake_generate_content))
+    )
+
+    with pytest.raises(ProviderAuthError):
+        await adapter.complete(model="gemini-x", system="sys", user="hi", max_tokens=100)
+
+
+async def test_gemini_adapter_maps_permission_denied_error_to_auth_error():
+    adapter = GeminiAdapter(api_key="unused")
+
+    async def fake_generate_content(**kwargs):
+        raise ClientError(403, {"error": {"message": "no access to this model"}})
 
     adapter._client = SimpleNamespace(
         aio=SimpleNamespace(models=SimpleNamespace(generate_content=fake_generate_content))

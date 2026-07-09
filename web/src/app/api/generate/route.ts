@@ -19,20 +19,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const rateLimit = await checkRateLimit(generateLimiter, userId);
-  if (!rateLimit.allowed) {
-    return NextResponse.json(
-      { error: "Too many requests, please slow down" },
-      {
-        status: 429,
-        headers: {
-          "Retry-After": Math.max(
-            0,
-            Math.ceil((rateLimit.reset - Date.now()) / 1000),
-          ).toString(),
+  // Rate limiting is a safety net, not a core dependency — an Upstash outage
+  // shouldn't take down generation entirely, so fail open on error.
+  try {
+    const rateLimit = await checkRateLimit(generateLimiter, userId);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many requests, please slow down" },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": Math.max(
+              0,
+              Math.ceil((rateLimit.reset - Date.now()) / 1000),
+            ).toString(),
+          },
         },
-      },
-    );
+      );
+    }
+  } catch (err) {
+    console.error("Rate limit check failed, failing open", err);
   }
 
   let body: unknown;

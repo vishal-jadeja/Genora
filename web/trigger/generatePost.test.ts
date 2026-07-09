@@ -128,6 +128,75 @@ describe("generatePost", () => {
     );
   });
 
+  it("degrades to a failed result instead of throwing when persistSuccess rejects", async () => {
+    triggerAndWaitMock.mockResolvedValue({
+      ok: true,
+      output: {
+        status: "success",
+        content: "final",
+        revisionCount: 1,
+        usage: [],
+      },
+    });
+    persistSuccessMock.mockRejectedValue(new Error("db unavailable"));
+    persistFailureMock.mockResolvedValue(undefined);
+
+    const result = await run({
+      ...basePayload,
+      platforms: [{ platform: "linkedin", modelId: "groq" }],
+    });
+
+    expect(result).toEqual({
+      results: [{ platform: "linkedin", status: "failed" }],
+    });
+    expect(persistFailureMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        errorReason: expect.stringContaining("db unavailable"),
+      }),
+    );
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it("does not throw when both persistSuccess and persistFailure reject", async () => {
+    triggerAndWaitMock.mockResolvedValue({
+      ok: true,
+      output: {
+        status: "success",
+        content: "final",
+        revisionCount: 1,
+        usage: [],
+      },
+    });
+    persistSuccessMock.mockRejectedValue(new Error("db unavailable"));
+    persistFailureMock.mockRejectedValue(new Error("db still unavailable"));
+
+    const result = await run({
+      ...basePayload,
+      platforms: [{ platform: "linkedin", modelId: "groq" }],
+    });
+
+    expect(result).toEqual({
+      results: [{ platform: "linkedin", status: "failed" }],
+    });
+  });
+
+  it("does not reject the whole run when persistFailure rejects on a normal generation failure", async () => {
+    triggerAndWaitMock.mockResolvedValue({
+      ok: true,
+      output: { status: "failed", errorReason: "boom" },
+    });
+    persistFailureMock.mockRejectedValue(new Error("db unavailable"));
+
+    const result = await run({
+      ...basePayload,
+      platforms: [{ platform: "linkedin", modelId: "groq" }],
+    });
+
+    expect(result).toEqual({
+      results: [{ platform: "linkedin", status: "failed" }],
+    });
+  });
+
   it("marks the post generated if at least one of several platforms succeeds", async () => {
     triggerAndWaitMock
       .mockResolvedValueOnce({

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const callAiServiceMock = vi.fn();
 const insertMock = vi.fn();
+const deleteMock = vi.fn();
 const triggerMock = vi.fn();
 const createPublicTokenMock = vi.fn();
 const folderBelongsToUserMock = vi.fn();
@@ -17,6 +18,7 @@ vi.mock("@/lib/folders/service", () => ({
 vi.mock("@/db/client", () => ({
   db: {
     insert: (...args: unknown[]) => insertMock(...args),
+    delete: (...args: unknown[]) => deleteMock(...args),
   },
 }));
 
@@ -43,6 +45,7 @@ const validInput = {
 beforeEach(() => {
   callAiServiceMock.mockReset();
   insertMock.mockReset();
+  deleteMock.mockReset();
   triggerMock.mockReset();
   createPublicTokenMock.mockReset();
   folderBelongsToUserMock.mockReset();
@@ -139,6 +142,43 @@ describe("runGenerate", () => {
 
     expect(folderBelongsToUserMock).toHaveBeenCalledWith("user-1", "folder-1");
     expect(result.status).toBe("accepted");
+  });
+
+  it("deletes the orphaned post row and rethrows when trigger() fails", async () => {
+    callAiServiceMock.mockResolvedValue({ verdict: "pass", reason: "" });
+    const returning = vi.fn().mockResolvedValue([{ id: "post-1" }]);
+    const values = vi.fn().mockReturnValue({ returning });
+    insertMock.mockReturnValue({ values });
+    const deleteWhere = vi.fn().mockResolvedValue(undefined);
+    deleteMock.mockReturnValue({ where: deleteWhere });
+    triggerMock.mockRejectedValue(new Error("trigger.dev unavailable"));
+
+    await expect(runGenerate("user-1", validInput)).rejects.toThrow(
+      "trigger.dev unavailable",
+    );
+    expect(deleteMock).toHaveBeenCalledTimes(1);
+    expect(deleteWhere).toHaveBeenCalledTimes(1);
+    expect(createPublicTokenMock).not.toHaveBeenCalled();
+  });
+
+  it("degrades to publicAccessToken: null instead of throwing when createPublicToken fails", async () => {
+    callAiServiceMock.mockResolvedValue({ verdict: "pass", reason: "" });
+    const returning = vi.fn().mockResolvedValue([{ id: "post-1" }]);
+    const values = vi.fn().mockReturnValue({ returning });
+    insertMock.mockReturnValue({ values });
+    triggerMock.mockResolvedValue({ id: "run-1" });
+    createPublicTokenMock.mockRejectedValue(new Error("token service down"));
+
+    const result = await runGenerate("user-1", validInput);
+
+    expect(result).toEqual({
+      status: "accepted",
+      postId: "post-1",
+      runId: "run-1",
+      publicAccessToken: null,
+      slopGuard: { verdict: "pass", reason: "" },
+    });
+    expect(deleteMock).not.toHaveBeenCalled();
   });
 
   it("throws SlopGuardUnavailableError without creating a post when the slop guard call fails", async () => {

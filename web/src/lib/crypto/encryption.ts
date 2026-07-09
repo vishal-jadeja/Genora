@@ -4,21 +4,26 @@ const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
 const KEY_LENGTH = 32;
 
-function loadKey(): Buffer {
-  const raw = process.env.ENCRYPTION_KEY;
+function loadKey(envVar: string, raw: string | undefined): Buffer {
   if (!raw) {
-    throw new Error("ENCRYPTION_KEY is not set");
+    throw new Error(`${envVar} is not set`);
   }
   const buf = Buffer.from(raw, "base64");
   if (buf.length !== KEY_LENGTH) {
     throw new Error(
-      `ENCRYPTION_KEY must decode to exactly ${KEY_LENGTH} bytes (base64-encoded)`,
+      `${envVar} must decode to exactly ${KEY_LENGTH} bytes (base64-encoded)`,
     );
   }
   return buf;
 }
 
-const key = loadKey();
+const key = loadKey("ENCRYPTION_KEY", process.env.ENCRYPTION_KEY);
+// Optional: set during a key rotation so rows encrypted under the old key
+// keep decrypting until they're naturally re-saved under the new one. Drop
+// this env var once rotation is complete.
+const previousKey = process.env.ENCRYPTION_KEY_PREVIOUS
+  ? loadKey("ENCRYPTION_KEY_PREVIOUS", process.env.ENCRYPTION_KEY_PREVIOUS)
+  : undefined;
 
 export interface EncryptedSecret {
   encryptedKey: string;
@@ -40,7 +45,7 @@ export function encryptSecret(plaintext: string): EncryptedSecret {
   };
 }
 
-export function decryptSecret(payload: EncryptedSecret): string {
+function decryptWith(key: Buffer, payload: EncryptedSecret): string {
   const decipher = createDecipheriv(
     ALGORITHM,
     key,
@@ -52,4 +57,15 @@ export function decryptSecret(payload: EncryptedSecret): string {
     decipher.final(),
   ]);
   return decrypted.toString("utf8");
+}
+
+export function decryptSecret(payload: EncryptedSecret): string {
+  try {
+    return decryptWith(key, payload);
+  } catch (err) {
+    if (previousKey) {
+      return decryptWith(previousKey, payload);
+    }
+    throw err;
+  }
 }

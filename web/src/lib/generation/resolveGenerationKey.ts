@@ -1,4 +1,7 @@
-import { resolveKeyForGeneration } from "@/lib/keys/resolveKey";
+import {
+  KeyDecryptionError,
+  resolveKeyForGeneration,
+} from "@/lib/keys/resolveKey";
 import { getModelCatalogEntry, type ModelId } from "./modelCatalog";
 import type { Provider } from "@/lib/keys/service";
 
@@ -33,10 +36,18 @@ export async function resolveGenerationKey(
     throw new GenerationKeyError(`unknown model id: ${modelId}`);
   }
 
-  const resolved = await resolveKeyForGeneration({
-    userId,
-    provider: entry.provider,
-  });
+  let resolved;
+  try {
+    resolved = await resolveKeyForGeneration({
+      userId,
+      provider: entry.provider,
+    });
+  } catch (err) {
+    if (err instanceof KeyDecryptionError) {
+      throw new GenerationKeyError(err.message);
+    }
+    throw err;
+  }
 
   if (resolved.source === "byok") {
     return {

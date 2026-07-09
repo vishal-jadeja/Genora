@@ -56,4 +56,32 @@ describe("encryptSecret / decryptSecret", () => {
       "ENCRYPTION_KEY must decode to exactly 32 bytes",
     );
   });
+
+  it("decrypts rows encrypted under ENCRYPTION_KEY_PREVIOUS after a key rotation", async () => {
+    const { encryptSecret } = await import("./encryption");
+    const oldSecret = encryptSecret("sk-encrypted-under-old-key");
+
+    vi.resetModules();
+    process.env.ENCRYPTION_KEY = Buffer.alloc(32, 9).toString("base64");
+    process.env.ENCRYPTION_KEY_PREVIOUS = TEST_KEY;
+    const { decryptSecret, encryptSecret: encryptWithNewKey } =
+      await import("./encryption");
+
+    expect(decryptSecret(oldSecret)).toBe("sk-encrypted-under-old-key");
+
+    const newSecret = encryptWithNewKey("sk-encrypted-under-new-key");
+    expect(decryptSecret(newSecret)).toBe("sk-encrypted-under-new-key");
+  });
+
+  it("throws (does not silently fall back) when there is no previous key configured", async () => {
+    const { encryptSecret } = await import("./encryption");
+    const secret = encryptSecret("sk-secret");
+
+    vi.resetModules();
+    process.env.ENCRYPTION_KEY = Buffer.alloc(32, 9).toString("base64");
+    delete process.env.ENCRYPTION_KEY_PREVIOUS;
+    const { decryptSecret } = await import("./encryption");
+
+    expect(() => decryptSecret(secret)).toThrow();
+  });
 });
