@@ -7,6 +7,7 @@ import {
   Space_Grotesk,
 } from "next/font/google";
 import "./globals.css";
+import { Analytics } from '@vercel/analytics/next';
 
 const newsreader = Newsreader({
   subsets: ["latin"],
@@ -61,6 +62,7 @@ export default function RootLayout({
     >
       <body className="h-full" suppressHydrationWarning>
         {children}
+        <Analytics />
       </body>
     </html>
   );
