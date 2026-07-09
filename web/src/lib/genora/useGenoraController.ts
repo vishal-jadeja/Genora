@@ -3,11 +3,25 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useApiKeys, useDeleteKey, useSaveKey } from "@/hooks/useApiKeys";
 import {
+  useCreateFolder,
+  useDeleteFolder,
+  useFolders,
+  useRenameFolder,
+} from "@/hooks/useFolders";
+import {
   usePlatformInstructions,
   useResetAllInstructions,
   useSaveInstructions,
 } from "@/hooks/usePlatformInstructions";
+import {
+  useDeletePost,
+  useDuplicatePost,
+  useMovePost,
+  usePosts,
+  useUpdatePost,
+} from "@/hooks/usePosts";
 import { useQuota } from "@/hooks/useQuota";
+import { toMockFolder, toMockPost } from "./adapters";
 import {
   ALTS,
   GEN_ERROR_REASONS,
@@ -23,7 +37,6 @@ import {
 import { thresholds, wordCount } from "./logic";
 import type {
   GenoraState,
-  Folder,
   ModelMeta,
   PlatformId,
   PlatformOutputStatus,
@@ -78,6 +91,26 @@ export function useGenoraController(nav: {
   const saveInstructionsMutation = useSaveInstructions();
   const resetAllInstructionsMutation = useResetAllInstructions();
   const quotaQuery = useQuota();
+
+  // ---- real backend: folders + posts --------------------------------------
+  const foldersQuery = useFolders();
+  const createFolderMutation = useCreateFolder();
+  const renameFolderMutation = useRenameFolder();
+  const deleteFolderMutation = useDeleteFolder();
+  const postsQuery = usePosts();
+  const updatePostMutation = useUpdatePost();
+  const movePostMutation = useMovePost();
+  const deletePostMutation = useDeletePost();
+  const duplicatePostMutation = useDuplicatePost();
+
+  const realFolders = useMemo(
+    () => (foldersQuery.data ?? []).map(toMockFolder),
+    [foldersQuery.data],
+  );
+  const realPosts = useMemo(
+    () => (postsQuery.data ?? []).map(toMockPost),
+    [postsQuery.data],
+  );
 
   // instr is user-edited free text with no explicit save-per-keystroke UX
   // (see SettingsBody's Save button) — hydrate it from the server exactly
@@ -235,15 +268,20 @@ export function useGenoraController(nav: {
   const toggleMove = useCallback((id: string) => {
     setState((s) => ({ ...s, moveMenu: s.moveMenu === id ? null : id }));
   }, []);
-  const moveTo = useCallback((postId: string, folderId: string | null) => {
-    setState((s) => ({
-      ...s,
-      posts: s.posts.map((p) =>
-        p.id === postId ? { ...p, folder: folderId } : p,
-      ),
-      moveMenu: null,
-    }));
-  }, []);
+  const moveTo = useCallback(
+    (postId: string, folderId: string | null) => {
+      movePostMutation.mutate(
+        { id: postId, folderId },
+        {
+          onError: (err) => {
+            console.error("Failed to move post", err);
+          },
+        },
+      );
+      setState((s) => ({ ...s, moveMenu: null }));
+    },
+    [movePostMutation],
+  );
 
   // ---- folder management --------------------------------------------------
   const startNewFolder = useCallback(() => {
@@ -257,15 +295,17 @@ export function useGenoraController(nav: {
     setState((s) => {
       const name = s.newFolderDraft.trim();
       if (!name) return { ...s, creatingFolder: false, newFolderDraft: "" };
-      const folder: Folder = { id: crypto.randomUUID(), name };
-      return {
-        ...s,
-        folders: [...s.folders, folder],
-        creatingFolder: false,
-        newFolderDraft: "",
-      };
+      createFolderMutation.mutate(
+        { name },
+        {
+          onError: (err) => {
+            console.error("Failed to create folder", err);
+          },
+        },
+      );
+      return { ...s, creatingFolder: false, newFolderDraft: "" };
     });
-  }, []);
+  }, [createFolderMutation]);
   const cancelNewFolder = useCallback(
     () => patch({ creatingFolder: false, newFolderDraft: "" }),
     [patch],
@@ -296,16 +336,17 @@ export function useGenoraController(nav: {
       if (!s.renamingFolderId || !name) {
         return { ...s, renamingFolderId: null, renameFolderValue: "" };
       }
-      return {
-        ...s,
-        folders: s.folders.map((f) =>
-          f.id === s.renamingFolderId ? { ...f, name } : f,
-        ),
-        renamingFolderId: null,
-        renameFolderValue: "",
-      };
+      renameFolderMutation.mutate(
+        { id: s.renamingFolderId, name },
+        {
+          onError: (err) => {
+            console.error("Failed to rename folder", err);
+          },
+        },
+      );
+      return { ...s, renamingFolderId: null, renameFolderValue: "" };
     });
-  }, []);
+  }, [renameFolderMutation]);
   const cancelRenameFolder = useCallback(
     () => patch({ renamingFolderId: null, renameFolderValue: "" }),
     [patch],
@@ -702,22 +743,20 @@ export function useGenoraController(nav: {
   );
 
   // ---- drafts page: post management ---------------------------------------
-  const duplicatePost = useCallback((postId: string) => {
-    setState((s) => {
-      const idx = s.posts.findIndex((p) => p.id === postId);
-      if (idx === -1) return s;
-      const source = s.posts[idx];
-      const copy: Post = {
-        ...source,
-        id: crypto.randomUUID(),
-        title: source.title + " (copy)",
-        edited: "just now",
-      };
-      const posts = [...s.posts];
-      posts.splice(idx + 1, 0, copy);
-      return { ...s, posts, moveMenu: null };
-    });
-  }, []);
+  // No dedicated duplicate endpoint — composes a read + a create. This
+  // intentionally does NOT copy generated per-platform outputs, unlike the
+  // prototype's instant clone; the duplicate starts as a fresh draft.
+  const duplicatePost = useCallback(
+    (postId: string) => {
+      duplicatePostMutation.mutate(postId, {
+        onError: (err) => {
+          console.error("Failed to duplicate post", err);
+        },
+      });
+      setState((s) => ({ ...s, moveMenu: null }));
+    },
+    [duplicatePostMutation],
+  );
 
   const startRenamePost = useCallback((postId: string) => {
     setState((s) => {
@@ -740,16 +779,17 @@ export function useGenoraController(nav: {
       if (!s.renamingPostId || !title) {
         return { ...s, renamingPostId: null, renameDraftValue: "" };
       }
-      return {
-        ...s,
-        posts: s.posts.map((p) =>
-          p.id === s.renamingPostId ? { ...p, title } : p,
-        ),
-        renamingPostId: null,
-        renameDraftValue: "",
-      };
+      updatePostMutation.mutate(
+        { id: s.renamingPostId, input: { title } },
+        {
+          onError: (err) => {
+            console.error("Failed to rename post", err);
+          },
+        },
+      );
+      return { ...s, renamingPostId: null, renameDraftValue: "" };
     });
-  }, []);
+  }, [updatePostMutation]);
   const cancelRenamePost = useCallback(
     () => patch({ renamingPostId: null, renameDraftValue: "" }),
     [patch],
@@ -771,20 +811,23 @@ export function useGenoraController(nav: {
     if (!d) return;
 
     if (d.kind === "deletePost") {
-      setState((s) => ({
-        ...s,
-        posts: s.posts.filter((p) => p.id !== d.postId),
-        confirmDialog: null,
-      }));
+      await deletePostMutation.mutateAsync(d.postId).catch((err: unknown) => {
+        console.error("Failed to delete post", err);
+      });
+      setState((s) => ({ ...s, confirmDialog: null }));
       return;
     }
     if (d.kind === "deleteFolder") {
+      // Posts filed under the deleted folder move to folderId: null
+      // server-side (FK ON DELETE SET NULL) — the posts query invalidation
+      // already picks that up, no client-side reassignment needed.
+      await deleteFolderMutation
+        .mutateAsync(d.folderId)
+        .catch((err: unknown) => {
+          console.error("Failed to delete folder", err);
+        });
       setState((s) => ({
         ...s,
-        folders: s.folders.filter((f) => f.id !== d.folderId),
-        posts: s.posts.map((p) =>
-          p.folder === d.folderId ? { ...p, folder: null } : p,
-        ),
         activeFolder: s.activeFolder === d.folderId ? null : s.activeFolder,
         confirmDialog: null,
       }));
@@ -809,7 +852,13 @@ export function useGenoraController(nav: {
       return;
     }
     setState((s) => ({ ...s, confirmDialog: null }));
-  }, [state.confirmDialog, deleteKeyMutation, resetAllInstructionsMutation]);
+  }, [
+    state.confirmDialog,
+    deleteKeyMutation,
+    resetAllInstructionsMutation,
+    deletePostMutation,
+    deleteFolderMutation,
+  ]);
 
   // ---- drafts page: filters/sort ------------------------------------------
   const setDraftsSearch = useCallback(
@@ -918,12 +967,12 @@ export function useGenoraController(nav: {
       hr < 12 ? "Good morning" : hr < 18 ? "Good afternoon" : "Good evening";
 
     const counts: Record<string, number> = {};
-    S.folders.forEach((f) => (counts[f.id] = 0));
-    S.posts.forEach((p) => {
+    realFolders.forEach((f) => (counts[f.id] = 0));
+    realPosts.forEach((p) => {
       if (p.folder && counts[p.folder] != null) counts[p.folder]++;
     });
     const folderName = (id: string | null) =>
-      S.folders.find((f) => f.id === id)?.name ?? null;
+      realFolders.find((f) => f.id === id)?.name ?? null;
 
     const dashExpanded = S.dashFocused || S.dashDraft.trim() !== "";
     const dashWords = wordCount(S.dashDraft);
@@ -934,7 +983,7 @@ export function useGenoraController(nav: {
     const curModel = MODELS.find((m) => m.id === S.model) || MODELS[0];
 
     const q = S.search.trim().toLowerCase();
-    let rows = S.posts;
+    let rows = realPosts;
     if (S.activeFolder) rows = rows.filter((p) => p.folder === S.activeFolder);
     if (S.draftsPlatformFilter !== "all") {
       rows = rows.filter((p) =>
@@ -945,14 +994,14 @@ export function useGenoraController(nav: {
       rows = rows.filter((p) =>
         (p.title + " " + p.snippet).toLowerCase().includes(q),
       );
-    const showEmptyAll = S.posts.length === 0;
+    const showEmptyAll = realPosts.length === 0;
     const showEmptyFolder =
       !showEmptyAll &&
       rows.length === 0 &&
       (S.activeFolder !== null || S.draftsPlatformFilter !== "all") &&
       !q;
     const hasRows = rows.length > 0;
-    const hasContent = S.posts.length > 0;
+    const hasContent = realPosts.length > 0;
 
     const words = wordCount(S.draft);
     const { hard, soft } = thresholds(S.slopStrictness);
@@ -987,7 +1036,7 @@ export function useGenoraController(nav: {
 
     // ---- drafts page ----
     const draftsSearchQ = S.draftsSearch.trim().toLowerCase();
-    let draftsRows = S.posts;
+    let draftsRows = realPosts;
     if (S.draftsFolderFilter === "none") {
       draftsRows = draftsRows.filter((p) => p.folder === null);
     } else if (S.draftsFolderFilter !== "all") {
@@ -1011,7 +1060,7 @@ export function useGenoraController(nav: {
       return 0;
     });
     if (S.draftsSort === "oldest") draftsRows = [...draftsRows].reverse();
-    const draftsEmpty = S.posts.length === 0;
+    const draftsEmpty = realPosts.length === 0;
     const draftsNoMatch = !draftsEmpty && draftsRows.length === 0;
 
     let confirmDialogContent: {
@@ -1021,15 +1070,15 @@ export function useGenoraController(nav: {
     } | null = null;
     const d = S.confirmDialog;
     if (d?.kind === "deletePost") {
-      const p = S.posts.find((x) => x.id === d.postId);
+      const p = realPosts.find((x) => x.id === d.postId);
       confirmDialogContent = {
         title: "Delete draft?",
         description: `"${p?.title ?? "This draft"}" will be permanently deleted. This can't be undone.`,
         confirmLabel: "Delete",
       };
     } else if (d?.kind === "deleteFolder") {
-      const f = S.folders.find((x) => x.id === d.folderId);
-      const count = S.posts.filter((p) => p.folder === d.folderId).length;
+      const f = realFolders.find((x) => x.id === d.folderId);
+      const count = realPosts.filter((p) => p.folder === d.folderId).length;
       confirmDialogContent = {
         title: "Delete folder?",
         description: `"${f?.name ?? "This folder"}" will be deleted. ${count} post${count === 1 ? "" : "s"} inside will move to No folder.`,
@@ -1095,7 +1144,7 @@ export function useGenoraController(nav: {
       draftsNoMatch,
       confirmDialogContent,
     };
-  }, [state, hasKey, quotaQuery.data]);
+  }, [state, hasKey, quotaQuery.data, realFolders, realPosts]);
 
   useEffect(() => {
     const saved = window.localStorage.getItem(THEME_MODE_KEY);
@@ -1124,8 +1173,14 @@ export function useGenoraController(nav: {
     (Object.keys(keys) as ProviderId[]).forEach((id) => {
       keys[id] = { ...keys[id], c: connected.has(id) };
     });
-    return { ...state, keys, freeLeft: quotaQuery.data?.remaining ?? state.freeLeft };
-  }, [state, apiKeysQuery.data, quotaQuery.data]);
+    return {
+      ...state,
+      keys,
+      freeLeft: quotaQuery.data?.remaining ?? state.freeLeft,
+      folders: realFolders,
+      posts: realPosts,
+    };
+  }, [state, apiKeysQuery.data, quotaQuery.data, realFolders, realPosts]);
 
   const actions = useMemo(
     () => ({
