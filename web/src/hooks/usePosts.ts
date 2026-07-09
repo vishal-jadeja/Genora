@@ -16,11 +16,15 @@ export function usePosts(folderId?: string) {
   });
 }
 
-export function usePost(id: string | undefined) {
+export function usePost(
+  id: string | undefined,
+  options?: { refetchInterval?: number | false },
+) {
   return useQuery({
     queryKey: postDetailKey(id ?? ""),
     queryFn: () => getPost(id as string),
     enabled: !!id,
+    refetchInterval: options?.refetchInterval ?? false,
   });
 }
 
