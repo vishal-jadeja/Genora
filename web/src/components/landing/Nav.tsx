@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Hoverable } from "@/components/Hoverable";
 import { Magnetic } from "./Magnetic";
@@ -16,9 +16,22 @@ const NAV_LINKS = [
 
 export function Nav() {
   const [open, setOpen] = useState(false);
+  const navRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (navRef.current && !navRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [open]);
 
   return (
     <nav
+      ref={navRef as React.RefObject<HTMLElement>}
       className={styles.nav}
       style={{
         position: "fixed",
@@ -46,8 +59,8 @@ export function Nav() {
         <span
           style={{
             position: "relative",
-            width: 16,
-            height: 16,
+            width: 22,
+            height: 22,
             display: "inline-block",
           }}
         >

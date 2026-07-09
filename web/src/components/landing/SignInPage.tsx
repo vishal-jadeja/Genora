@@ -58,8 +58,8 @@ export function SignInPage({
         <span
           style={{
             position: "relative",
-            width: 16,
-            height: 16,
+            width: 22,
+            height: 22,
             display: "inline-block",
           }}
         >
