@@ -9,12 +9,7 @@ export type PostStatus = "Draft" | "Generated" | "Edited" | "Exported";
 export type ThemeMode = "system" | "light" | "dark";
 
 export type SettingsTab =
-  | "usage"
-  | "keys"
-  | "instructions"
-  | "voice"
-  | "slop"
-  | "model";
+  "usage" | "keys" | "instructions" | "voice" | "slop" | "model";
 
 export type SlopStrictness = "lenient" | "balanced" | "strict";
 
@@ -94,6 +89,8 @@ export interface KeyState {
   v: string;
 }
 
+export type PlatformOutputStatus = "pending" | "success" | "failed";
+
 export interface GenoraState {
   themeMode: ThemeMode;
   sidebarCollapsed: boolean;
@@ -152,6 +149,8 @@ export interface GenoraState {
   activeTab: PlatformId;
   content: Partial<Record<PlatformId, string>>;
   versions: Partial<Record<PlatformId, string[]>>;
+  outputStatus: Partial<Record<PlatformId, PlatformOutputStatus>>;
+  outputError: Partial<Record<PlatformId, string>>;
   historyOpen: PlatformId | null;
   redditSub: string;
   flashMsg: string;
@@ -162,6 +161,8 @@ export interface GenoraState {
   // settings
   settingsTab: SettingsTab;
   keys: Record<ProviderId, KeyState>;
+  keyValidating: Partial<Record<ProviderId, boolean>>;
+  keyError: Partial<Record<ProviderId, string>>;
   instrOpen: PlatformId | null;
   instr: Record<PlatformId, string>;
   voice: string;

@@ -139,6 +139,16 @@ export const PROVIDERS: ProviderMeta[] = [
   { id: "groq", name: "Groq", ph: "gsk_…" },
 ];
 
+// Canned failure reasons for the simulated per-platform generation outcome —
+// mirrors the shape of real backend errors (auth/permission, rate limit,
+// timeout) so the UI has something realistic to render before it's wired to
+// the actual ai-service classification (401/403/429/5xx).
+export const GEN_ERROR_REASONS: string[] = [
+  "The connected API key doesn't have access to this model.",
+  "This provider is rate-limiting requests right now — safe to retry.",
+  "Generation timed out before finishing.",
+];
+
 export const REJECTS: string[] = [
   "There's no thought in here yet — just a topic wearing a trench coat.",
   "This is a headline waiting for an opinion. Care to lend it one?",
@@ -348,6 +358,8 @@ export function createInitialState(): GenoraState {
     activeTab: "linkedin",
     content: {},
     versions: {},
+    outputStatus: {},
+    outputError: {},
     historyOpen: null,
     redditSub: "",
     flashMsg: "",
@@ -359,6 +371,8 @@ export function createInitialState(): GenoraState {
       gemini: { c: false, v: "" },
       groq: { c: false, v: "" },
     },
+    keyValidating: {},
+    keyError: {},
     instrOpen: "linkedin",
     instr: { ...INSTR_DEFAULTS },
     voice: "",

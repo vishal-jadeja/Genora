@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ALTS,
+  GEN_ERROR_REASONS,
   INSTR_DEFAULTS,
   MODELS,
   ORDER,
@@ -18,6 +19,7 @@ import type {
   Folder,
   ModelMeta,
   PlatformId,
+  PlatformOutputStatus,
   Post,
   PostStatus,
   ProviderId,
@@ -25,6 +27,12 @@ import type {
   SlopStrictness,
   ThemeMode,
 } from "./types";
+
+// Prototype-only: simulates the real backend's partial-failure behavior
+// (see backend-plan.md — "one platform failing doesn't fail the run") so
+// this UI has somewhere to render success/failure per platform instead of
+// treating every generation as instant and infallible.
+const SIMULATED_FAILURE_CHANCE = 0.18;
 
 const THEME_MODE_KEY = "genora-theme-mode";
 const SIDEBAR_COLLAPSED_KEY = "genora-sidebar-collapsed";
@@ -50,8 +58,13 @@ export function useGenoraController(nav: {
   const navigate = nav.push;
   const replace = nav.replace;
   const [state, setState] = useState<GenoraState>(createInitialState);
-  const genTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const platformTimers = useRef<
+    Partial<Record<PlatformId, ReturnType<typeof setTimeout>>>
+  >({});
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const keyValidateTimers = useRef<
+    Partial<Record<ProviderId, ReturnType<typeof setTimeout>>>
+  >({});
 
   const patch = useCallback((p: Partial<GenoraState>) => {
     setState((s) => ({ ...s, ...p }));
@@ -146,10 +159,13 @@ export function useGenoraController(nav: {
           : (["linkedin"] as PlatformId[]);
         const content: Partial<Record<PlatformId, string>> = {};
         const versions: Partial<Record<PlatformId, string[]>> = {};
+        const outputStatus: Partial<Record<PlatformId, PlatformOutputStatus>> =
+          {};
         sel.forEach((pid) => {
           const t = SAMPLES[pid] || SAMPLES.linkedin;
           content[pid] = t;
           versions[pid] = [t];
+          outputStatus[pid] = "success";
         });
         return {
           ...s,
@@ -158,6 +174,8 @@ export function useGenoraController(nav: {
           outPlatforms: sel,
           content,
           versions,
+          outputStatus,
+          outputError: {},
           activeTab: sel[0],
           slopHard: false,
           generating: false,
@@ -337,6 +355,105 @@ export function useGenoraController(nav: {
   );
 
   // ---- generation -------------------------------------------------------
+  // Resolves one platform's generation independently of the others — mirrors
+  // the real backend's per-platform fan-out (generatePost.ts), where one
+  // platform failing never blocks or fails the rest. Guards on
+  // s.composePostId !== postId so a stale timer from an abandoned post can't
+  // clobber state after the user has moved on to a new one.
+  const settlePlatform = useCallback(
+    (postId: string, id: PlatformId) => {
+      setState((s) => {
+        if (s.composePostId !== postId) return s;
+        const failed = Math.random() < SIMULATED_FAILURE_CHANCE;
+        const content = { ...s.content };
+        const versions = { ...s.versions };
+        const outputError = { ...s.outputError };
+        const outputStatus: GenoraState["outputStatus"] = {
+          ...s.outputStatus,
+          [id]: failed ? "failed" : "success",
+        };
+        if (failed) {
+          outputError[id] =
+            GEN_ERROR_REASONS[
+              Math.floor(Math.random() * GEN_ERROR_REASONS.length)
+            ];
+          delete content[id];
+        } else {
+          delete outputError[id];
+          content[id] = SAMPLES[id];
+          versions[id] = [SAMPLES[id]];
+        }
+        const stillPending = s.outPlatforms.some(
+          (pid) => outputStatus[pid] === "pending" || outputStatus[pid] == null,
+        );
+        const anySuccess = s.outPlatforms.some(
+          (pid) => outputStatus[pid] === "success",
+        );
+        const posts =
+          stillPending || !anySuccess
+            ? s.posts
+            : s.posts.map((p) =>
+                p.id === postId
+                  ? {
+                      ...p,
+                      status: "Generated" as PostStatus,
+                      edited: "just now",
+                    }
+                  : p,
+              );
+        return {
+          ...s,
+          content,
+          versions,
+          outputStatus,
+          outputError,
+          posts,
+          generating: stillPending,
+          freeLeft: stillPending
+            ? s.freeLeft
+            : hasKey(s)
+              ? s.freeLeft
+              : Math.max(0, s.freeLeft - 1),
+        };
+      });
+    },
+    [hasKey],
+  );
+
+  const schedulePlatform = useCallback(
+    (postId: string, id: PlatformId, index: number) => {
+      if (platformTimers.current[id]) clearTimeout(platformTimers.current[id]);
+      // Staggered, slightly randomized delay per platform — so the loading
+      // screen shows genuinely independent progress instead of every row
+      // finishing in lockstep.
+      const delay = 900 + index * 250 + Math.round(Math.random() * 500);
+      platformTimers.current[id] = setTimeout(
+        () => settlePlatform(postId, id),
+        delay,
+      );
+    },
+    [settlePlatform],
+  );
+
+  const retryPlatform = useCallback(
+    (id: PlatformId) => {
+      const postId = state.composePostId;
+      if (!postId) return;
+      setState((s) => ({
+        ...s,
+        outputStatus: { ...s.outputStatus, [id]: "pending" },
+        outputError: (() => {
+          const e = { ...s.outputError };
+          delete e[id];
+          return e;
+        })(),
+        generating: true,
+      }));
+      schedulePlatform(postId, id, 0);
+    },
+    [state.composePostId, schedulePlatform],
+  );
+
   // navMode "replace": /compose was already a committed page the user was
   // looking at (its own earlier tick) — collapse it into /post so Back skips
   // the transient compose step. navMode "push": there was no real /compose
@@ -346,8 +463,11 @@ export function useGenoraController(nav: {
   const runGenerate = useCallback(
     (navMode: "push" | "replace" = "replace") => {
       if (!hasKey(state) && state.freeLeft <= 0) {
+        // No silent redirect — the caller's screen already shows an inline
+        // "out of free generations" banner (derived.quotaExhausted) with its
+        // own explicit "Add a key" action. Pre-select the right settings tab
+        // for whenever the user does navigate there themselves.
         patch({ settingsTab: "keys" });
-        navigate("/settings");
         return;
       }
 
@@ -370,6 +490,8 @@ export function useGenoraController(nav: {
         const posts = exists
           ? s.posts.map((p) => (p.id === postId ? { ...p, ...draftPost } : p))
           : [draftPost, ...s.posts];
+        const outputStatus: GenoraState["outputStatus"] = {};
+        sel.forEach((id) => (outputStatus[id] = "pending"));
         return {
           ...s,
           posts,
@@ -382,38 +504,20 @@ export function useGenoraController(nav: {
           outPlatforms: sel,
           content: {},
           versions: {},
+          outputStatus,
+          outputError: {},
           redditSub: "",
         };
       });
       (navMode === "replace" ? replace : navigate)(`/post/${postId}`);
 
-      if (genTimer.current) clearTimeout(genTimer.current);
-      genTimer.current = setTimeout(() => {
-        setState((s) => {
-          const sel2 = s.outPlatforms;
-          const content: Partial<Record<PlatformId, string>> = {};
-          const versions: Partial<Record<PlatformId, string[]>> = {};
-          sel2.forEach((id) => {
-            content[id] = SAMPLES[id];
-            versions[id] = [SAMPLES[id]];
-          });
-          const posts = s.posts.map((p) =>
-            p.id === postId
-              ? { ...p, status: "Generated" as PostStatus, edited: "just now" }
-              : p,
-          );
-          return {
-            ...s,
-            posts,
-            generating: false,
-            content,
-            versions,
-            freeLeft: hasKey(s) ? s.freeLeft : Math.max(0, s.freeLeft - 1),
-          };
-        });
-      }, 1800);
+      Object.values(platformTimers.current).forEach(
+        (t) => t && clearTimeout(t),
+      );
+      platformTimers.current = {};
+      sel.forEach((id, index) => schedulePlatform(postId, id, index));
     },
-    [hasKey, state, patch, navigate, replace],
+    [hasKey, state, patch, navigate, replace, schedulePlatform],
   );
 
   const generate = useCallback(() => {
@@ -710,12 +814,48 @@ export function useGenoraController(nav: {
       keys: { ...s.keys, [id]: { ...s.keys[id], v } },
     }));
   }, []);
-  const validateKey = useCallback((id: ProviderId) => {
-    setState((s) => ({
-      ...s,
-      keys: { ...s.keys, [id]: { ...s.keys[id], c: true } },
-    }));
-  }, []);
+  // Prototype-only: simulates a real key-validation network call with a
+  // loading state and a plausible failure mode (per backend-plan.md's BYOK
+  // adapter, a bad key surfaces as a 401 — modeled here as a crude length
+  // heuristic since there's no real provider to call yet).
+  const validateKey = useCallback(
+    (id: ProviderId) => {
+      const value = state.keys[id]?.v ?? "";
+      setState((s) => ({
+        ...s,
+        keyValidating: { ...s.keyValidating, [id]: true },
+        keyError: (() => {
+          const e = { ...s.keyError };
+          delete e[id];
+          return e;
+        })(),
+      }));
+      if (keyValidateTimers.current[id]) {
+        clearTimeout(keyValidateTimers.current[id]);
+      }
+      keyValidateTimers.current[id] = setTimeout(() => {
+        const looksValid = value.trim().length >= 10;
+        setState((s) => ({
+          ...s,
+          keyValidating: { ...s.keyValidating, [id]: false },
+          keys: looksValid
+            ? { ...s.keys, [id]: { ...s.keys[id], c: true } }
+            : s.keys,
+          keyError: looksValid
+            ? (() => {
+                const e = { ...s.keyError };
+                delete e[id];
+                return e;
+              })()
+            : {
+                ...s.keyError,
+                [id]: "That key doesn't look right — check you copied the whole thing.",
+              },
+        }));
+      }, 900);
+    },
+    [state.keys],
+  );
   const toggleInstr = useCallback((id: PlatformId) => {
     setState((s) => ({ ...s, instrOpen: s.instrOpen === id ? null : id }));
   }, []);
@@ -740,6 +880,7 @@ export function useGenoraController(nav: {
       ? "BYOK · unlimited"
       : `${S.freeLeft} free generation${S.freeLeft === 1 ? "" : "s"} left today`;
     const quotaLow = !hk && S.freeLeft <= 1;
+    const quotaExhausted = !hk && S.freeLeft <= 0;
 
     const hr = new Date().getHours();
     const greeting =
@@ -883,6 +1024,7 @@ export function useGenoraController(nav: {
       hasKey: hk,
       quotaText,
       quotaLow,
+      quotaExhausted,
       greeting,
       counts,
       folderName,
@@ -988,6 +1130,7 @@ export function useGenoraController(nav: {
       onEditContent,
       onRedditSub,
       regenerate,
+      retryPlatform,
       openHistory,
       restoreVersion,
       copyText,
@@ -1059,6 +1202,7 @@ export function useGenoraController(nav: {
       onEditContent,
       onRedditSub,
       regenerate,
+      retryPlatform,
       openHistory,
       restoreVersion,
       copyText,
