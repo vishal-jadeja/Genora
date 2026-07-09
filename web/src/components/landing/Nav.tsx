@@ -1,11 +1,21 @@
 "use client";
 
+import { useState } from "react";
 import { Hoverable } from "@/components/Hoverable";
 import { Magnetic } from "./Magnetic";
 import { ANTON, INK, MONO, ORANGE, TEXT, linkStyle } from "./constants";
 import styles from "./LandingPage.module.css";
 
+const NAV_LINKS = [
+  { href: "#intro", label: "Intro" },
+  { href: "#features", label: "Features" },
+  { href: "#platforms", label: "Platforms" },
+  { href: "#pricing", label: "Pricing" },
+];
+
 export function Nav() {
+  const [open, setOpen] = useState(false);
+
   return (
     <nav
       className={styles.nav}
@@ -88,45 +98,22 @@ export function Nav() {
         </span>
       </a>
       <div style={{ display: "flex", alignItems: "center", gap: 34 }}>
-        <Hoverable
-          as="a"
-          href="#intro"
-          className={styles.navLink}
-          style={linkStyle}
-          hoverStyle={{ color: TEXT }}
-        >
-          Intro
-        </Hoverable>
-        <Hoverable
-          as="a"
-          href="#features"
-          className={styles.navLink}
-          style={linkStyle}
-          hoverStyle={{ color: TEXT }}
-        >
-          Features
-        </Hoverable>
-        <Hoverable
-          as="a"
-          href="#platforms"
-          className={styles.navLink}
-          style={linkStyle}
-          hoverStyle={{ color: TEXT }}
-        >
-          Platforms
-        </Hoverable>
-        <Hoverable
-          as="a"
-          href="#pricing"
-          className={styles.navLink}
-          style={linkStyle}
-          hoverStyle={{ color: TEXT }}
-        >
-          Pricing
-        </Hoverable>
+        {NAV_LINKS.map((link) => (
+          <Hoverable
+            key={link.href}
+            as="a"
+            href={link.href}
+            className={styles.navLink}
+            style={linkStyle}
+            hoverStyle={{ color: TEXT }}
+          >
+            {link.label}
+          </Hoverable>
+        ))}
         <Magnetic
           as="a"
           href="#cta"
+          className={styles.navCta}
           style={{
             fontFamily: MONO,
             fontSize: 11,
@@ -142,7 +129,83 @@ export function Nav() {
         >
           Get access
         </Magnetic>
+        <button
+          type="button"
+          aria-label={open ? "Close menu" : "Open menu"}
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+          className={styles.navToggle}
+          style={{
+            background: "none",
+            border: "none",
+            padding: 6,
+            display: "none",
+            flexDirection: "column",
+            gap: 5,
+            cursor: "pointer",
+          }}
+        >
+          <span
+            style={{
+              width: 20,
+              height: 1.5,
+              background: TEXT,
+              transition: "transform .2s ease",
+              transform: open ? "translateY(6.5px) rotate(45deg)" : "none",
+            }}
+          />
+          <span
+            style={{
+              width: 20,
+              height: 1.5,
+              background: TEXT,
+              opacity: open ? 0 : 1,
+              transition: "opacity .2s ease",
+            }}
+          />
+          <span
+            style={{
+              width: 20,
+              height: 1.5,
+              background: TEXT,
+              transition: "transform .2s ease",
+              transform: open ? "translateY(-6.5px) rotate(-45deg)" : "none",
+            }}
+          />
+        </button>
       </div>
+
+      {open && (
+        <div
+          className={styles.navMobilePanel}
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            right: 0,
+            background: INK,
+            borderBottom: "1px solid rgba(242,238,231,.14)",
+            display: "flex",
+            flexDirection: "column",
+            padding: "8px 20px 20px",
+          }}
+        >
+          {NAV_LINKS.map((link) => (
+            <a
+              key={link.href}
+              href={link.href}
+              onClick={() => setOpen(false)}
+              style={{
+                ...linkStyle,
+                padding: "14px 0",
+                borderBottom: "1px solid rgba(242,238,231,.08)",
+              }}
+            >
+              {link.label}
+            </a>
+          ))}
+        </div>
+      )}
     </nav>
   );
 }

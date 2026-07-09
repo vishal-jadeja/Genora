@@ -85,6 +85,7 @@ export function Hero() {
       <div id="heroSection" style={{ position: "relative" }}>
         <div
           id="heroPin"
+          className={styles.heroPin}
           style={{
             position: "relative",
             height: "100vh",
@@ -208,7 +209,7 @@ export function Hero() {
               style={{
                 position: "relative",
                 zIndex: 5,
-                width: 420,
+                width: "min(420px, 84vw)",
                 background: CARD,
                 border: "1px solid rgba(242,238,231,.14)",
                 borderRadius: 6,
@@ -306,6 +307,7 @@ export function Hero() {
 
             <div
               id="heroAnnotate"
+              className={styles.heroAnnotate}
               style={{
                 position: "absolute",
                 zIndex: 6,

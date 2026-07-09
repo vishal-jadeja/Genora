@@ -10,10 +10,36 @@
   .navLink {
     display: none;
   }
+
+  .navToggle {
+    display: flex !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .navCta {
+    display: none;
+  }
+}
+
+@media (min-width: 721px) {
+  .navMobilePanel {
+    display: none;
+  }
 }
 
 .heroNote {
   max-width: 100%;
+}
+
+.heroPin {
+  padding: 0 20px;
+}
+
+@media (max-width: 640px) {
+  .heroAnnotate {
+    display: none;
+  }
 }
 
 .howRow {
