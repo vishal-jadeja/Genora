@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { Hoverable } from "@/components/Hoverable";
 import { SignInPanel } from "./SignInPanel";

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Hoverable } from "@/components/Hoverable";
 import { Magnetic } from "./Magnetic";
 import { ANTON, INK, MONO, ORANGE, TEXT, linkStyle } from "./constants";
@@ -111,8 +112,8 @@ export function Nav() {
           </Hoverable>
         ))}
         <Magnetic
-          as="a"
-          href="#cta"
+          as={Link}
+          href="/signin"
           className={styles.navCta}
           style={{
             fontFamily: MONO,
