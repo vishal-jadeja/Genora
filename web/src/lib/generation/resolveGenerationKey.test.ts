@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const resolveKeyForGenerationMock = vi.fn();
+const consumeQuotaMock = vi.fn();
 
 class MockKeyDecryptionError extends Error {}
 
@@ -10,11 +11,22 @@ vi.mock("@/lib/keys/resolveKey", () => ({
   KeyDecryptionError: MockKeyDecryptionError,
 }));
 
+vi.mock("@/lib/redis/quota", () => ({
+  consumeQuota: (...args: unknown[]) => consumeQuotaMock(...args),
+}));
+
 const { resolveGenerationKey, GenerationKeyError } =
   await import("./resolveGenerationKey");
 
 beforeEach(() => {
   resolveKeyForGenerationMock.mockReset();
+  consumeQuotaMock.mockReset();
+  consumeQuotaMock.mockResolvedValue({
+    allowed: true,
+    remaining: 29,
+    limit: 30,
+    resetAt: new Date("2026-08-01T00:00:00.000Z"),
+  });
   delete process.env.PLATFORM_GROQ_API_KEY;
   delete process.env.PLATFORM_GEMINI_API_KEY;
 });
@@ -45,6 +57,7 @@ describe("resolveGenerationKey", () => {
       apiModel: "openai/gpt-oss-120b",
       apiKey: "gsk-user-key",
     });
+    expect(consumeQuotaMock).not.toHaveBeenCalled();
   });
 
   it("falls back to the platform Groq key for the groq free model when no BYOK key exists", async () => {
@@ -81,6 +94,27 @@ describe("resolveGenerationKey", () => {
       apiModel: "gemini-2.5-flash",
       apiKey: "aiza-platform-key",
     });
+  });
+
+  it("consumes quota for the free-tier fallback and throws when exhausted", async () => {
+    resolveKeyForGenerationMock.mockResolvedValue({
+      source: "free-tier",
+      provider: "groq",
+      model: "TBD",
+      quota: { remaining: null, limit: null, resetAt: null },
+    });
+    process.env.PLATFORM_GROQ_API_KEY = "gsk-platform-key";
+    consumeQuotaMock.mockResolvedValue({
+      allowed: false,
+      remaining: 0,
+      limit: 30,
+      resetAt: new Date("2026-08-01T00:00:00.000Z"),
+    });
+
+    await expect(resolveGenerationKey("user-1", "groq")).rejects.toThrow(
+      /free-tier quota exhausted/,
+    );
+    expect(consumeQuotaMock).toHaveBeenCalledWith("user-1");
   });
 
   it("throws if the platform key is missing for a free model", async () => {

@@ -18,14 +18,6 @@ export interface ResolvedByok {
 export interface ResolvedFreeTier {
   source: "free-tier";
   provider: Provider;
-  // TODO(Phase 3): concrete free-tier model is not yet decided.
-  model: string;
-  quota: {
-    // TODO(Phase 6): fill these from the Upstash Redis quota counter.
-    remaining: number | null;
-    limit: number | null;
-    resetAt: Date | null;
-  };
 }
 
 export type ResolvedKey = ResolvedByok | ResolvedFreeTier;
@@ -35,8 +27,6 @@ export type ResolvedKey = ResolvedByok | ResolvedFreeTier;
 // rotated out from under an old row) apart from a transient DB failure,
 // which should still be retried rather than fast-failed.
 export class KeyDecryptionError extends Error {}
-
-const FREE_TIER_MODEL_PLACEHOLDER = "TBD";
 
 export async function resolveKeyForGeneration(
   req: ResolveKeyRequest,
@@ -73,10 +63,5 @@ export async function resolveKeyForGeneration(
     return { source: "byok", provider: req.provider, apiKey };
   }
 
-  return {
-    source: "free-tier",
-    provider: req.provider,
-    model: FREE_TIER_MODEL_PLACEHOLDER,
-    quota: { remaining: null, limit: null, resetAt: null },
-  };
+  return { source: "free-tier", provider: req.provider };
 }

@@ -2,6 +2,7 @@ import {
   KeyDecryptionError,
   resolveKeyForGeneration,
 } from "@/lib/keys/resolveKey";
+import { consumeQuota } from "@/lib/redis/quota";
 import { getModelCatalogEntry, type ModelId } from "./modelCatalog";
 import type { Provider } from "@/lib/keys/service";
 
@@ -73,6 +74,13 @@ export async function resolveGenerationKey(
   const platformKey = process.env[envVar];
   if (!platformKey) {
     throw new GenerationKeyError(`${envVar} is not configured`);
+  }
+
+  const quota = await consumeQuota(userId);
+  if (!quota.allowed) {
+    throw new GenerationKeyError(
+      `free-tier quota exhausted (${quota.limit}/month) — add a BYOK ${entry.provider} key or wait until ${quota.resetAt.toISOString()}`,
+    );
   }
 
   return {
