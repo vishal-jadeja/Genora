@@ -12,21 +12,21 @@ Full build plan, architecture decisions, and phase roadmap live in [`backend-pla
  you write a raw thought
         │
         ▼
- ┌─────────────────┐   hard reject          ┌──────────────────┐
- │   Slop Guard     │───────────────────────▶│ instant response  │
- │  (sync, no cost) │                        │  no job created   │
+ ┌──────────────────┐   hard reject          ┌──────────────────┐
+ │   Slop Guard     │───────────────────────▶│ instant response │
+ │  (sync, no cost) │                        │  no job created  │
  └────────┬─────────┘                        └──────────────────┘
           │ pass / soft nudge
           ▼
  ┌─────────────────────────┐
- │   Trigger.dev v4 run     │   one parallel subtask per platform
+ │   Trigger.dev v4 run    │   one parallel subtask per platform
  └────────┬────────────────┘
           │
           ▼
  ┌─────────────────────────────────────────────┐
- │   per platform: Writer → Critic → Reviser     │   + RAG context
- │   (BYOK key or free-tier Groq / Gemini)       │   + saved per-platform instructions
- └────────┬──────────────────────────────────────┘
+ │   per platform: Writer → Critic → Reviser   │   + RAG context
+ │   (BYOK key or free-tier Groq / Gemini)     │   + saved per-platform instructions
+ └────────┬────────────────────────────────────┘
           │
           ▼
    Postgres: versioned platform_outputs + usage_logs
@@ -43,7 +43,7 @@ Full build plan, architecture decisions, and phase roadmap live in [`backend-pla
 | Data           | Postgres (Neon, EU) + pgvector, via Drizzle ORM                     |
 | Cache / quota  | Upstash Redis                                                       |
 | Auth           | NextAuth v5 (Google OAuth, database sessions)                       |
-| Embeddings     | Google `gemini-embedding-001`, truncated to 768-dim                  |
+| Embeddings     | Google `gemini-embedding-001`, truncated to 768-dim                 |
 | BYOK providers | Anthropic, OpenAI, Gemini, Groq                                     |
 
 ## Repo layout
