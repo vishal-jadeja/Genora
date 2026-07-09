@@ -1,17 +1,53 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Magnetic } from "./Magnetic";
 import { GoogleIcon } from "./GoogleIcon";
+import { GitHubIcon } from "./GitHubIcon";
 import { CARD, GROTESK, INK, MONO, MUTED, MUTED2, ORANGE, RED, TEXT } from "./constants";
 import styles from "@/app/signin/signin.module.css";
 
+type Provider = {
+  id: string;
+  label: string;
+  action: () => Promise<void>;
+  icon: ReactNode;
+  background: string;
+  color: string;
+  border: string;
+};
+
 export function SignInPanel({
-  action,
+  actions,
   error,
 }: {
-  action: () => Promise<void>;
+  actions: {
+    google: () => Promise<void>;
+    github: () => Promise<void>;
+  };
   error: string | null;
 }) {
+  const providers: Provider[] = [
+    {
+      id: "google",
+      label: "Continue with Google",
+      action: actions.google,
+      icon: <GoogleIcon size={18} />,
+      background: TEXT,
+      color: INK,
+      border: "1px solid rgba(14,13,11,.1)",
+    },
+    {
+      id: "github",
+      label: "Continue with GitHub",
+      action: actions.github,
+      icon: <GitHubIcon size={18} />,
+      background: "#000",
+      color: TEXT,
+      border: "1px solid #2b2b2b",
+    },
+  ];
+
   return (
     <div
       className={`${styles.card} ${styles.rise}`}
@@ -63,36 +99,40 @@ export function SignInPanel({
           fontFamily: GROTESK,
         }}
       >
-        Sign in with your Google account — no password, no setup.
+        Sign in to continue — no password, no setup.
       </p>
 
-      <form action={action}>
-        <Magnetic
-          as="button"
-          type="submit"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 10,
-            width: "100%",
-            border: "1px solid rgba(14,13,11,.1)",
-            cursor: "pointer",
-            background: TEXT,
-            color: INK,
-            fontFamily: MONO,
-            fontSize: 12,
-            letterSpacing: ".12em",
-            textTransform: "uppercase",
-            fontWeight: 500,
-            padding: "15px 20px",
-            borderRadius: 3,
-          }}
-        >
-          <GoogleIcon size={18} />
-          Continue with Google
-        </Magnetic>
-      </form>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {providers.map((p) => (
+          <form key={p.id} action={p.action}>
+            <Magnetic
+              as="button"
+              type="submit"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 10,
+                width: "100%",
+                border: p.border,
+                cursor: "pointer",
+                background: p.background,
+                color: p.color,
+                fontFamily: MONO,
+                fontSize: 12,
+                letterSpacing: ".12em",
+                textTransform: "uppercase",
+                fontWeight: 500,
+                padding: "15px 20px",
+                borderRadius: 3,
+              }}
+            >
+              {p.icon}
+              {p.label}
+            </Magnetic>
+          </form>
+        ))}
+      </div>
 
       {error && (
         <div

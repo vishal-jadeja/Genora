@@ -7,10 +7,13 @@ import { ANTON, GROTESK, INK, MONO, ORANGE, TEXT, linkStyle } from "./constants"
 import styles from "@/app/signin/signin.module.css";
 
 export function SignInPage({
-  action,
+  actions,
   error,
 }: {
-  action: () => Promise<void>;
+  actions: {
+    google: () => Promise<void>;
+    github: () => Promise<void>;
+  };
   error: string | null;
 }) {
   return (
@@ -160,7 +163,7 @@ export function SignInPage({
             Welcome back.
           </h1>
 
-          <SignInPanel action={action} error={error} />
+          <SignInPanel actions={actions} error={error} />
 
           <div
             style={{
