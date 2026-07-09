@@ -51,3 +51,13 @@ export function getModelCatalogEntry(
 ): ModelCatalogEntry | undefined {
   return MODEL_CATALOG[modelId as ModelId];
 }
+
+// Reverse lookup for regenerating a platform without an explicit modelId:
+// platform_outputs.model stores the provider-facing apiModel string, not our
+// internal ModelId, so we need to map back to default to "whatever was used
+// last time."
+export function findModelIdByApiModel(apiModel: string): ModelId | undefined {
+  return Object.values(MODEL_CATALOG).find(
+    (entry) => entry.apiModel === apiModel,
+  )?.id;
+}

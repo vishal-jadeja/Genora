@@ -6,6 +6,7 @@ const deleteMock = vi.fn();
 const triggerMock = vi.fn();
 const createPublicTokenMock = vi.fn();
 const folderBelongsToUserMock = vi.fn();
+const getPostMock = vi.fn();
 
 vi.mock("@/lib/aiService/client", () => ({
   callAiService: (...args: unknown[]) => callAiServiceMock(...args),
@@ -13,6 +14,11 @@ vi.mock("@/lib/aiService/client", () => ({
 
 vi.mock("@/lib/folders/service", () => ({
   folderBelongsToUser: (...args: unknown[]) => folderBelongsToUserMock(...args),
+}));
+
+vi.mock("@/lib/posts/service", () => ({
+  getPost: (...args: unknown[]) => getPostMock(...args),
+  PostNotFoundError: class PostNotFoundError extends Error {},
 }));
 
 vi.mock("@/db/client", () => ({
@@ -34,8 +40,13 @@ vi.mock("@trigger.dev/sdk", () => ({
   },
 }));
 
-const { runGenerate, FolderNotOwnedError, SlopGuardUnavailableError } =
-  await import("./generateService");
+const {
+  runGenerate,
+  regeneratePlatform,
+  FolderNotOwnedError,
+  SlopGuardUnavailableError,
+  ModelRequiredError,
+} = await import("./generateService");
 
 const validInput = {
   rawText: "a genuinely substantive raw thought",
@@ -49,6 +60,7 @@ beforeEach(() => {
   triggerMock.mockReset();
   createPublicTokenMock.mockReset();
   folderBelongsToUserMock.mockReset();
+  getPostMock.mockReset();
 });
 
 describe("runGenerate", () => {
@@ -189,5 +201,78 @@ describe("runGenerate", () => {
     );
     expect(insertMock).not.toHaveBeenCalled();
     expect(triggerMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("regeneratePlatform", () => {
+  it("uses the given modelId and triggers a single-platform run", async () => {
+    getPostMock.mockResolvedValue({
+      id: "post-1",
+      rawContent: "a genuinely substantive raw thought",
+      platformOutputs: [],
+    });
+    triggerMock.mockResolvedValue({ id: "run-1" });
+    createPublicTokenMock.mockResolvedValue("public-token");
+
+    const result = await regeneratePlatform(
+      "user-1",
+      "post-1",
+      "linkedin",
+      "groq",
+    );
+
+    expect(triggerMock).toHaveBeenCalledWith(
+      {
+        postId: "post-1",
+        userId: "user-1",
+        rawText: "a genuinely substantive raw thought",
+        platforms: [{ platform: "linkedin", modelId: "groq" }],
+      },
+      { tags: ["user:user-1"] },
+    );
+    expect(result).toEqual({ runId: "run-1", publicAccessToken: "public-token" });
+  });
+
+  it("infers modelId from the current platform_outputs row when none is given", async () => {
+    getPostMock.mockResolvedValue({
+      id: "post-1",
+      rawContent: "a genuinely substantive raw thought",
+      platformOutputs: [
+        { platform: "linkedin", model: "openai/gpt-oss-120b" },
+      ],
+    });
+    triggerMock.mockResolvedValue({ id: "run-1" });
+    createPublicTokenMock.mockResolvedValue("public-token");
+
+    await regeneratePlatform("user-1", "post-1", "linkedin");
+
+    expect(triggerMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        platforms: [{ platform: "linkedin", modelId: "groq" }],
+      }),
+      expect.anything(),
+    );
+  });
+
+  it("throws ModelRequiredError when no modelId is given and there's no prior output for that platform", async () => {
+    getPostMock.mockResolvedValue({
+      id: "post-1",
+      rawContent: "a genuinely substantive raw thought",
+      platformOutputs: [],
+    });
+
+    await expect(
+      regeneratePlatform("user-1", "post-1", "linkedin"),
+    ).rejects.toThrow(ModelRequiredError);
+    expect(triggerMock).not.toHaveBeenCalled();
+  });
+
+  it("propagates PostNotFoundError from getPost", async () => {
+    const { PostNotFoundError } = await import("@/lib/posts/service");
+    getPostMock.mockRejectedValue(new PostNotFoundError("post-1"));
+
+    await expect(
+      regeneratePlatform("user-1", "post-1", "linkedin", "groq"),
+    ).rejects.toThrow(PostNotFoundError);
   });
 });
