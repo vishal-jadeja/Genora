@@ -17,7 +17,7 @@ export function CtaButton() {
     >
       <Magnetic
         as="a"
-        href="/api/auth/signin"
+        href="/signin"
         style={{
           display: "block",
           width: "100%",

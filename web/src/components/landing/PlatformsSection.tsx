@@ -1,9 +1,473 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { TiltCard } from "./TiltCard";
 import { ANTON, GROTESK, MONO, MUTED, ORANGE } from "./constants";
 
+function FeedCards({ prefix }: { prefix: string }) {
+  return (
+    <>
+      <TiltCard
+        key={`${prefix}-linkedin`}
+        style={{
+          flex: "0 0 auto",
+          width: 360,
+          background: "#fff",
+          color: "#1a1a1a",
+          borderRadius: 10,
+          padding: 20,
+          boxShadow: "0 30px 70px -30px rgba(0,0,0,.7)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            marginBottom: 14,
+          }}
+        >
+          <span
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: "50%",
+              background: "#0A66C2",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#fff",
+              fontWeight: 700,
+              fontFamily: GROTESK,
+              fontSize: 16,
+            }}
+          >
+            JR
+          </span>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 14 }}>Jordan Reyes</div>
+            <div style={{ fontSize: 12, color: "#666" }}>
+              Founder, building in public · 2h
+            </div>
+          </div>
+          <span
+            style={{
+              marginLeft: "auto",
+              fontSize: 12,
+              color: "#0A66C2",
+              fontWeight: 600,
+            }}
+          >
+            + Follow
+          </span>
+        </div>
+        <p style={{ margin: "0 0 12px", fontSize: 14, lineHeight: 1.55 }}>
+          We shipped a feature <b>nobody asked for.</b>
+          <br />
+          <br />
+          It&apos;s now our most-used one.
+          <br />
+          <br />
+          The lesson wasn&apos;t &quot;ignore users.&quot; It was: the
+          sharpest signal is your own frustration, used daily. Build for the
+          operator you already are 👇
+        </p>
+        <div
+          style={{
+            display: "flex",
+            gap: 16,
+            paddingTop: 12,
+            borderTop: "1px solid #eee",
+            fontSize: 12,
+            color: "#666",
+          }}
+        >
+          <span>👍 342</span>
+          <span>💬 28</span>
+          <span>↪ 14</span>
+        </div>
+        <div
+          style={{
+            marginTop: 12,
+            fontFamily: MONO,
+            fontSize: 9,
+            letterSpacing: ".14em",
+            textTransform: "uppercase",
+            color: "#0A66C2",
+          }}
+        >
+          LinkedIn · professional
+        </div>
+      </TiltCard>
+
+      <TiltCard
+        key={`${prefix}-x`}
+        style={{
+          flex: "0 0 auto",
+          width: 360,
+          background: "#000",
+          color: "#e7e9ea",
+          border: "1px solid #2f3336",
+          borderRadius: 10,
+          padding: 20,
+          boxShadow: "0 30px 70px -30px rgba(0,0,0,.7)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            marginBottom: 14,
+          }}
+        >
+          <span
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: "50%",
+              background: "#333",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#fff",
+              fontWeight: 700,
+              fontSize: 16,
+            }}
+          >
+            JR
+          </span>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 14 }}>Jordan Reyes</div>
+            <div style={{ fontSize: 12, color: "#71767b" }}>
+              @jreyes · 1/5
+            </div>
+          </div>
+        </div>
+        <p style={{ margin: "0 0 12px", fontSize: 15, lineHeight: 1.45 }}>
+          we built a feature literally nobody asked for.
+          <br />
+          <br />
+          it&apos;s now the #1 reason people pay us.
+          <br />
+          <br />a thread on why &quot;scratch your own itch&quot; beats a
+          roadmap 🧵
+        </p>
+        <div
+          style={{
+            display: "flex",
+            gap: 22,
+            paddingTop: 12,
+            borderTop: "1px solid #2f3336",
+            fontSize: 12,
+            color: "#71767b",
+          }}
+        >
+          <span>💬 91</span>
+          <span>🔁 210</span>
+          <span>♥ 1.4K</span>
+        </div>
+        <div
+          style={{
+            marginTop: 12,
+            fontFamily: MONO,
+            fontSize: 9,
+            letterSpacing: ".14em",
+            textTransform: "uppercase",
+            color: "#71767b",
+          }}
+        >
+          X · punchy thread
+        </div>
+      </TiltCard>
+
+      <TiltCard
+        key={`${prefix}-reddit`}
+        style={{
+          flex: "0 0 auto",
+          width: 360,
+          background: "#fff",
+          color: "#1a1a1a",
+          border: "1px solid #ececec",
+          borderRadius: 10,
+          padding: 0,
+          overflow: "hidden",
+          boxShadow: "0 30px 70px -30px rgba(0,0,0,.7)",
+        }}
+      >
+        <div style={{ display: "flex" }}>
+          <div
+            style={{
+              width: 40,
+              background: "#F7F7F7",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              padding: "12px 0",
+              gap: 6,
+            }}
+          >
+            <span style={{ color: "#FF4500", fontSize: 16 }}>▲</span>
+            <span style={{ fontSize: 12, fontWeight: 700 }}>988</span>
+            <span style={{ color: "#9AA", fontSize: 16 }}>▼</span>
+          </div>
+          <div style={{ padding: "16px 18px" }}>
+            <div style={{ fontSize: 11, color: "#787c7e", marginBottom: 8 }}>
+              <b style={{ color: "#1a1a1a" }}>r/SaaS</b> · Posted by u/jreyes
+              · 3h
+            </div>
+            <div
+              style={{
+                fontWeight: 700,
+                fontSize: 16,
+                marginBottom: 8,
+                lineHeight: 1.3,
+              }}
+            >
+              We shipped a feature nobody requested. It became our most-used
+              one. Here&apos;s what I&apos;d tell my past self.
+            </div>
+            <p
+              style={{
+                margin: 0,
+                fontSize: 13,
+                lineHeight: 1.55,
+                color: "#333",
+              }}
+            >
+              Long-time lurker. Quick story + the counterintuitive takeaway on
+              building for yourself vs. chasing feature requests. Happy to
+              answer questions in the comments.
+            </p>
+            <div
+              style={{
+                marginTop: 12,
+                fontFamily: MONO,
+                fontSize: 9,
+                letterSpacing: ".14em",
+                textTransform: "uppercase",
+                color: "#FF4500",
+              }}
+            >
+              Reddit · community, no-hype
+            </div>
+          </div>
+        </div>
+      </TiltCard>
+
+      <TiltCard
+        key={`${prefix}-medium`}
+        style={{
+          flex: "0 0 auto",
+          width: 360,
+          background: "#fff",
+          color: "#242424",
+          borderRadius: 10,
+          padding: 24,
+          boxShadow: "0 30px 70px -30px rgba(0,0,0,.7)",
+        }}
+      >
+        <div
+          style={{
+            fontFamily: MONO,
+            fontSize: 10,
+            letterSpacing: ".12em",
+            textTransform: "uppercase",
+            color: "#6B6B6B",
+            marginBottom: 14,
+          }}
+        >
+          Product · 6 min read
+        </div>
+        <h3
+          style={{
+            margin: "0 0 12px",
+            fontFamily: "Georgia, serif",
+            fontSize: 26,
+            lineHeight: 1.2,
+            fontWeight: 700,
+          }}
+        >
+          The Feature Nobody Asked For
+        </h3>
+        <p
+          style={{
+            margin: "0 0 14px",
+            fontFamily: "Georgia, serif",
+            fontSize: 15,
+            lineHeight: 1.6,
+            color: "#333",
+          }}
+        >
+          There&apos;s a particular kind of silence that follows shipping
+          something no user requested. Then, quietly, the usage graph did
+          something none of our roadmap items ever managed…
+        </p>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: "50%",
+              background: "#242424",
+            }}
+          />
+          <span style={{ fontSize: 12, color: "#6B6B6B" }}>
+            Jordan Reyes · Jul 6
+          </span>
+        </div>
+        <div
+          style={{
+            marginTop: 12,
+            fontFamily: MONO,
+            fontSize: 9,
+            letterSpacing: ".14em",
+            textTransform: "uppercase",
+            color: "#242424",
+          }}
+        >
+          Medium · long-form essay
+        </div>
+      </TiltCard>
+
+      <TiltCard
+        key={`${prefix}-substack`}
+        style={{
+          flex: "0 0 auto",
+          width: 360,
+          background: "#FFF6E9",
+          color: "#2b2b2b",
+          border: "1px solid #efe1cb",
+          borderRadius: 10,
+          padding: 24,
+          boxShadow: "0 30px 70px -30px rgba(0,0,0,.7)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 9,
+            marginBottom: 16,
+            paddingBottom: 14,
+            borderBottom: "1px solid #efe1cb",
+          }}
+        >
+          <span
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: 5,
+              background: "#FF6719",
+            }}
+          />
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 13 }}>
+              The Operator&apos;s Log
+            </div>
+            <div style={{ fontSize: 11, color: "#7a7266" }}>
+              by Jordan Reyes
+            </div>
+          </div>
+        </div>
+        <div
+          style={{
+            fontFamily: MONO,
+            fontSize: 10,
+            letterSpacing: ".1em",
+            textTransform: "uppercase",
+            color: "#7a7266",
+            marginBottom: 8,
+          }}
+        >
+          Subject line
+        </div>
+        <h3
+          style={{
+            margin: "0 0 12px",
+            fontFamily: "Georgia, serif",
+            fontSize: 21,
+            lineHeight: 1.25,
+          }}
+        >
+          Building for yourself is underrated
+        </h3>
+        <p
+          style={{
+            margin: 0,
+            fontFamily: "Georgia, serif",
+            fontSize: 14,
+            lineHeight: 1.6,
+            color: "#3a3a3a",
+          }}
+        >
+          Hey — this week I want to tell you about a feature we almost
+          didn&apos;t build, and why it changed how I think about listening to
+          users…
+        </p>
+        <div
+          style={{
+            marginTop: 14,
+            fontFamily: MONO,
+            fontSize: 9,
+            letterSpacing: ".14em",
+            textTransform: "uppercase",
+            color: "#FF6719",
+          }}
+        >
+          Substack · warm newsletter
+        </div>
+      </TiltCard>
+    </>
+  );
+}
+
 export function PlatformsSection() {
+  const railRef = useRef<HTMLDivElement | null>(null);
+  const loopRef = useRef<HTMLDivElement | null>(null);
+  const pausedRef = useRef(false);
+
+  useEffect(() => {
+    const prefersReduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    if (prefersReduced) return;
+
+    const rail = railRef.current;
+    const loopMark = loopRef.current;
+    if (!rail || !loopMark) return;
+
+    const railRect = rail.getBoundingClientRect();
+    const loopDistance =
+      loopMark.getBoundingClientRect().left - railRect.left + rail.scrollLeft;
+
+    const speed = 34; // px/s — slow enough to read, fast enough to feel alive
+    let last = performance.now();
+    let raf = 0;
+
+    const step = (now: number) => {
+      const dt = (now - last) / 1000;
+      last = now;
+      if (!pausedRef.current && loopDistance > 0) {
+        rail.scrollLeft += speed * dt;
+        if (rail.scrollLeft >= loopDistance) {
+          rail.scrollLeft -= loopDistance;
+        }
+      }
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  const pause = () => {
+    pausedRef.current = true;
+  };
+  const resume = () => {
+    pausedRef.current = false;
+  };
+
   return (
     <section
       id="platforms"
@@ -64,429 +528,30 @@ export function PlatformsSection() {
       </div>
 
       <div
+        ref={railRef}
         id="platRail"
         style={{
           display: "flex",
           gap: 26,
           overflowX: "auto",
           padding: "12px 40px 30px",
-          scrollSnapType: "x mandatory",
           WebkitOverflowScrolling: "touch",
         }}
+        onMouseEnter={pause}
+        onMouseLeave={resume}
+        onPointerDown={pause}
+        onPointerUp={resume}
+        onTouchStart={pause}
+        onTouchEnd={resume}
       >
-        <TiltCard
-          style={{
-            scrollSnapAlign: "center",
-            flex: "0 0 auto",
-            width: 360,
-            background: "#fff",
-            color: "#1a1a1a",
-            borderRadius: 10,
-            padding: 20,
-            boxShadow: "0 30px 70px -30px rgba(0,0,0,.7)",
-          }}
+        <FeedCards prefix="a" />
+        <div
+          ref={loopRef}
+          aria-hidden="true"
+          style={{ display: "flex", gap: 26 }}
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              marginBottom: 14,
-            }}
-          >
-            <span
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: "50%",
-                background: "#0A66C2",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#fff",
-                fontWeight: 700,
-                fontFamily: GROTESK,
-                fontSize: 16,
-              }}
-            >
-              JR
-            </span>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 14 }}>Jordan Reyes</div>
-              <div style={{ fontSize: 12, color: "#666" }}>
-                Founder, building in public · 2h
-              </div>
-            </div>
-            <span
-              style={{
-                marginLeft: "auto",
-                fontSize: 12,
-                color: "#0A66C2",
-                fontWeight: 600,
-              }}
-            >
-              + Follow
-            </span>
-          </div>
-          <p style={{ margin: "0 0 12px", fontSize: 14, lineHeight: 1.55 }}>
-            We shipped a feature <b>nobody asked for.</b>
-            <br />
-            <br />
-            It&apos;s now our most-used one.
-            <br />
-            <br />
-            The lesson wasn&apos;t &quot;ignore users.&quot; It was: the
-            sharpest signal is your own frustration, used daily. Build for the
-            operator you already are 👇
-          </p>
-          <div
-            style={{
-              display: "flex",
-              gap: 16,
-              paddingTop: 12,
-              borderTop: "1px solid #eee",
-              fontSize: 12,
-              color: "#666",
-            }}
-          >
-            <span>👍 342</span>
-            <span>💬 28</span>
-            <span>↪ 14</span>
-          </div>
-          <div
-            style={{
-              marginTop: 12,
-              fontFamily: MONO,
-              fontSize: 9,
-              letterSpacing: ".14em",
-              textTransform: "uppercase",
-              color: "#0A66C2",
-            }}
-          >
-            LinkedIn · professional
-          </div>
-        </TiltCard>
-
-        <TiltCard
-          style={{
-            scrollSnapAlign: "center",
-            flex: "0 0 auto",
-            width: 360,
-            background: "#000",
-            color: "#e7e9ea",
-            border: "1px solid #2f3336",
-            borderRadius: 10,
-            padding: 20,
-            boxShadow: "0 30px 70px -30px rgba(0,0,0,.7)",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              marginBottom: 14,
-            }}
-          >
-            <span
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: "50%",
-                background: "#333",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#fff",
-                fontWeight: 700,
-                fontSize: 16,
-              }}
-            >
-              JR
-            </span>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 14 }}>Jordan Reyes</div>
-              <div style={{ fontSize: 12, color: "#71767b" }}>
-                @jreyes · 1/5
-              </div>
-            </div>
-          </div>
-          <p style={{ margin: "0 0 12px", fontSize: 15, lineHeight: 1.45 }}>
-            we built a feature literally nobody asked for.
-            <br />
-            <br />
-            it&apos;s now the #1 reason people pay us.
-            <br />
-            <br />a thread on why &quot;scratch your own itch&quot; beats a
-            roadmap 🧵
-          </p>
-          <div
-            style={{
-              display: "flex",
-              gap: 22,
-              paddingTop: 12,
-              borderTop: "1px solid #2f3336",
-              fontSize: 12,
-              color: "#71767b",
-            }}
-          >
-            <span>💬 91</span>
-            <span>🔁 210</span>
-            <span>♥ 1.4K</span>
-          </div>
-          <div
-            style={{
-              marginTop: 12,
-              fontFamily: MONO,
-              fontSize: 9,
-              letterSpacing: ".14em",
-              textTransform: "uppercase",
-              color: "#71767b",
-            }}
-          >
-            X · punchy thread
-          </div>
-        </TiltCard>
-
-        <TiltCard
-          style={{
-            scrollSnapAlign: "center",
-            flex: "0 0 auto",
-            width: 360,
-            background: "#fff",
-            color: "#1a1a1a",
-            border: "1px solid #ececec",
-            borderRadius: 10,
-            padding: 0,
-            overflow: "hidden",
-            boxShadow: "0 30px 70px -30px rgba(0,0,0,.7)",
-          }}
-        >
-          <div style={{ display: "flex" }}>
-            <div
-              style={{
-                width: 40,
-                background: "#F7F7F7",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                padding: "12px 0",
-                gap: 6,
-              }}
-            >
-              <span style={{ color: "#FF4500", fontSize: 16 }}>▲</span>
-              <span style={{ fontSize: 12, fontWeight: 700 }}>988</span>
-              <span style={{ color: "#9AA", fontSize: 16 }}>▼</span>
-            </div>
-            <div style={{ padding: "16px 18px" }}>
-              <div style={{ fontSize: 11, color: "#787c7e", marginBottom: 8 }}>
-                <b style={{ color: "#1a1a1a" }}>r/SaaS</b> · Posted by u/jreyes
-                · 3h
-              </div>
-              <div
-                style={{
-                  fontWeight: 700,
-                  fontSize: 16,
-                  marginBottom: 8,
-                  lineHeight: 1.3,
-                }}
-              >
-                We shipped a feature nobody requested. It became our most-used
-                one. Here&apos;s what I&apos;d tell my past self.
-              </div>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 13,
-                  lineHeight: 1.55,
-                  color: "#333",
-                }}
-              >
-                Long-time lurker. Quick story + the counterintuitive takeaway on
-                building for yourself vs. chasing feature requests. Happy to
-                answer questions in the comments.
-              </p>
-              <div
-                style={{
-                  marginTop: 12,
-                  fontFamily: MONO,
-                  fontSize: 9,
-                  letterSpacing: ".14em",
-                  textTransform: "uppercase",
-                  color: "#FF4500",
-                }}
-              >
-                Reddit · community, no-hype
-              </div>
-            </div>
-          </div>
-        </TiltCard>
-
-        <TiltCard
-          style={{
-            scrollSnapAlign: "center",
-            flex: "0 0 auto",
-            width: 360,
-            background: "#fff",
-            color: "#242424",
-            borderRadius: 10,
-            padding: 24,
-            boxShadow: "0 30px 70px -30px rgba(0,0,0,.7)",
-          }}
-        >
-          <div
-            style={{
-              fontFamily: MONO,
-              fontSize: 10,
-              letterSpacing: ".12em",
-              textTransform: "uppercase",
-              color: "#6B6B6B",
-              marginBottom: 14,
-            }}
-          >
-            Product · 6 min read
-          </div>
-          <h3
-            style={{
-              margin: "0 0 12px",
-              fontFamily: "Georgia, serif",
-              fontSize: 26,
-              lineHeight: 1.2,
-              fontWeight: 700,
-            }}
-          >
-            The Feature Nobody Asked For
-          </h3>
-          <p
-            style={{
-              margin: "0 0 14px",
-              fontFamily: "Georgia, serif",
-              fontSize: 15,
-              lineHeight: 1.6,
-              color: "#333",
-            }}
-          >
-            There&apos;s a particular kind of silence that follows shipping
-            something no user requested. Then, quietly, the usage graph did
-            something none of our roadmap items ever managed…
-          </p>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: "50%",
-                background: "#242424",
-              }}
-            />
-            <span style={{ fontSize: 12, color: "#6B6B6B" }}>
-              Jordan Reyes · Jul 6
-            </span>
-          </div>
-          <div
-            style={{
-              marginTop: 12,
-              fontFamily: MONO,
-              fontSize: 9,
-              letterSpacing: ".14em",
-              textTransform: "uppercase",
-              color: "#242424",
-            }}
-          >
-            Medium · long-form essay
-          </div>
-        </TiltCard>
-
-        <TiltCard
-          style={{
-            scrollSnapAlign: "center",
-            flex: "0 0 auto",
-            width: 360,
-            background: "#FFF6E9",
-            color: "#2b2b2b",
-            border: "1px solid #efe1cb",
-            borderRadius: 10,
-            padding: 24,
-            boxShadow: "0 30px 70px -30px rgba(0,0,0,.7)",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 9,
-              marginBottom: 16,
-              paddingBottom: 14,
-              borderBottom: "1px solid #efe1cb",
-            }}
-          >
-            <span
-              style={{
-                width: 30,
-                height: 30,
-                borderRadius: 5,
-                background: "#FF6719",
-              }}
-            />
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 13 }}>
-                The Operator&apos;s Log
-              </div>
-              <div style={{ fontSize: 11, color: "#7a7266" }}>
-                by Jordan Reyes
-              </div>
-            </div>
-          </div>
-          <div
-            style={{
-              fontFamily: MONO,
-              fontSize: 10,
-              letterSpacing: ".1em",
-              textTransform: "uppercase",
-              color: "#7a7266",
-              marginBottom: 8,
-            }}
-          >
-            Subject line
-          </div>
-          <h3
-            style={{
-              margin: "0 0 12px",
-              fontFamily: "Georgia, serif",
-              fontSize: 21,
-              lineHeight: 1.25,
-            }}
-          >
-            Building for yourself is underrated
-          </h3>
-          <p
-            style={{
-              margin: 0,
-              fontFamily: "Georgia, serif",
-              fontSize: 14,
-              lineHeight: 1.6,
-              color: "#3a3a3a",
-            }}
-          >
-            Hey — this week I want to tell you about a feature we almost
-            didn&apos;t build, and why it changed how I think about listening to
-            users…
-          </p>
-          <div
-            style={{
-              marginTop: 14,
-              fontFamily: MONO,
-              fontSize: 9,
-              letterSpacing: ".14em",
-              textTransform: "uppercase",
-              color: "#FF6719",
-            }}
-          >
-            Substack · warm newsletter
-          </div>
-        </TiltCard>
-
-        <div style={{ flex: "0 0 40px" }} />
+          <FeedCards prefix="b" />
+        </div>
       </div>
       <div
         style={{
@@ -500,7 +565,7 @@ export function PlatformsSection() {
           color: "#5f594f",
         }}
       >
-        ← drag / scroll the rail →
+        ← hover to pause · drag to steer →
       </div>
     </section>
   );

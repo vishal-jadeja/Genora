@@ -1,8 +1,6 @@
 "use client";
 
-import { CSSProperties, useState } from "react";
-
-type Tag = "button" | "div" | "textarea" | "input" | "span" | "a";
+import { CSSProperties, ElementType, useState } from "react";
 
 // React warns if a rerender removes a shorthand (`border`) while a
 // longhand (`borderColor`) from a hover/focus overlay stays set, or vice
@@ -24,7 +22,7 @@ function expandBorderShorthand(style: CSSProperties): CSSProperties {
 }
 
 interface HoverableProps {
-  as?: Tag;
+  as?: ElementType;
   style?: CSSProperties;
   hoverStyle?: CSSProperties;
   focusStyle?: CSSProperties;

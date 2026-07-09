@@ -12,6 +12,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     verificationTokensTable: verificationTokens,
   }),
   session: { strategy: "database" },
+  pages: { signIn: "/signin" },
   providers: [Google],
   callbacks: {
     session({ session, user }) {
