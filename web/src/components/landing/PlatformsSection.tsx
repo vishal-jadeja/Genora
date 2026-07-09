@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import { TiltCard } from "./TiltCard";
 import { ANTON, GROTESK, MONO, MUTED, ORANGE } from "./constants";
 
-function FeedCards({ prefix }: { prefix: string }) {
+function FeedCards() {
   return (
     <>
       <TiltCard
-        key={`${prefix}-linkedin`}
         style={{
           flex: "0 0 auto",
           width: 360,
@@ -68,9 +66,9 @@ function FeedCards({ prefix }: { prefix: string }) {
           It&apos;s now our most-used one.
           <br />
           <br />
-          The lesson wasn&apos;t &quot;ignore users.&quot; It was: the
-          sharpest signal is your own frustration, used daily. Build for the
-          operator you already are 👇
+          The lesson wasn&apos;t &quot;ignore users.&quot; It was: the sharpest
+          signal is your own frustration, used daily. Build for the operator you
+          already are 👇
         </p>
         <div
           style={{
@@ -101,7 +99,6 @@ function FeedCards({ prefix }: { prefix: string }) {
       </TiltCard>
 
       <TiltCard
-        key={`${prefix}-x`}
         style={{
           flex: "0 0 auto",
           width: 360,
@@ -139,9 +136,7 @@ function FeedCards({ prefix }: { prefix: string }) {
           </span>
           <div>
             <div style={{ fontWeight: 700, fontSize: 14 }}>Jordan Reyes</div>
-            <div style={{ fontSize: 12, color: "#71767b" }}>
-              @jreyes · 1/5
-            </div>
+            <div style={{ fontSize: 12, color: "#71767b" }}>@jreyes · 1/5</div>
           </div>
         </div>
         <p style={{ margin: "0 0 12px", fontSize: 15, lineHeight: 1.45 }}>
@@ -182,7 +177,6 @@ function FeedCards({ prefix }: { prefix: string }) {
       </TiltCard>
 
       <TiltCard
-        key={`${prefix}-reddit`}
         style={{
           flex: "0 0 auto",
           width: 360,
@@ -213,8 +207,8 @@ function FeedCards({ prefix }: { prefix: string }) {
           </div>
           <div style={{ padding: "16px 18px" }}>
             <div style={{ fontSize: 11, color: "#787c7e", marginBottom: 8 }}>
-              <b style={{ color: "#1a1a1a" }}>r/SaaS</b> · Posted by u/jreyes
-              · 3h
+              <b style={{ color: "#1a1a1a" }}>r/SaaS</b> · Posted by u/jreyes ·
+              3h
             </div>
             <div
               style={{
@@ -256,7 +250,6 @@ function FeedCards({ prefix }: { prefix: string }) {
       </TiltCard>
 
       <TiltCard
-        key={`${prefix}-medium`}
         style={{
           flex: "0 0 auto",
           width: 360,
@@ -331,7 +324,6 @@ function FeedCards({ prefix }: { prefix: string }) {
       </TiltCard>
 
       <TiltCard
-        key={`${prefix}-substack`}
         style={{
           flex: "0 0 auto",
           width: 360,
@@ -423,51 +415,6 @@ function FeedCards({ prefix }: { prefix: string }) {
 }
 
 export function PlatformsSection() {
-  const railRef = useRef<HTMLDivElement | null>(null);
-  const loopRef = useRef<HTMLDivElement | null>(null);
-  const pausedRef = useRef(false);
-
-  useEffect(() => {
-    const prefersReduced = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    if (prefersReduced) return;
-
-    const rail = railRef.current;
-    const loopMark = loopRef.current;
-    if (!rail || !loopMark) return;
-
-    const railRect = rail.getBoundingClientRect();
-    const loopDistance =
-      loopMark.getBoundingClientRect().left - railRect.left + rail.scrollLeft;
-
-    const speed = 34; // px/s — slow enough to read, fast enough to feel alive
-    let last = performance.now();
-    let raf = 0;
-
-    const step = (now: number) => {
-      const dt = (now - last) / 1000;
-      last = now;
-      if (!pausedRef.current && loopDistance > 0) {
-        rail.scrollLeft += speed * dt;
-        if (rail.scrollLeft >= loopDistance) {
-          rail.scrollLeft -= loopDistance;
-        }
-      }
-      raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
-
-    return () => cancelAnimationFrame(raf);
-  }, []);
-
-  const pause = () => {
-    pausedRef.current = true;
-  };
-  const resume = () => {
-    pausedRef.current = false;
-  };
-
   return (
     <section
       id="platforms"
@@ -528,29 +475,23 @@ export function PlatformsSection() {
       </div>
 
       <div
-        ref={railRef}
-        id="platRail"
+        id="platViewport"
         style={{
-          display: "flex",
-          gap: 26,
-          overflowX: "auto",
-          padding: "12px 40px 30px",
+          overflow: "hidden",
+          padding: "12px 0 30px",
           WebkitOverflowScrolling: "touch",
         }}
-        onMouseEnter={pause}
-        onMouseLeave={resume}
-        onPointerDown={pause}
-        onPointerUp={resume}
-        onTouchStart={pause}
-        onTouchEnd={resume}
       >
-        <FeedCards prefix="a" />
         <div
-          ref={loopRef}
-          aria-hidden="true"
-          style={{ display: "flex", gap: 26 }}
+          id="platTrack"
+          style={{
+            display: "flex",
+            gap: 26,
+            padding: "0 40px",
+            width: "max-content",
+          }}
         >
-          <FeedCards prefix="b" />
+          <FeedCards />
         </div>
       </div>
       <div
@@ -565,7 +506,7 @@ export function PlatformsSection() {
           color: "#5f594f",
         }}
       >
-        ← hover to pause · drag to steer →
+        ↓ scroll to browse the feed →
       </div>
     </section>
   );

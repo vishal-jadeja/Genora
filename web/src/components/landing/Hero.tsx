@@ -92,359 +92,370 @@ export function Hero() {
             minHeight: 760,
             display: "flex",
             flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
             overflow: "hidden",
           }}
         >
+          <div className={styles.heroNavSpacer} aria-hidden="true" />
           <div
-            data-hero-el=""
             style={{
+              flex: 1,
               display: "flex",
-              alignItems: "center",
-              gap: 12,
-              marginBottom: 26,
-            }}
-          >
-            <span style={{ width: 26, height: 1, background: ORANGE }} />
-            <span
-              style={{
-                fontFamily: MONO,
-                fontSize: 11,
-                letterSpacing: ".28em",
-                textTransform: "uppercase",
-                color: ORANGE,
-              }}
-            >
-              Writing-first content engine
-            </span>
-            <span style={{ width: 26, height: 1, background: ORANGE }} />
-          </div>
-
-          <h1
-            style={{
-              margin: 0,
-              textAlign: "center",
-              fontFamily: ANTON,
-              fontWeight: 400,
-              fontSize: "clamp(46px,8.4vw,132px)",
-              lineHeight: 0.92,
-              letterSpacing: ".005em",
-              textTransform: "none",
-            }}
-          >
-            <span className="hero-word" style={{ display: "inline-block" }}>
-              Write
-            </span>{" "}
-            <span className="hero-word" style={{ display: "inline-block" }}>
-              once.
-            </span>
-            <br />
-            <span className="hero-word" style={{ display: "inline-block" }}>
-              Say
-            </span>{" "}
-            <span className="hero-word" style={{ display: "inline-block" }}>
-              it
-            </span>{" "}
-            <span
-              className="hero-word"
-              style={{ display: "inline-block", position: "relative" }}
-            >
-              everywhere
-              <span
-                style={{
-                  position: "absolute",
-                  left: 0,
-                  right: 0,
-                  bottom: ".06em",
-                  height: 6,
-                  background: ORANGE,
-                }}
-              />
-            </span>
-            <span
-              className="hero-word"
-              style={{ display: "inline-block", color: ORANGE }}
-            >
-              .
-            </span>
-          </h1>
-
-          <p
-            data-hero-el=""
-            style={{
-              maxWidth: 640,
-              textAlign: "center",
-              margin: "26px auto 0",
-              fontSize: 17,
-              lineHeight: 1.55,
-              color: MUTED2,
-            }}
-          >
-            One raw thought in — a platform-native post out for{" "}
-            <span style={{ color: TEXT }}>LinkedIn</span>,{" "}
-            <span style={{ color: TEXT }}>X</span>,{" "}
-            <span style={{ color: TEXT }}>Reddit</span>,{" "}
-            <span style={{ color: TEXT }}>Medium</span> &{" "}
-            <span style={{ color: TEXT }}>Substack</span>. No copy-paste. No
-            re-writing five times.
-          </p>
-
-          <div
-            id="heroStage"
-            style={{
-              position: "relative",
-              marginTop: 52,
-              width: "100%",
-              maxWidth: 520,
-              height: 230,
-              display: "flex",
+              flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
+              width: "100%",
+              overflow: "hidden",
             }}
           >
             <div
-              id="heroNote"
-              className={styles.heroNote}
+              data-hero-el=""
               style={{
-                position: "relative",
-                zIndex: 5,
-                width: "min(420px, 84vw)",
-                background: CARD,
-                border: "1px solid rgba(242,238,231,.14)",
-                borderRadius: 6,
-                padding: "22px 24px",
-                boxShadow: "0 30px 80px -30px rgba(0,0,0,.8)",
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                marginBottom: 26,
               }}
             >
-              <div
+              <span style={{ width: 26, height: 1, background: ORANGE }} />
+              <span
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  marginBottom: 14,
+                  fontFamily: MONO,
+                  fontSize: 11,
+                  letterSpacing: ".28em",
+                  textTransform: "uppercase",
+                  color: ORANGE,
                 }}
               >
+                Writing-first content engine
+              </span>
+              <span style={{ width: 26, height: 1, background: ORANGE }} />
+            </div>
+
+            <h1
+              style={{
+                margin: 0,
+                textAlign: "center",
+                fontFamily: ANTON,
+                fontWeight: 400,
+                fontSize: "clamp(46px,8.4vw,132px)",
+                lineHeight: 0.92,
+                letterSpacing: ".005em",
+                textTransform: "none",
+              }}
+            >
+              <span className="hero-word" style={{ display: "inline-block" }}>
+                Write
+              </span>{" "}
+              <span className="hero-word" style={{ display: "inline-block" }}>
+                once.
+              </span>
+              <br />
+              <span className="hero-word" style={{ display: "inline-block" }}>
+                Say
+              </span>{" "}
+              <span className="hero-word" style={{ display: "inline-block" }}>
+                it
+              </span>{" "}
+              <span
+                className="hero-word"
+                style={{ display: "inline-block", position: "relative" }}
+              >
+                everywhere
                 <span
                   style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: "50%",
+                    position: "absolute",
+                    left: 0,
+                    right: 0,
+                    bottom: ".06em",
+                    height: 6,
                     background: ORANGE,
                   }}
                 />
-                <span
-                  style={{
-                    fontFamily: MONO,
-                    fontSize: 10,
-                    letterSpacing: ".2em",
-                    textTransform: "uppercase",
-                    color: MUTED,
-                  }}
-                >
-                  raw_thought.txt
-                </span>
-              </div>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 15.5,
-                  lineHeight: 1.6,
-                  color: "#D8D2C7",
-                  fontFamily: GROTESK,
-                }}
+              </span>
+              <span
+                className="hero-word"
+                style={{ display: "inline-block", color: ORANGE }}
               >
-                shipped a feature <span style={{ color: MUTED }}>nobody</span>{" "}
-                asked for → became our{" "}
-                <span style={{ color: ORANGE }}>most-used</span> one. building
-                for yourself is underrated?
-              </p>
-              <span
-                style={{
-                  position: "absolute",
-                  left: -6,
-                  top: -6,
-                  width: 14,
-                  height: 14,
-                  borderLeft: `1.5px solid ${ORANGE}`,
-                  borderTop: `1.5px solid ${ORANGE}`,
-                }}
-              />
-              <span
-                style={{
-                  position: "absolute",
-                  right: -6,
-                  top: -6,
-                  width: 14,
-                  height: 14,
-                  borderRight: `1.5px solid ${ORANGE}`,
-                  borderTop: `1.5px solid ${ORANGE}`,
-                }}
-              />
-              <span
-                style={{
-                  position: "absolute",
-                  left: -6,
-                  bottom: -6,
-                  width: 14,
-                  height: 14,
-                  borderLeft: `1.5px solid ${ORANGE}`,
-                  borderBottom: `1.5px solid ${ORANGE}`,
-                }}
-              />
-              <span
-                style={{
-                  position: "absolute",
-                  right: -6,
-                  bottom: -6,
-                  width: 14,
-                  height: 14,
-                  borderRight: `1.5px solid ${ORANGE}`,
-                  borderBottom: `1.5px solid ${ORANGE}`,
-                }}
-              />
-            </div>
+                .
+              </span>
+            </h1>
+
+            <p
+              data-hero-el=""
+              style={{
+                maxWidth: 640,
+                textAlign: "center",
+                margin: "26px auto 0",
+                fontSize: 17,
+                lineHeight: 1.55,
+                color: MUTED2,
+              }}
+            >
+              One raw thought in — a platform-native post out for{" "}
+              <span style={{ color: TEXT }}>LinkedIn</span>,{" "}
+              <span style={{ color: TEXT }}>X</span>,{" "}
+              <span style={{ color: TEXT }}>Reddit</span>,{" "}
+              <span style={{ color: TEXT }}>Medium</span> &{" "}
+              <span style={{ color: TEXT }}>Substack</span>. No copy-paste. No
+              re-writing five times.
+            </p>
 
             <div
-              id="heroAnnotate"
-              className={styles.heroAnnotate}
+              id="heroStage"
               style={{
-                position: "absolute",
-                zIndex: 6,
-                left: "calc(50% + 230px)",
-                top: "50%",
-                transform: "translateY(-50%)",
+                position: "relative",
+                marginTop: 52,
+                width: "100%",
+                maxWidth: 520,
+                height: 230,
                 display: "flex",
-                flexDirection: "column",
-                gap: 6,
-                pointerEvents: "none",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span
-                  style={{
-                    width: 5,
-                    height: 5,
-                    borderRadius: "50%",
-                    background: ORANGE,
-                    boxShadow: `0 0 6px ${ORANGE}`,
-                  }}
-                />
-                <span
-                  style={{
-                    fontFamily: MONO,
-                    fontSize: 10,
-                    letterSpacing: ".1em",
-                    color: MUTED,
-                  }}
-                >
-                  1 input
-                </span>
-              </div>
               <div
+                id="heroNote"
+                className={styles.heroNote}
                 style={{
-                  width: 1,
-                  height: 34,
-                  marginLeft: 2,
-                  background:
-                    "repeating-linear-gradient(#8A8378 0 3px,transparent 3px 7px)",
-                }}
-              />
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span
-                  style={{
-                    width: 5,
-                    height: 5,
-                    borderRadius: "50%",
-                    background: ORANGE,
-                    boxShadow: `0 0 6px ${ORANGE}`,
-                  }}
-                />
-                <span
-                  style={{
-                    fontFamily: MONO,
-                    fontSize: 10,
-                    letterSpacing: ".1em",
-                    color: MUTED,
-                  }}
-                >
-                  5 outputs
-                </span>
-              </div>
-            </div>
-
-            {FLY_CARDS.map((f, i) => (
-              <div
-                key={f.label}
-                className="hero-fly"
-                data-fly={i}
-                style={{
-                  position: "absolute",
-                  zIndex: 4,
-                  width: 150,
-                  borderRadius: 8,
-                  padding: 12,
-                  opacity: 0,
-                  boxShadow: "0 20px 50px -20px rgba(0,0,0,.7)",
-                  ...f.style,
+                  position: "relative",
+                  zIndex: 5,
+                  width: "min(420px, 84vw)",
+                  background: CARD,
+                  border: "1px solid rgba(242,238,231,.14)",
+                  borderRadius: 6,
+                  padding: "22px 24px",
+                  boxShadow: "0 30px 80px -30px rgba(0,0,0,.8)",
                 }}
               >
                 <div
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 6,
-                    marginBottom: 7,
+                    gap: 8,
+                    marginBottom: 14,
                   }}
                 >
                   <span
                     style={{
-                      width: 18,
-                      height: 18,
-                      borderRadius: f.iconRadius,
-                      background: f.iconBg,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#fff",
-                      fontWeight: 700,
-                      fontSize: 12,
-                      border: i === 1 ? "1px solid #333" : undefined,
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      background: ORANGE,
                     }}
-                  >
-                    {i === 1 ? "X" : null}
-                  </span>
+                  />
                   <span
                     style={{
-                      fontFamily: i === 3 ? "Georgia, serif" : MONO,
-                      fontSize: i === 3 ? 9 : 8,
-                      letterSpacing: i === 3 ? undefined : ".12em",
-                      color: f.labelColor,
-                      textTransform: i === 3 ? undefined : "uppercase",
+                      fontFamily: MONO,
+                      fontSize: 10,
+                      letterSpacing: ".2em",
+                      textTransform: "uppercase",
+                      color: MUTED,
                     }}
                   >
-                    {f.label}
+                    raw_thought.txt
+                  </span>
+                </div>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 15.5,
+                    lineHeight: 1.6,
+                    color: "#D8D2C7",
+                    fontFamily: GROTESK,
+                  }}
+                >
+                  shipped a feature <span style={{ color: MUTED }}>nobody</span>{" "}
+                  asked for → became our{" "}
+                  <span style={{ color: ORANGE }}>most-used</span> one. building
+                  for yourself is underrated?
+                </p>
+                <span
+                  style={{
+                    position: "absolute",
+                    left: -6,
+                    top: -6,
+                    width: 14,
+                    height: 14,
+                    borderLeft: `1.5px solid ${ORANGE}`,
+                    borderTop: `1.5px solid ${ORANGE}`,
+                  }}
+                />
+                <span
+                  style={{
+                    position: "absolute",
+                    right: -6,
+                    top: -6,
+                    width: 14,
+                    height: 14,
+                    borderRight: `1.5px solid ${ORANGE}`,
+                    borderTop: `1.5px solid ${ORANGE}`,
+                  }}
+                />
+                <span
+                  style={{
+                    position: "absolute",
+                    left: -6,
+                    bottom: -6,
+                    width: 14,
+                    height: 14,
+                    borderLeft: `1.5px solid ${ORANGE}`,
+                    borderBottom: `1.5px solid ${ORANGE}`,
+                  }}
+                />
+                <span
+                  style={{
+                    position: "absolute",
+                    right: -6,
+                    bottom: -6,
+                    width: 14,
+                    height: 14,
+                    borderRight: `1.5px solid ${ORANGE}`,
+                    borderBottom: `1.5px solid ${ORANGE}`,
+                  }}
+                />
+              </div>
+
+              <div
+                id="heroAnnotate"
+                className={styles.heroAnnotate}
+                style={{
+                  position: "absolute",
+                  zIndex: 6,
+                  left: "calc(50% + 230px)",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 6,
+                  pointerEvents: "none",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span
+                    style={{
+                      width: 5,
+                      height: 5,
+                      borderRadius: "50%",
+                      background: ORANGE,
+                      boxShadow: `0 0 6px ${ORANGE}`,
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontFamily: MONO,
+                      fontSize: 10,
+                      letterSpacing: ".1em",
+                      color: MUTED,
+                    }}
+                  >
+                    1 input
                   </span>
                 </div>
                 <div
                   style={{
-                    height: f.bar1.h,
-                    width: f.bar1.w,
-                    background: f.barBg,
-                    borderRadius: 3,
-                    marginBottom: 4,
+                    width: 1,
+                    height: 34,
+                    marginLeft: 2,
+                    background:
+                      "repeating-linear-gradient(#8A8378 0 3px,transparent 3px 7px)",
                   }}
                 />
-                <div
-                  style={{
-                    height: 5,
-                    width: f.bar2.w,
-                    background: f.barBg,
-                    borderRadius: 3,
-                  }}
-                />
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span
+                    style={{
+                      width: 5,
+                      height: 5,
+                      borderRadius: "50%",
+                      background: ORANGE,
+                      boxShadow: `0 0 6px ${ORANGE}`,
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontFamily: MONO,
+                      fontSize: 10,
+                      letterSpacing: ".1em",
+                      color: MUTED,
+                    }}
+                  >
+                    5 outputs
+                  </span>
+                </div>
               </div>
-            ))}
+
+              {FLY_CARDS.map((f, i) => (
+                <div
+                  key={f.label}
+                  className="hero-fly"
+                  data-fly={i}
+                  style={{
+                    position: "absolute",
+                    zIndex: 4,
+                    width: 150,
+                    borderRadius: 8,
+                    padding: 12,
+                    opacity: 0,
+                    boxShadow: "0 20px 50px -20px rgba(0,0,0,.7)",
+                    ...f.style,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      marginBottom: 7,
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 18,
+                        height: 18,
+                        borderRadius: f.iconRadius,
+                        background: f.iconBg,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#fff",
+                        fontWeight: 700,
+                        fontSize: 12,
+                        border: i === 1 ? "1px solid #333" : undefined,
+                      }}
+                    >
+                      {i === 1 ? "X" : null}
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: i === 3 ? "Georgia, serif" : MONO,
+                        fontSize: i === 3 ? 9 : 8,
+                        letterSpacing: i === 3 ? undefined : ".12em",
+                        color: f.labelColor,
+                        textTransform: i === 3 ? undefined : "uppercase",
+                      }}
+                    >
+                      {f.label}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      height: f.bar1.h,
+                      width: f.bar1.w,
+                      background: f.barBg,
+                      borderRadius: 3,
+                      marginBottom: 4,
+                    }}
+                  />
+                  <div
+                    style={{
+                      height: 5,
+                      width: f.bar2.w,
+                      background: f.barBg,
+                      borderRadius: 3,
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
 
           <div

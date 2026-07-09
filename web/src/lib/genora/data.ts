@@ -245,7 +245,6 @@ export function createInitialState(): GenoraState {
   return {
     themeMode: "system",
     sidebarCollapsed: false,
-    isAuthed: false,
     profileMenuOpen: false,
     activeFolder: null,
     search: "",

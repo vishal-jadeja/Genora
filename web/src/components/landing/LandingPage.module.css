@@ -33,7 +33,18 @@
 }
 
 .heroPin {
-  padding: 96px 20px 0;
+  padding: 0 20px;
+}
+
+.heroNavSpacer {
+  height: 88px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 720px) {
+  .heroNavSpacer {
+    height: 72px;
+  }
 }
 
 @media (max-width: 640px) {

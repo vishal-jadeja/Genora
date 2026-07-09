@@ -31,6 +31,12 @@ export function useLandingMotion() {
       });
     }
 
+    // reduced motion: fall back to a plain, natively scrollable feed rail
+    const platViewport = document.getElementById("platViewport");
+    if (platViewport && reduced) {
+      platViewport.style.overflowX = "auto";
+    }
+
     let lenis: import("lenis").default | undefined;
     let tickerFn: ((time: number) => void) | undefined;
     let safetyTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -153,6 +159,24 @@ export function useLandingMotion() {
             },
             0.28 + i * 0.05,
           );
+        });
+      }
+
+      const platTrack = document.getElementById("platTrack");
+      if (platTrack && !reduced) {
+        const getMax = () => platTrack.scrollWidth - window.innerWidth;
+        gsap.to(platTrack, {
+          x: () => -Math.max(getMax(), 0),
+          ease: "none",
+          scrollTrigger: {
+            trigger: "#platforms",
+            start: "top top",
+            end: () => "+=" + Math.max(getMax(), 0),
+            scrub: 0.6,
+            pin: true,
+            anticipatePin: 1,
+            invalidateOnRefresh: true,
+          },
         });
       }
 

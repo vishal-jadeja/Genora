@@ -1,19 +1,26 @@
 "use client";
 
+import Link from "next/link";
+import { signOutAction } from "@/app/(app)/actions";
 import { Hoverable } from "./Hoverable";
 import { moveOptStyle, popoverStyle } from "./styleHelpers";
 import type { GenoraViewProps } from "./viewProps";
 
+type HeaderUser = { name?: string | null; email?: string | null; image?: string | null };
+
 export function AppHeader({
   state,
   actions,
+  user,
   onToggleMouseEnter,
   onToggleMouseLeave,
 }: GenoraViewProps & {
+  user: HeaderUser | null;
   onToggleMouseEnter: () => void;
   onToggleMouseLeave: () => void;
 }) {
   const collapsed = state.sidebarCollapsed;
+  const initial = (user?.name?.[0] ?? user?.email?.[0] ?? "?").toUpperCase();
 
   return (
     <header
@@ -69,11 +76,11 @@ export function AppHeader({
       <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/logo.svg"
+          src="/logo.webp"
           alt="Genora"
           width={26}
           height={26}
-          style={{ borderRadius: 7, flex: "none" }}
+          style={{ borderRadius: 7, flex: "none", objectFit: "cover" }}
         />
         <span style={{ fontSize: 14, fontWeight: 600 }}>Genora</span>
       </div>
@@ -81,11 +88,11 @@ export function AppHeader({
       <div style={{ flex: 1 }} />
 
       <div style={{ position: "relative" }}>
-        {state.isAuthed ? (
+        {user ? (
           <>
             <Hoverable
               as="button"
-              title="Account"
+              title={user.name ?? user.email ?? "Account"}
               onClick={actions.toggleProfileMenu}
               style={{
                 width: 32,
@@ -100,10 +107,22 @@ export function AppHeader({
                 color: "var(--c-text2)",
                 fontSize: 12.5,
                 fontWeight: 600,
+                overflow: "hidden",
               }}
               hoverStyle={{ borderColor: "var(--c-borderHover)" }}
             >
-              V
+              {user.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={user.image}
+                  alt=""
+                  width={32}
+                  height={32}
+                  style={{ objectFit: "cover" }}
+                />
+              ) : (
+                initial
+              )}
             </Hoverable>
             {state.profileMenuOpen && (
               <div style={{ ...popoverStyle, top: 40, right: 0, left: "auto" }}>
@@ -116,7 +135,13 @@ export function AppHeader({
                 >
                   Settings
                 </button>
-                <button onClick={actions.logOut} style={moveOptStyle}>
+                <button
+                  onClick={() => {
+                    actions.toggleProfileMenu();
+                    void signOutAction();
+                  }}
+                  style={moveOptStyle}
+                >
                   Log out
                 </button>
               </div>
@@ -124,8 +149,8 @@ export function AppHeader({
           </>
         ) : (
           <Hoverable
-            as="button"
-            onClick={actions.logIn}
+            as={Link}
+            href="/signin"
             style={{
               display: "flex",
               alignItems: "center",
@@ -137,6 +162,7 @@ export function AppHeader({
               color: "var(--c-primaryText)",
               fontSize: 13,
               fontWeight: 600,
+              textDecoration: "none",
             }}
             hoverStyle={{ opacity: 0.9 }}
           >

@@ -10,9 +10,11 @@ const PEEK_HIDE_DELAY = 150;
 export function AppShell({
   children,
   modal,
+  user,
 }: {
   children: ReactNode;
   modal: ReactNode;
+  user: { name?: string | null; email?: string | null; image?: string | null } | null;
 }) {
   const { state, derived, actions } = useGenora();
   const collapsed = state.sidebarCollapsed;
@@ -45,6 +47,7 @@ export function AppShell({
         state={state}
         derived={derived}
         actions={actions}
+        user={user}
         onToggleMouseEnter={showPeek}
         onToggleMouseLeave={scheduleHidePeek}
       />

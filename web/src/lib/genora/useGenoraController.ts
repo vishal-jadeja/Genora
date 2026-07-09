@@ -97,13 +97,6 @@ export function useGenoraController(nav: {
     });
   }, []);
 
-  // ---- mock auth (visual only, no backend) --------------------------------
-  const logIn = useCallback(() => {
-    patch({ isAuthed: true });
-  }, [patch]);
-  const logOut = useCallback(() => {
-    patch({ isAuthed: false, profileMenuOpen: false });
-  }, [patch]);
   const toggleProfileMenu = useCallback(() => {
     setState((s) => ({ ...s, profileMenuOpen: !s.profileMenuOpen }));
   }, []);
@@ -1088,8 +1081,6 @@ export function useGenoraController(nav: {
     () => ({
       setThemeMode,
       toggleSidebarCollapsed,
-      logIn,
-      logOut,
       toggleProfileMenu,
       goDash,
       goDrafts,
@@ -1160,8 +1151,6 @@ export function useGenoraController(nav: {
     [
       setThemeMode,
       toggleSidebarCollapsed,
-      logIn,
-      logOut,
       toggleProfileMenu,
       goDash,
       goDrafts,

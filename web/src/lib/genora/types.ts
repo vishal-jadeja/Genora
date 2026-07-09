@@ -94,7 +94,6 @@ export type PlatformOutputStatus = "pending" | "success" | "failed";
 export interface GenoraState {
   themeMode: ThemeMode;
   sidebarCollapsed: boolean;
-  isAuthed: boolean;
   profileMenuOpen: boolean;
   activeFolder: string | null;
   search: string;
