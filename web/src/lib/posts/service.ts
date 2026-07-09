@@ -2,9 +2,19 @@ import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { platformOutputs, posts } from "@/db/schema";
 import { folderBelongsToUser } from "@/lib/folders/service";
+import {
+  persistManualEdit,
+  restoreVersion,
+  VersionNotFoundError,
+  type PlatformOutputRow,
+} from "@/lib/generation/persistResult";
+import type { Platform } from "@/lib/generation/types";
+import type { Provider } from "@/lib/keys/service";
 
 export class PostNotFoundError extends Error {}
 export class FolderNotOwnedError extends Error {}
+export class PlatformOutputNotFoundError extends Error {}
+export { VersionNotFoundError };
 
 export interface PostSummary {
   id: string;
@@ -163,6 +173,70 @@ export async function updatePost(
     throw new PostNotFoundError(postId);
   }
   return post;
+}
+
+// Lists every version (current + historical, success or failed) generated
+// for one post+platform, newest first.
+export async function listPlatformOutputVersions(
+  userId: string,
+  postId: string,
+  platform: Platform,
+): Promise<PlatformOutputRow[]> {
+  await getPost(userId, postId); // ownership check
+
+  return db
+    .select()
+    .from(platformOutputs)
+    .where(
+      and(
+        eq(platformOutputs.postId, postId),
+        eq(platformOutputs.platform, platform),
+      ),
+    )
+    .orderBy(desc(platformOutputs.version)) as Promise<PlatformOutputRow[]>;
+}
+
+// Edits already-generated content for one platform — writes a new version
+// (same append-only/isCurrent versioning as a real generation) rather than
+// mutating the existing row in place.
+export async function editPlatformOutputContent(
+  userId: string,
+  postId: string,
+  platform: Platform,
+  content: string,
+): Promise<PlatformOutputSummary> {
+  const post = await getPost(userId, postId);
+  const current = post.platformOutputs.find((o) => o.platform === platform);
+  if (!current) {
+    throw new PlatformOutputNotFoundError(`${postId}:${platform}`);
+  }
+
+  const written = await persistManualEdit({
+    postId,
+    platform,
+    content,
+    provider: current.provider as Provider | null,
+    model: current.model,
+    revisionCount: current.revisionCount,
+  });
+
+  return {
+    ...current,
+    id: written.id,
+    version: written.version,
+    content,
+  };
+}
+
+// Restores an older (or failed) version to current for one post+platform.
+export async function restorePlatformOutputVersion(
+  userId: string,
+  postId: string,
+  platform: Platform,
+  version: number,
+): Promise<PlatformOutputRow> {
+  await getPost(userId, postId); // ownership check
+  return restoreVersion(postId, platform, version);
 }
 
 export async function deletePost(

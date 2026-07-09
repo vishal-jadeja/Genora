@@ -152,3 +152,97 @@ export async function persistFailure(
     });
   });
 }
+
+export class VersionNotFoundError extends Error {}
+
+export interface PlatformOutputRow {
+  id: string;
+  platform: Platform;
+  version: number;
+  content: string | null;
+  status: "pending" | "success" | "failed";
+  revisionCount: number;
+  errorReason: string | null;
+  provider: Provider | null;
+  model: string | null;
+  isCurrent: boolean;
+  createdAt: Date;
+}
+
+// Flips an older (or failed) version back to current — the inverse of
+// supersedeCurrent. Same advisory-lock transaction pattern as
+// persistSuccess/persistFailure/persistManualEdit so a restore can't race a
+// concurrent generation for the same post+platform.
+export async function restoreVersion(
+  postId: string,
+  platform: Platform,
+  version: number,
+): Promise<PlatformOutputRow> {
+  return db.transaction(async (tx) => {
+    await lockPostPlatform(tx, postId, platform);
+
+    const [target] = await tx
+      .select()
+      .from(platformOutputs)
+      .where(
+        and(
+          eq(platformOutputs.postId, postId),
+          eq(platformOutputs.platform, platform),
+          eq(platformOutputs.version, version),
+        ),
+      );
+
+    if (!target) {
+      throw new VersionNotFoundError(`${postId}:${platform}:${version}`);
+    }
+
+    await supersedeCurrent(tx, postId, platform);
+
+    const [restored] = await tx
+      .update(platformOutputs)
+      .set({ isCurrent: true })
+      .where(eq(platformOutputs.id, target.id))
+      .returning();
+
+    return restored as PlatformOutputRow;
+  });
+}
+
+interface PersistManualEditInput {
+  postId: string;
+  platform: Platform;
+  content: string;
+  provider: Provider | null;
+  model: string | null;
+  revisionCount: number;
+}
+
+// A user manually editing already-generated content — not a new generation,
+// but still versioned the same way (append-only, isCurrent flip) so history
+// and restore keep working uniformly regardless of how a version was made.
+export async function persistManualEdit(
+  input: PersistManualEditInput,
+): Promise<{ id: string; version: number }> {
+  return db.transaction(async (tx) => {
+    await lockPostPlatform(tx, input.postId, input.platform);
+    await supersedeCurrent(tx, input.postId, input.platform);
+    const version = await nextVersion(tx, input.postId, input.platform);
+
+    const [output] = await tx
+      .insert(platformOutputs)
+      .values({
+        postId: input.postId,
+        platform: input.platform,
+        version,
+        content: input.content,
+        status: "success",
+        revisionCount: input.revisionCount,
+        provider: input.provider,
+        model: input.model,
+        isCurrent: true,
+      })
+      .returning({ id: platformOutputs.id });
+
+    return { id: output.id, version };
+  });
+}

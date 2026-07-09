@@ -12,7 +12,8 @@ vi.mock("@/db/client", () => ({
   },
 }));
 
-const { persistFailure, persistSuccess } = await import("./persistResult");
+const { persistFailure, persistSuccess, persistManualEdit, restoreVersion, VersionNotFoundError } =
+  await import("./persistResult");
 
 const tx = {
   select: (...args: unknown[]) => selectMock(...args),
@@ -138,6 +139,76 @@ describe("persistFailure", () => {
       status: "failed",
       errorReason: "ai-service generate failed: 503",
     });
+  });
+});
+
+describe("persistManualEdit", () => {
+  it("supersedes the prior current row and inserts the edited content at the next version", async () => {
+    const returning = vi.fn().mockResolvedValue([{ id: "output-2" }]);
+    const values = vi.fn().mockReturnValue({ returning });
+    insertMock.mockReturnValueOnce({ values });
+
+    const result = await persistManualEdit({
+      postId: "post-1",
+      platform: "linkedin",
+      content: "hand-edited draft",
+      provider: "anthropic",
+      model: "claude-sonnet-4-5",
+      revisionCount: 1,
+    });
+
+    expect(executeMock).toHaveBeenCalledTimes(1);
+    expect(updateMock).toHaveBeenCalledTimes(1);
+    expect(values.mock.calls[0][0]).toMatchObject({
+      postId: "post-1",
+      platform: "linkedin",
+      version: 3,
+      status: "success",
+      isCurrent: true,
+      content: "hand-edited draft",
+      provider: "anthropic",
+      model: "claude-sonnet-4-5",
+    });
+    expect(result).toEqual({ id: "output-2", version: 3 });
+  });
+});
+
+describe("restoreVersion", () => {
+  it("throws VersionNotFoundError when the target version doesn't exist", async () => {
+    const targetWhere = vi.fn().mockResolvedValue([]);
+    selectMock.mockReturnValueOnce({
+      from: vi.fn().mockReturnValue({ where: targetWhere }),
+    });
+
+    await expect(
+      restoreVersion("post-1", "linkedin", 99),
+    ).rejects.toThrow(VersionNotFoundError);
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it("supersedes current, then flips the target version to current", async () => {
+    const targetWhere = vi
+      .fn()
+      .mockResolvedValue([{ id: "output-1", version: 2 }]);
+    selectMock.mockReturnValueOnce({
+      from: vi.fn().mockReturnValue({ where: targetWhere }),
+    });
+
+    const supersedeWhere = vi.fn().mockResolvedValue(undefined);
+    const restoreReturning = vi
+      .fn()
+      .mockResolvedValue([{ id: "output-1", version: 2, isCurrent: true }]);
+    const restoreWhere = vi.fn().mockReturnValue({ returning: restoreReturning });
+    updateMock
+      .mockReturnValueOnce({ set: vi.fn().mockReturnValue({ where: supersedeWhere }) })
+      .mockReturnValueOnce({ set: vi.fn().mockReturnValue({ where: restoreWhere }) });
+
+    const result = await restoreVersion("post-1", "linkedin", 2);
+
+    expect(executeMock).toHaveBeenCalledTimes(1);
+    expect(updateMock).toHaveBeenCalledTimes(2);
+    expect(restoreWhere).toHaveBeenCalled();
+    expect(result).toEqual({ id: "output-1", version: 2, isCurrent: true });
   });
 });
 
