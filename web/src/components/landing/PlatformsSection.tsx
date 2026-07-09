@@ -419,7 +419,7 @@ export function PlatformsSection() {
     <section
       id="platforms"
       data-screen-label="Platforms"
-      style={{ position: "relative", zIndex: 2, padding: "40px 0 130px" }}
+      style={{ position: "relative", zIndex: 1, padding: "40px 0 130px" }}
     >
       <div style={{ maxWidth: 1180, margin: "0 auto", padding: "0 40px" }}>
         <div

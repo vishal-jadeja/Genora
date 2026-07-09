@@ -58,9 +58,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${newsreader.variable} ${hankenGrotesk.variable} ${jetbrainsMono.variable} ${anton.variable} ${spaceGrotesk.variable} h-full`}
+      className={`${newsreader.variable} ${hankenGrotesk.variable} ${jetbrainsMono.variable} ${anton.variable} ${spaceGrotesk.variable}`}
     >
-      <body className="h-full" suppressHydrationWarning>
+      <body suppressHydrationWarning>
         {children}
         <Analytics />
       </body>

@@ -164,20 +164,23 @@ export function useLandingMotion() {
 
       const platTrack = document.getElementById("platTrack");
       if (platTrack && !reduced) {
-        const getMax = () => platTrack.scrollWidth - window.innerWidth;
-        gsap.to(platTrack, {
-          x: () => -Math.max(getMax(), 0),
-          ease: "none",
-          scrollTrigger: {
-            trigger: "#platforms",
-            start: "top top",
-            end: () => "+=" + Math.max(getMax(), 0),
-            scrub: 0.6,
-            pin: true,
-            anticipatePin: 1,
-            invalidateOnRefresh: true,
+        const getMax = () =>
+          Math.max(platTrack.scrollWidth - window.innerWidth, 0);
+        gsap.fromTo(
+          platTrack,
+          { x: 0 },
+          {
+            x: () => -getMax(),
+            ease: "none",
+            scrollTrigger: {
+              trigger: "#platforms",
+              start: "top bottom",
+              end: "bottom top",
+              scrub: 0.6,
+              invalidateOnRefresh: true,
+            },
           },
-        });
+        );
       }
 
       const glow = document.getElementById("edgeGlow");

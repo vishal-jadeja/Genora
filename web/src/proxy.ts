@@ -1,12 +1,26 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { auth } from "@/auth";
 
-export async function proxy(request: NextRequest) {
-  const session = await auth();
+const PUBLIC_PATHS = new Set(["/", "/signin"]);
 
-  if (!session) {
-    return NextResponse.redirect(new URL("/", request.url));
+function hasSessionCookie(req: NextRequest) {
+  return (
+    req.cookies.has("authjs.session-token") ||
+    req.cookies.has("__Secure-authjs.session-token")
+  );
+}
+
+export default function proxy(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+
+  if (PUBLIC_PATHS.has(pathname) || pathname.startsWith("/api/auth")) {
+    return NextResponse.next();
+  }
+
+  if (!hasSessionCookie(req)) {
+    const signInUrl = new URL("/signin", req.nextUrl.origin);
+    signInUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(signInUrl);
   }
 
   return NextResponse.next();
@@ -14,10 +28,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/dashboard/:path*",
-    "/compose/:path*",
-    "/drafts/:path*",
-    "/post/:path*",
-    "/settings/:path*",
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
