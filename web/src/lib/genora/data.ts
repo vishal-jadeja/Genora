@@ -139,95 +139,16 @@ export const PROVIDERS: ProviderMeta[] = [
   { id: "groq", name: "Groq", ph: "gsk_…" },
 ];
 
-// Canned failure reasons for the simulated per-platform generation outcome —
-// mirrors the shape of real backend errors (auth/permission, rate limit,
-// timeout) so the UI has something realistic to render before it's wired to
-// the actual ai-service classification (401/403/429/5xx).
-export const GEN_ERROR_REASONS: string[] = [
-  "The connected API key doesn't have access to this model.",
-  "This provider is rate-limiting requests right now — safe to retry.",
-  "Generation timed out before finishing.",
-];
-
+// Cycled through by the client-side Slop Guard heuristic's hard-reject
+// banner. Only used when the *client* heuristic blocks before ever calling
+// the real backend — a real rejection shows the server's actual reason
+// instead (see slopRejectReason).
 export const REJECTS: string[] = [
   "There's no thought in here yet — just a topic wearing a trench coat.",
   "This is a headline waiting for an opinion. Care to lend it one?",
   "I repurpose thinking, not vibes. Give me something you actually believe.",
   "You wrote a subject line and called it a draft. Bold. Still no.",
 ];
-
-export const SAMPLES: Record<PlatformId, string> = {
-  linkedin: `I spent two years letting my analytics dashboard decide what to write.
-
-Here's what it quietly cost me:
-
-Every post that "did numbers" pulled me toward the same three safe takes. The dashboard rewarded certainty, so I stopped publishing anything I was still thinking through — which was, of course, the only writing worth doing.
-
-Last month I hid the stats for 30 days and wrote only what I actually wanted to say.
-
-Reach dropped about 30%. But the replies changed completely: longer, more specific, from people I'd genuinely want to talk to.
-
-"What performs" and "what's worth writing" had been drifting apart the whole time. I just couldn't see it with the numbers in the way.`,
-  x: `I hid my analytics for 30 days and wrote only what I actually wanted to say.
-
-Reach dropped ~30%. Replies got 3x more thoughtful.
-
-Turns out "what performs" and "what's worth writing" had quietly drifted apart — and the dashboard was the last place I'd notice.`,
-  reddit: `After two years of writing for the algorithm, I turned off my analytics for 30 days. Some honest notes.
-
-The dashboard rewarded certainty, so I slowly stopped posting anything I was still working out — which was the only stuff worth posting. With the stats hidden, reach fell ~30% but the replies got dramatically better: longer, more specific, actual conversations.
-
-Curious if anyone else here has done a stats detox. Did your writing change, or just your anxiety about it?`,
-  medium: `## The quiet cost of writing for the dashboard
-
-There's a specific kind of self-betrayal that doesn't feel like one while it's happening.
-
-For two years, I let an analytics dashboard choose my topics. Not consciously — I'd just notice which posts "worked," and drift toward more of those. The dashboard rewarded certainty, so I stopped publishing the half-formed things. The tentative things. Which, it turns out, were the only things worth writing.
-
-So I ran an experiment: 30 days, stats hidden.
-
-Reach dropped about 30%. And it barely mattered — because the replies, the actual humans on the other end, got better in every way I care about.`,
-  substack: `Hey — quick one this week.
-
-I turned off my stats for a month. No opens, no reach, no little dopamine graph.
-
-Here's the honest report: my numbers dropped maybe 30%, and I've never enjoyed writing this newsletter more. The dashboard had been quietly steering me toward my safest takes, and I hadn't noticed until I took it away.
-
-More soon,
-— J`,
-};
-
-export const ALTS: Record<PlatformId, string> = {
-  linkedin: `Unpopular opinion: your analytics dashboard is a worse editor than you are.
-
-For two years I let mine pick my topics. It rewarded certainty, so I quietly stopped publishing anything I was still figuring out.
-
-I hid the stats for 30 days. Reach fell ~30%. The replies got sharper, longer, and from people I actually wanted to hear from.
-
-"What performs" and "what's worth writing" had drifted apart — I only saw it once the numbers were gone.`,
-  x: `Your analytics dashboard is a worse editor than you are.
-
-Proof: 30 days, stats hidden. Reach ~30% down, replies way up.
-
-The numbers had been steering me toward my safest takes the whole time.`,
-  reddit: `Did a 30-day "analytics detox" and it kind of rewired how I write (in a good way).
-
-Short version: hiding my stats dropped reach ~30% but made my replies genuinely thoughtful for the first time in years. The dashboard had me writing safe without me noticing.
-
-Anyone else tried this? What happened to your writing?`,
-  medium: `## I fired my analytics dashboard as an editor
-
-It was never supposed to have the job. It just quietly took it.
-
-Thirty days with the stats hidden taught me that "what performs" and "what's worth writing" had been drifting apart for years — and reach dropping 30% mattered far less than I feared.`,
-  substack: `Hey —
-
-Experiment report: I killed my stats for 30 days.
-
-Numbers down ~30%, enjoyment up 100%. The dashboard had been nudging me toward my safest self, and I only noticed in its absence.
-
-— J`,
-};
 
 export const INSTR_DEFAULTS: Record<PlatformId, string> = {
   linkedin:
@@ -261,99 +182,37 @@ export function createInitialState(): GenoraState {
     draftsStatusFilter: "all",
     draftsPlatformFilter: "all",
     draftsSort: "recent",
-    folders: [
-      { id: "essays", name: "Essays" },
-      { id: "threads", name: "Thread ideas" },
-      { id: "work", name: "Work notes" },
-      { id: "personal", name: "Personal" },
-    ],
-    posts: [
-      {
-        id: "p1",
-        title: "Writing for the dashboard",
-        snippet:
-          "I spent two years letting analytics pick my topics, and here is what it quietly cost me.",
-        folder: "essays",
-        status: "Generated",
-        platforms: ["linkedin", "x", "substack"],
-        edited: "2h",
-      },
-      {
-        id: "p2",
-        title: "The case for boring tools",
-        snippet:
-          "Every productivity app promises transformation. The ones I keep are the dull, dependable ones.",
-        folder: "essays",
-        status: "Edited",
-        platforms: ["linkedin", "medium"],
-        edited: "1d",
-      },
-      {
-        id: "p3",
-        title: "Why I quit my morning routine",
-        snippet:
-          "Six months of 5am wake-ups taught me exactly one uncomfortable thing about discipline.",
-        folder: "personal",
-        status: "Draft",
-        platforms: [],
-        edited: "3d",
-      },
-      {
-        id: "p4",
-        title: "Ship smaller",
-        snippet:
-          "A thread on why my team stopped doing two-week sprints and got faster.",
-        folder: "threads",
-        status: "Exported",
-        platforms: ["x", "reddit"],
-        edited: "4d",
-      },
-      {
-        id: "p5",
-        title: "Notes on hiring for taste",
-        snippet:
-          "You can teach skill. Taste is harder, and I have some strong opinions about it.",
-        folder: "work",
-        status: "Generated",
-        platforms: ["linkedin"],
-        edited: "1w",
-      },
-      {
-        id: "p6",
-        title: "The tyranny of the blank page",
-        snippet: "",
-        folder: "personal",
-        status: "Draft",
-        platforms: [],
-        edited: "1w",
-      },
-    ],
+    // folders/posts are placeholders — the real values (useFolders/usePosts)
+    // always override them at display time; see useGenoraController's
+    // displayState merge.
+    folders: [],
+    posts: [],
     moveMenu: null,
     dashDraft: "",
     dashFocused: false,
     composePostId: null,
-    composeTitle: "Writing for the dashboard",
-    draft:
-      "I spent two years letting my analytics dashboard decide what I wrote about. Every time a post did well, I'd drift toward more of that — and the dashboard rewarded certainty, so I slowly stopped publishing anything I was still thinking through. Last month I hid the stats for 30 days and wrote only what I actually wanted to say. Reach dropped about 30%, but the replies got so much better: longer, more specific, from people I'd actually want to talk to. \"What performs\" and \"what's worth writing\" had quietly drifted apart, and I couldn't see it with the numbers in the way.",
+    composeTitle: "",
+    draft: "",
     platforms: {
-      linkedin: true,
-      x: true,
+      linkedin: false,
+      x: false,
       reddit: false,
       medium: false,
-      substack: true,
+      substack: false,
     },
     model: "sonnet" as ModelId,
     modelOpen: false,
-    composeFolder: "essays",
+    composeFolder: null,
     folderPickerOpen: false,
     softNudge: false,
     softDismissed: false,
     generating: false,
     slopHard: false,
-    blockedCount: 12,
+    slopRejectReason: null,
+    blockedCount: 0,
     rejectIdx: 0,
-    outTitle: "Writing for the dashboard",
-    outPlatforms: ["linkedin", "x", "substack"],
+    outTitle: "",
+    outPlatforms: [],
     activeTab: "linkedin",
     content: {},
     versions: {},
@@ -362,7 +221,7 @@ export function createInitialState(): GenoraState {
     historyOpen: null,
     redditSub: "",
     flashMsg: "",
-    freeLeft: 3,
+    freeLeft: 0,
     settingsTab: "keys",
     keys: {
       anthropic: { c: false, v: "" },
@@ -372,7 +231,7 @@ export function createInitialState(): GenoraState {
     },
     keyValidating: {},
     keyError: {},
-    instrOpen: "linkedin",
+    instrOpen: null,
     instr: { ...INSTR_DEFAULTS },
     voice: "",
     slopEnabled: true,

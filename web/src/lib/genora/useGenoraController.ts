@@ -17,21 +17,27 @@ import {
   useDeletePost,
   useDuplicatePost,
   useMovePost,
+  usePost,
   usePosts,
   useUpdatePost,
 } from "@/hooks/usePosts";
 import { useQuota } from "@/hooks/useQuota";
-import { toMockFolder, toMockPost } from "./adapters";
+import { useGenerationRun } from "@/hooks/useGenerationRun";
 import {
-  ALTS,
-  GEN_ERROR_REASONS,
+  useEditPlatformContent,
+  useGenerate,
+  usePlatformVersions,
+  useRegeneratePlatform,
+  useRestoreVersion,
+} from "@/hooks/useGeneration";
+import { computeOutputs, toMockFolder, toMockPost } from "./adapters";
+import {
   INSTR_DEFAULTS,
   MODELS,
   ORDER,
   PLAT,
   PROVIDERS,
   REJECTS,
-  SAMPLES,
   createInitialState,
 } from "./data";
 import { thresholds, wordCount } from "./logic";
@@ -39,7 +45,6 @@ import type {
   GenoraState,
   ModelMeta,
   PlatformId,
-  PlatformOutputStatus,
   Post,
   PostStatus,
   ProviderId,
@@ -47,12 +52,6 @@ import type {
   SlopStrictness,
   ThemeMode,
 } from "./types";
-
-// Prototype-only: simulates the real backend's partial-failure behavior
-// (see backend-plan.md — "one platform failing doesn't fail the run") so
-// this UI has somewhere to render success/failure per platform instead of
-// treating every generation as instant and infallible.
-const SIMULATED_FAILURE_CHANCE = 0.18;
 
 const THEME_MODE_KEY = "genora-theme-mode";
 const SIDEBAR_COLLAPSED_KEY = "genora-sidebar-collapsed";
@@ -78,9 +77,6 @@ export function useGenoraController(nav: {
   const navigate = nav.push;
   const replace = nav.replace;
   const [state, setState] = useState<GenoraState>(createInitialState);
-  const platformTimers = useRef<
-    Partial<Record<PlatformId, ReturnType<typeof setTimeout>>>
-  >({});
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ---- real backend: BYOK keys, per-platform instructions, quota ---------
@@ -111,6 +107,105 @@ export function useGenoraController(nav: {
     () => (postsQuery.data ?? []).map(toMockPost),
     [postsQuery.data],
   );
+
+  // ---- real backend: generation / output ----------------------------------
+  const generateMutation = useGenerate();
+  const regeneratePlatformMutation = useRegeneratePlatform();
+  const editPlatformContentMutation = useEditPlatformContent();
+  const restoreVersionMutation = useRestoreVersion();
+  // In-memory only — the run id/token from the most recent trigger in *this*
+  // browser session. Not persisted anywhere (posts has no run FK — ownership
+  // is Trigger.dev tag-based), so a cold revisit to a still-generating post
+  // has no token and falls back to whatever's already in the DB; it won't
+  // live-update until the user refreshes. Known, disclosed limitation.
+  const [activeRun, setActiveRun] = useState<{
+    runId: string | null;
+    publicAccessToken: string | null;
+  }>({ runId: null, publicAccessToken: null });
+  const { shouldPoll } = useGenerationRun({
+    postId: state.composePostId ?? "",
+    runId: activeRun.runId,
+    publicAccessToken: activeRun.publicAccessToken,
+  });
+  const postDetailQuery = usePost(state.composePostId ?? undefined, {
+    refetchInterval: shouldPoll ? 2500 : false,
+  });
+  const versionsQuery = usePlatformVersions(
+    state.composePostId ?? undefined,
+    state.historyOpen ?? undefined,
+  );
+
+  // Seed outPlatforms (which platforms were requested) from whatever's
+  // already on the post the first time it loads cold — e.g. opened from
+  // Drafts rather than just-triggered — without clobbering an in-session
+  // list a just-fired generate/regenerate call already set.
+  const seededOutPlatformsRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!postDetailQuery.data) return;
+    if (seededOutPlatformsRef.current === postDetailQuery.data.id) return;
+    seededOutPlatformsRef.current = postDetailQuery.data.id;
+    const fromServer = postDetailQuery.data.platformOutputs.map(
+      (o) => o.platform as PlatformId,
+    );
+    if (fromServer.length === 0) return;
+    setState((s) => ({
+      ...s,
+      outPlatforms: s.outPlatforms.length > 0 ? s.outPlatforms : fromServer,
+      activeTab:
+        s.outPlatforms.length > 0 ? s.activeTab : (fromServer[0] ?? s.activeTab),
+    }));
+  }, [postDetailQuery.data]);
+
+  // Content is user-editable, so it's hydrated from the server exactly once
+  // per platform (the moment that platform's generation first completes),
+  // then locally owned — a background poll/realtime update must never
+  // clobber an in-progress edit.
+  const hydratedContentRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!postDetailQuery.data) return;
+    const postId = postDetailQuery.data.id;
+    const toHydrate: Partial<Record<PlatformId, string>> = {};
+    let changed = false;
+    for (const o of postDetailQuery.data.platformOutputs) {
+      if (o.status !== "success" || o.content == null) continue;
+      const key = `${postId}:${o.platform}`;
+      if (hydratedContentRef.current.has(key)) continue;
+      hydratedContentRef.current.add(key);
+      toHydrate[o.platform as PlatformId] = o.content;
+      changed = true;
+    }
+    if (changed) {
+      setState((s) => ({ ...s, content: { ...s.content, ...toHydrate } }));
+    }
+  }, [postDetailQuery.data]);
+
+  // The optimistic "generating: true" set by runGenerate/regenerate only
+  // covers the brief window before the first real fetch for this post
+  // resolves — once it has, outputsGenerating/regeneratingPlatforms (both
+  // computed live from server data) are the sole source of truth.
+  useEffect(() => {
+    if (postDetailQuery.data) {
+      setState((s) => (s.generating ? { ...s, generating: false } : s));
+    }
+  }, [postDetailQuery.data]);
+
+  // Resuming an existing (not-yet-generated) draft: hydrate the full raw
+  // text once from the server — the mock Post's `snippet` is truncated to
+  // 160 chars for list rendering and isn't enough to resume editing.
+  const hydratedDraftRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!postDetailQuery.data || postDetailQuery.data.status !== "draft") {
+      return;
+    }
+    if (hydratedDraftRef.current === postDetailQuery.data.id) return;
+    hydratedDraftRef.current = postDetailQuery.data.id;
+    setState((s) => ({
+      ...s,
+      draft: postDetailQuery.data!.rawContent,
+      composeTitle: postDetailQuery.data!.title ?? s.composeTitle,
+      composeFolder: postDetailQuery.data!.folderId,
+    }));
+  }, [postDetailQuery.data]);
 
   // instr is user-edited free text with no explicit save-per-keystroke UX
   // (see SettingsBody's Save button) — hydrate it from the server exactly
@@ -194,57 +289,29 @@ export function useGenoraController(nav: {
         softNudge: false,
         softDismissed: false,
         slopHard: false,
+        slopRejectReason: null,
       });
       navigate("/compose");
     },
     [patch, navigate],
   );
 
-  // Pure state hydration from an existing post — no navigation. Used both by
-  // openPost (which also navigates) and by /post/[id]'s mount effect (which
-  // must NOT re-trigger navigation on browser back/forward).
+  // Sets which post is open and resets transient UI for it — the actual
+  // content/output/draft-text hydration happens in the effects above, driven
+  // by usePost(composePostId) once it resolves (async, so intentionally not
+  // done here synchronously).
   const loadPost = useCallback((id: string) => {
-    setState((s) => {
-      const post = s.posts.find((p) => p.id === id);
-      if (!post) return s;
-      if (["Generated", "Edited", "Exported"].includes(post.status)) {
-        const sel = post.platforms.length
-          ? post.platforms
-          : (["linkedin"] as PlatformId[]);
-        const content: Partial<Record<PlatformId, string>> = {};
-        const versions: Partial<Record<PlatformId, string[]>> = {};
-        const outputStatus: Partial<Record<PlatformId, PlatformOutputStatus>> =
-          {};
-        sel.forEach((pid) => {
-          const t = SAMPLES[pid] || SAMPLES.linkedin;
-          content[pid] = t;
-          versions[pid] = [t];
-          outputStatus[pid] = "success";
-        });
-        return {
-          ...s,
-          composePostId: post.id,
-          outTitle: post.title,
-          outPlatforms: sel,
-          content,
-          versions,
-          outputStatus,
-          outputError: {},
-          activeTab: sel[0],
-          slopHard: false,
-          generating: false,
-        };
-      }
-      return {
-        ...s,
-        composePostId: post.id,
-        composeTitle: post.title,
-        draft: post.snippet || "",
-        composeFolder: post.folder,
-        softNudge: false,
-        softDismissed: false,
-      };
-    });
+    setState((s) => ({
+      ...s,
+      composePostId: id,
+      outTitle: s.posts.find((p) => p.id === id)?.title ?? s.outTitle,
+      slopHard: false,
+      slopRejectReason: null,
+      generating: false,
+      softNudge: false,
+      softDismissed: false,
+      redditSub: "",
+    }));
   }, []);
 
   const openPost = useCallback(
@@ -369,6 +436,7 @@ export function useGenoraController(nav: {
         softNudge: false,
         softDismissed: false,
         slopHard: false,
+        slopRejectReason: null,
       };
     });
     navigate("/compose");
@@ -417,103 +485,76 @@ export function useGenoraController(nav: {
   );
 
   // ---- generation -------------------------------------------------------
-  // Resolves one platform's generation independently of the others — mirrors
-  // the real backend's per-platform fan-out (generatePost.ts), where one
-  // platform failing never blocks or fails the rest. Guards on
-  // s.composePostId !== postId so a stale timer from an abandoned post can't
-  // clobber state after the user has moved on to a new one.
-  const settlePlatform = useCallback(
-    (postId: string, id: PlatformId) => {
-      setState((s) => {
-        if (s.composePostId !== postId) return s;
-        const failed = Math.random() < SIMULATED_FAILURE_CHANCE;
-        const content = { ...s.content };
-        const versions = { ...s.versions };
-        const outputError = { ...s.outputError };
-        const outputStatus: GenoraState["outputStatus"] = {
-          ...s.outputStatus,
-          [id]: failed ? "failed" : "success",
-        };
-        if (failed) {
-          outputError[id] =
-            GEN_ERROR_REASONS[
-              Math.floor(Math.random() * GEN_ERROR_REASONS.length)
-            ];
-          delete content[id];
-        } else {
-          delete outputError[id];
-          content[id] = SAMPLES[id];
-          versions[id] = [SAMPLES[id]];
-        }
-        const stillPending = s.outPlatforms.some(
-          (pid) => outputStatus[pid] === "pending" || outputStatus[pid] == null,
-        );
-        const anySuccess = s.outPlatforms.some(
-          (pid) => outputStatus[pid] === "success",
-        );
-        const posts =
-          stillPending || !anySuccess
-            ? s.posts
-            : s.posts.map((p) =>
-                p.id === postId
-                  ? {
-                      ...p,
-                      status: "Generated" as PostStatus,
-                      edited: "just now",
-                    }
-                  : p,
-              );
-        return {
-          ...s,
-          content,
-          versions,
-          outputStatus,
-          outputError,
-          posts,
-          generating: stillPending,
-          freeLeft: stillPending
-            ? s.freeLeft
-            : hasKey()
-              ? s.freeLeft
-              : Math.max(0, s.freeLeft - 1),
-        };
-      });
-    },
-    [hasKey],
-  );
+  // Tracks platforms currently being retried/regenerated so the UI shows
+  // "pending" immediately, even though the DB's current row for that
+  // platform is still the old (superseded-to-be) one until the real backend
+  // finishes — cleared by the query-watching effect below once a genuinely
+  // newer version appears.
+  const [regeneratingPlatforms, setRegeneratingPlatforms] = useState<
+    Set<PlatformId>
+  >(new Set());
+  const lastSeenVersionRef = useRef<Map<string, number>>(new Map());
 
-  const schedulePlatform = useCallback(
-    (postId: string, id: PlatformId, index: number) => {
-      if (platformTimers.current[id]) clearTimeout(platformTimers.current[id]);
-      // Staggered, slightly randomized delay per platform — so the loading
-      // screen shows genuinely independent progress instead of every row
-      // finishing in lockstep.
-      const delay = 900 + index * 250 + Math.round(Math.random() * 500);
-      platformTimers.current[id] = setTimeout(
-        () => settlePlatform(postId, id),
-        delay,
-      );
-    },
-    [settlePlatform],
-  );
+  // Single source of truth for "did a platform's result change": content is
+  // hydrated from the server exactly once per version (so a background
+  // poll/realtime update never clobbers an in-progress edit), and a version
+  // bump also clears that platform out of regeneratingPlatforms.
+  useEffect(() => {
+    if (!postDetailQuery.data) return;
+    const postId = postDetailQuery.data.id;
+    const contentUpdates: Partial<Record<PlatformId, string>> = {};
+    const justChanged: PlatformId[] = [];
+    for (const o of postDetailQuery.data.platformOutputs) {
+      const pid = o.platform as PlatformId;
+      const key = `${postId}:${pid}`;
+      const lastVersion = lastSeenVersionRef.current.get(key);
+      if (lastVersion !== undefined && o.version <= lastVersion) continue;
+      lastSeenVersionRef.current.set(key, o.version);
+      justChanged.push(pid);
+      if (o.status === "success" && o.content != null) {
+        contentUpdates[pid] = o.content;
+      }
+    }
+    if (justChanged.length === 0) return;
+    setState((s) => ({ ...s, content: { ...s.content, ...contentUpdates } }));
+    setRegeneratingPlatforms((prev) => {
+      if (prev.size === 0) return prev;
+      const next = new Set(prev);
+      justChanged.forEach((pid) => next.delete(pid));
+      return next;
+    });
+  }, [postDetailQuery.data]);
 
-  const retryPlatform = useCallback(
+  const regenerateForPlatform = useCallback(
     (id: PlatformId) => {
       const postId = state.composePostId;
       if (!postId) return;
-      setState((s) => ({
-        ...s,
-        outputStatus: { ...s.outputStatus, [id]: "pending" },
-        outputError: (() => {
-          const e = { ...s.outputError };
-          delete e[id];
-          return e;
-        })(),
-        generating: true,
-      }));
-      schedulePlatform(postId, id, 0);
+      setRegeneratingPlatforms((prev) => new Set(prev).add(id));
+      regeneratePlatformMutation.mutate(
+        { postId, platform: id },
+        {
+          onSuccess: (result) => {
+            setActiveRun({
+              runId: result.runId,
+              publicAccessToken: result.publicAccessToken,
+            });
+          },
+          onError: (err) => {
+            console.error("Failed to regenerate platform", err);
+            setRegeneratingPlatforms((prev) => {
+              const next = new Set(prev);
+              next.delete(id);
+              return next;
+            });
+          },
+        },
+      );
     },
-    [state.composePostId, schedulePlatform],
+    [state.composePostId, regeneratePlatformMutation],
+  );
+  const retryPlatform = useCallback(
+    (id: PlatformId) => regenerateForPlatform(id),
+    [regenerateForPlatform],
   );
 
   // navMode "replace": /compose was already a committed page the user was
@@ -533,53 +574,62 @@ export function useGenoraController(nav: {
         return;
       }
 
-      const postId = state.composePostId ?? crypto.randomUUID();
       const sel = ORDER.filter((id) => state.platforms[id]);
-      const first = sel[0] || "linkedin";
+      if (sel.length === 0) return;
       const title = state.composeTitle || "Untitled";
 
-      setState((s) => {
-        const exists = s.posts.some((p) => p.id === postId);
-        const draftPost: Post = {
-          id: postId,
-          title,
-          snippet: s.draft.slice(0, 160),
-          folder: s.composeFolder,
-          status: "Draft",
-          platforms: sel,
-          edited: "just now",
-        };
-        const posts = exists
-          ? s.posts.map((p) => (p.id === postId ? { ...p, ...draftPost } : p))
-          : [draftPost, ...s.posts];
-        const outputStatus: GenoraState["outputStatus"] = {};
-        sel.forEach((id) => (outputStatus[id] = "pending"));
-        return {
-          ...s,
-          posts,
-          composePostId: postId,
-          slopHard: false,
-          softNudge: false,
-          generating: true,
-          activeTab: first,
-          outTitle: title,
-          outPlatforms: sel,
-          content: {},
-          versions: {},
-          outputStatus,
-          outputError: {},
-          redditSub: "",
-        };
-      });
-      (navMode === "replace" ? replace : navigate)(`/post/${postId}`);
+      lastSeenVersionRef.current.clear();
+      seededOutPlatformsRef.current = null;
+      setRegeneratingPlatforms(new Set());
+      setState((s) => ({
+        ...s,
+        slopHard: false,
+        slopRejectReason: null,
+        softNudge: false,
+        generating: true,
+        activeTab: sel[0],
+        outTitle: title,
+        outPlatforms: sel,
+        content: {},
+        outputError: {},
+        redditSub: "",
+      }));
 
-      Object.values(platformTimers.current).forEach(
-        (t) => t && clearTimeout(t),
+      generateMutation.mutate(
+        {
+          rawText: state.draft,
+          title: state.composeTitle || undefined,
+          folderId: state.composeFolder ?? undefined,
+          platforms: sel.map((platform) => ({ platform, modelId: state.model })),
+        },
+        {
+          onSuccess: (outcome) => {
+            if (outcome.status === "rejected") {
+              setState((s) => ({
+                ...s,
+                slopHard: true,
+                generating: false,
+                slopRejectReason: outcome.slopGuard.reason,
+              }));
+              return;
+            }
+            setActiveRun({
+              runId: outcome.runId,
+              publicAccessToken: outcome.publicAccessToken,
+            });
+            setState((s) => ({ ...s, composePostId: outcome.postId }));
+            (navMode === "replace" ? replace : navigate)(
+              `/post/${outcome.postId}`,
+            );
+          },
+          onError: (err) => {
+            console.error("Failed to start generation", err);
+            setState((s) => ({ ...s, generating: false }));
+          },
+        },
       );
-      platformTimers.current = {};
-      sel.forEach((id, index) => schedulePlatform(postId, id, index));
     },
-    [hasKey, quotaQuery.data, state, patch, navigate, replace, schedulePlatform],
+    [hasKey, quotaQuery.data, state, patch, navigate, replace, generateMutation],
   );
 
   const generate = useCallback(() => {
@@ -589,6 +639,7 @@ export function useGenoraController(nav: {
       setState((s) => ({
         ...s,
         slopHard: true,
+        slopRejectReason: null,
         generating: false,
         blockedCount: s.blockedCount + 1,
         rejectIdx: (s.rejectIdx + 1) % REJECTS.length,
@@ -626,6 +677,7 @@ export function useGenoraController(nav: {
       setState((s) => ({
         ...s,
         slopHard: true,
+        slopRejectReason: null,
         generating: false,
         blockedCount: s.blockedCount + 1,
         rejectIdx: (s.rejectIdx + 1) % REJECTS.length,
@@ -653,7 +705,7 @@ export function useGenoraController(nav: {
 
   // ---- output -----------------------------------------------------------
   const backToCompose = useCallback(() => {
-    patch({ slopHard: false });
+    patch({ slopHard: false, slopRejectReason: null });
     // Lateral move within the same post's editing session — replace, not
     // push, so bouncing between compose/output doesn't grow the stack.
     replace("/compose");
@@ -662,41 +714,70 @@ export function useGenoraController(nav: {
     (id: PlatformId) => patch({ activeTab: id, historyOpen: null }),
     [patch],
   );
-  const onEditContent = useCallback((v: string, id?: PlatformId) => {
-    setState((s) => ({
-      ...s,
-      content: { ...s.content, [id ?? s.activeTab]: v },
-    }));
-  }, []);
+  const contentSaveTimers = useRef<
+    Partial<Record<PlatformId, ReturnType<typeof setTimeout>>>
+  >({});
+  const onEditContent = useCallback(
+    (v: string, id?: PlatformId) => {
+      const tab = id ?? state.activeTab;
+      const postId = state.composePostId;
+      setState((s) => ({ ...s, content: { ...s.content, [tab]: v } }));
+      if (!postId) return;
+      if (contentSaveTimers.current[tab]) {
+        clearTimeout(contentSaveTimers.current[tab]);
+      }
+      // Debounced — PATCH .../platforms/:platform has no live-typing
+      // endpoint, so this must not fire on every keystroke.
+      contentSaveTimers.current[tab] = setTimeout(() => {
+        editPlatformContentMutation.mutate(
+          { postId, platform: tab, content: v },
+          {
+            onError: (err) => {
+              console.error("Failed to save edited content", err);
+            },
+          },
+        );
+      }, 800);
+    },
+    [state.activeTab, state.composePostId, editPlatformContentMutation],
+  );
   const onRedditSub = useCallback(
     (v: string) => patch({ redditSub: v }),
     [patch],
   );
-  const regenerate = useCallback((id?: PlatformId) => {
-    setState((s) => {
-      const tab = id ?? s.activeTab;
-      const cur = s.content[tab];
-      const alt = cur === SAMPLES[tab] ? ALTS[tab] : SAMPLES[tab];
-      return {
-        ...s,
-        content: { ...s.content, [tab]: alt },
-        versions: { ...s.versions, [tab]: [...(s.versions[tab] || []), alt] },
-      };
-    });
-  }, []);
+  const regenerate = useCallback(
+    (id?: PlatformId) => regenerateForPlatform(id ?? state.activeTab),
+    [regenerateForPlatform, state.activeTab],
+  );
   const openHistory = useCallback((id?: PlatformId) => {
     setState((s) => {
       const target = id ?? s.activeTab;
       return { ...s, historyOpen: s.historyOpen === target ? null : target };
     });
   }, []);
-  const restoreVersion = useCallback((tab: PlatformId, text: string) => {
-    setState((s) => ({
-      ...s,
-      content: { ...s.content, [tab]: text },
-      historyOpen: null,
-    }));
-  }, []);
+  const restoreVersion = useCallback(
+    (tab: PlatformId, text: string) => {
+      const postId = state.composePostId;
+      if (!postId) return;
+      const match = (versionsQuery.data ?? []).find((v) => v.content === text);
+      if (match) {
+        restoreVersionMutation.mutate(
+          { postId, platform: tab, version: match.version },
+          {
+            onError: (err) => {
+              console.error("Failed to restore version", err);
+            },
+          },
+        );
+      }
+      setState((s) => ({
+        ...s,
+        content: { ...s.content, [tab]: text },
+        historyOpen: null,
+      }));
+    },
+    [state.composePostId, versionsQuery.data, restoreVersionMutation],
+  );
   const flash = useCallback(
     (msg: string) => {
       patch({ flashMsg: msg });
@@ -950,6 +1031,32 @@ export function useGenoraController(nav: {
     [patch],
   );
 
+  // The always-visible per-platform version badge needs a real count for
+  // every selected platform, but the actual past-version content is only
+  // ever rendered for whichever platform's history popover is open — so
+  // fetch full content lazily (versionsQuery, scoped to state.historyOpen)
+  // and fill in a correctly-sized placeholder array for the others (current
+  // row's `.version` is already known from postDetailQuery, no extra fetch).
+  const displayVersions = useMemo(() => {
+    const result: Partial<Record<PlatformId, string[]>> = {};
+    const currentByPlatform = new Map(
+      (postDetailQuery.data?.platformOutputs ?? []).map((o) => [
+        o.platform as PlatformId,
+        o,
+      ]),
+    );
+    state.outPlatforms.forEach((pid) => {
+      const count = currentByPlatform.get(pid)?.version ?? 1;
+      result[pid] = Array.from({ length: count }, () => "");
+    });
+    if (state.historyOpen && versionsQuery.data) {
+      result[state.historyOpen] = [...versionsQuery.data]
+        .sort((a, b) => a.version - b.version)
+        .map((v) => v.content ?? "");
+    }
+    return result;
+  }, [state.outPlatforms, state.historyOpen, postDetailQuery.data, versionsQuery.data]);
+
   // ---- derived (pure data, no styling) ------------------------------------
   const derived = useMemo(() => {
     const S = state;
@@ -1020,7 +1127,7 @@ export function useGenoraController(nav: {
     const alen = activeContent.length;
     const isReddit = activeMeta.share === "prefill" && !!activeMeta.sub;
     const shareReady = !(isReddit && !S.redditSub.trim());
-    const vArr = S.versions[activeTab] || [];
+    const vArr = displayVersions[activeTab] || [];
     const versionLabel = "v" + Math.max(1, vArr.length);
     const genCountText = `Repurposing your thought for ${S.outPlatforms.length} platform${S.outPlatforms.length === 1 ? "" : "s"}…`;
 
@@ -1144,7 +1251,7 @@ export function useGenoraController(nav: {
       draftsNoMatch,
       confirmDialogContent,
     };
-  }, [state, hasKey, quotaQuery.data, realFolders, realPosts]);
+  }, [state, hasKey, quotaQuery.data, realFolders, realPosts, displayVersions]);
 
   useEffect(() => {
     const saved = window.localStorage.getItem(THEME_MODE_KEY);
@@ -1173,14 +1280,35 @@ export function useGenoraController(nav: {
     (Object.keys(keys) as ProviderId[]).forEach((id) => {
       keys[id] = { ...keys[id], c: connected.has(id) };
     });
+
+    const { outputStatus, outputError, generating: outputsGenerating } =
+      computeOutputs(state.outPlatforms, postDetailQuery.data?.platformOutputs);
+    regeneratingPlatforms.forEach((pid) => {
+      outputStatus[pid] = "pending";
+    });
+
     return {
       ...state,
       keys,
       freeLeft: quotaQuery.data?.remaining ?? state.freeLeft,
       folders: realFolders,
       posts: realPosts,
+      versions: displayVersions,
+      outputStatus,
+      outputError,
+      generating:
+        outputsGenerating || regeneratingPlatforms.size > 0 || state.generating,
     };
-  }, [state, apiKeysQuery.data, quotaQuery.data, realFolders, realPosts]);
+  }, [
+    state,
+    apiKeysQuery.data,
+    quotaQuery.data,
+    realFolders,
+    realPosts,
+    displayVersions,
+    postDetailQuery.data,
+    regeneratingPlatforms,
+  ]);
 
   const actions = useMemo(
     () => ({

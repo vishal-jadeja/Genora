@@ -139,6 +139,10 @@ export interface GenoraState {
   // generation
   generating: boolean;
   slopHard: boolean;
+  // Set only when the real backend's Slop Guard actually rejects (vs the
+  // client-side word-count heuristic, which has no real reason and falls
+  // back to cycling REJECTS instead).
+  slopRejectReason: string | null;
   blockedCount: number;
   rejectIdx: number;
 

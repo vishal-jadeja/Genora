@@ -291,7 +291,7 @@ export function ComposeView({ state, derived, actions }: GenoraViewProps) {
               color: "var(--c-text)",
             }}
           >
-            &ldquo;{REJECTS[state.rejectIdx]}&rdquo;
+            &ldquo;{state.slopRejectReason ?? REJECTS[state.rejectIdx]}&rdquo;
           </h2>
           <p
             style={{

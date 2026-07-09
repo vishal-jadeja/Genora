@@ -1,6 +1,6 @@
 import type { FolderRecord } from "@/lib/folders/service";
-import type { PostSummary } from "@/lib/posts/service";
-import type { Folder, Post, PostStatus } from "./types";
+import type { PlatformOutputSummary, PostSummary } from "@/lib/posts/service";
+import type { Folder, PlatformId, PlatformOutputStatus, Post, PostStatus } from "./types";
 
 const STATUS_MAP: Record<string, PostStatus> = {
   draft: "Draft",
@@ -40,4 +40,35 @@ export function toMockPost(p: PostSummary): Post {
     platforms: [],
     edited: relativeTimeShort(new Date(p.updatedAt)),
   };
+}
+
+// Derives per-platform generating/success/failed status for the platforms
+// the client asked for (outPlatforms — tracked locally at trigger time,
+// since platform_outputs rows only appear once a platform finishes; there's
+// no pre-inserted "pending" row to read). A platform not yet present in
+// platformOutputs is still pending.
+export function computeOutputs(
+  outPlatforms: PlatformId[],
+  platformOutputs: PlatformOutputSummary[] | undefined,
+): {
+  outputStatus: Partial<Record<PlatformId, PlatformOutputStatus>>;
+  outputError: Partial<Record<PlatformId, string>>;
+  generating: boolean;
+} {
+  const byPlatform = new Map(
+    (platformOutputs ?? []).map((o) => [o.platform as PlatformId, o]),
+  );
+  const outputStatus: Partial<Record<PlatformId, PlatformOutputStatus>> = {};
+  const outputError: Partial<Record<PlatformId, string>> = {};
+  outPlatforms.forEach((pid) => {
+    const o = byPlatform.get(pid);
+    if (!o) {
+      outputStatus[pid] = "pending";
+    } else {
+      outputStatus[pid] = o.status as PlatformOutputStatus;
+      if (o.status === "failed" && o.errorReason) outputError[pid] = o.errorReason;
+    }
+  });
+  const generating = outPlatforms.some((pid) => outputStatus[pid] === "pending");
+  return { outputStatus, outputError, generating };
 }
