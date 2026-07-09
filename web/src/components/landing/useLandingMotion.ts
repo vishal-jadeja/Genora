@@ -32,8 +32,13 @@ export function useLandingMotion() {
     }
 
     // reduced motion: fall back to a plain, natively scrollable feed rail
+    // instead of the tall sticky scroll-space
+    const platScrollSpace = document.getElementById("platScrollSpace");
     const platViewport = document.getElementById("platViewport");
-    if (platViewport && reduced) {
+    if (platScrollSpace && platViewport && reduced) {
+      platScrollSpace.style.height = "auto";
+      platViewport.style.position = "static";
+      platViewport.style.height = "auto";
       platViewport.style.overflowX = "auto";
     }
 
@@ -173,9 +178,9 @@ export function useLandingMotion() {
             x: () => -getMax(),
             ease: "none",
             scrollTrigger: {
-              trigger: "#platforms",
-              start: "top bottom",
-              end: "bottom top",
+              trigger: "#platScrollSpace",
+              start: "top top",
+              end: "bottom bottom",
               scrub: 0.6,
               invalidateOnRefresh: true,
             },

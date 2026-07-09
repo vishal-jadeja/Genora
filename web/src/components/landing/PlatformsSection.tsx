@@ -419,7 +419,7 @@ export function PlatformsSection() {
     <section
       id="platforms"
       data-screen-label="Platforms"
-      style={{ position: "relative", zIndex: 1, padding: "40px 0 130px" }}
+      style={{ position: "relative", zIndex: 1, paddingTop: 40 }}
     >
       <div style={{ maxWidth: 1180, margin: "0 auto", padding: "0 40px" }}>
         <div
@@ -475,38 +475,49 @@ export function PlatformsSection() {
       </div>
 
       <div
-        id="platViewport"
-        style={{
-          overflow: "hidden",
-          padding: "12px 0 30px",
-          WebkitOverflowScrolling: "touch",
-        }}
+        id="platScrollSpace"
+        style={{ position: "relative", height: "180vh" }}
       >
         <div
-          id="platTrack"
+          id="platViewport"
           style={{
+            position: "sticky",
+            top: 0,
+            height: "100vh",
             display: "flex",
-            gap: 26,
-            padding: "0 40px",
-            width: "max-content",
+            flexDirection: "column",
+            justifyContent: "center",
+            overflow: "hidden",
+            WebkitOverflowScrolling: "touch",
           }}
         >
-          <FeedCards />
+          <div
+            id="platTrack"
+            style={{
+              display: "flex",
+              gap: 26,
+              padding: "0 40px",
+              width: "max-content",
+            }}
+          >
+            <FeedCards />
+          </div>
+          <div
+            style={{
+              maxWidth: 1180,
+              margin: "20px auto 0",
+              padding: "0 40px",
+              width: "100%",
+              fontFamily: MONO,
+              fontSize: 10,
+              letterSpacing: ".14em",
+              textTransform: "uppercase",
+              color: "#5f594f",
+            }}
+          >
+            ↓ scroll to browse the feed →
+          </div>
         </div>
-      </div>
-      <div
-        style={{
-          maxWidth: 1180,
-          margin: "6px auto 0",
-          padding: "0 40px",
-          fontFamily: MONO,
-          fontSize: 10,
-          letterSpacing: ".14em",
-          textTransform: "uppercase",
-          color: "#5f594f",
-        }}
-      >
-        ↓ scroll to browse the feed →
       </div>
     </section>
   );
