@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getAuthenticatedUserIdMock = vi.fn();
 const runGenerateMock = vi.fn();
+const checkRateLimitMock = vi.fn();
 
 vi.mock("@/lib/auth/session", () => ({
   getAuthenticatedUserId: () => getAuthenticatedUserIdMock(),
@@ -11,6 +12,11 @@ vi.mock("@/lib/generation/generateService", () => ({
   runGenerate: (...args: unknown[]) => runGenerateMock(...args),
   FolderNotOwnedError: class FolderNotOwnedError extends Error {},
   SlopGuardUnavailableError: class SlopGuardUnavailableError extends Error {},
+}));
+
+vi.mock("@/lib/redis/rateLimit", () => ({
+  createRateLimiter: vi.fn(),
+  checkRateLimit: (...args: unknown[]) => checkRateLimitMock(...args),
 }));
 
 const { POST } = await import("./route");
@@ -23,6 +29,13 @@ const validBody = {
 beforeEach(() => {
   getAuthenticatedUserIdMock.mockReset();
   runGenerateMock.mockReset();
+  checkRateLimitMock.mockReset();
+  checkRateLimitMock.mockResolvedValue({
+    allowed: true,
+    limit: 10,
+    remaining: 9,
+    reset: Date.now() + 60_000,
+  });
 });
 
 describe("POST /api/generate", () => {
@@ -147,6 +160,27 @@ describe("POST /api/generate", () => {
     );
 
     expect(response.status).toBe(400);
+  });
+
+  it("returns 429 with Retry-After when the user is rate limited", async () => {
+    getAuthenticatedUserIdMock.mockResolvedValue("user-1");
+    checkRateLimitMock.mockResolvedValue({
+      allowed: false,
+      limit: 10,
+      remaining: 0,
+      reset: Date.now() + 30_000,
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/generate", {
+        method: "POST",
+        body: JSON.stringify(validBody),
+      }),
+    );
+
+    expect(response.status).toBe(429);
+    expect(Number(response.headers.get("Retry-After"))).toBeGreaterThan(0);
+    expect(runGenerateMock).not.toHaveBeenCalled();
   });
 
   it("returns 502 when the slop guard call is unavailable", async () => {

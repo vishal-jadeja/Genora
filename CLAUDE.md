@@ -8,7 +8,7 @@ Genora — writing-first AI content repurposing tool. User writes a raw thought 
 
 ## Monorepo layout
 
-- `/web` — Next.js 16 (App Router, TypeScript). BFF layer: auth, CRUD, synchronous Slop Guard gate, job triggering. Trigger.dev v4 tasks will live in `/web/trigger` (Phase 4).
+- `/web` — Next.js 16 (App Router, TypeScript). BFF layer: auth, CRUD, synchronous Slop Guard gate, job triggering. Trigger.dev v4 tasks live in `/web/trigger`.
 - `/ai-service` — Python 3.12 / FastAPI. BYOK adapter, Slop Guard, RAG, Writer→Critic→Reviser pipeline. No LangChain — agent loop is implemented directly against provider SDKs.
 
 ## Commands
@@ -55,7 +55,7 @@ Key decisions:
 
 ## Working rules (from backend-plan.md)
 
-- Build phases in order (Phase 0 scaffolding → 1 data layer → 2 auth/BYOK → 3 AI service core → 4 Trigger.dev → 5 API routes → 6 hardening). Don't start a phase until the previous one works; summarize each phase when done. Current state: Phase 0 complete (health checks + tooling only).
+- Build phases in order (Phase 0 scaffolding → 1 data layer → 2 auth/BYOK → 3 AI service core → 4 Trigger.dev → 5 API routes → 6 hardening). Don't start a phase until the previous one works; summarize each phase when done. Current state: Phases 0-5 done; Phase 6 (hardening) in progress — see `README.md` Build status table for what's landed vs. open.
 - Ask before adding any dependency not in the tech stack list.
 - Tests alongside code, not after — pytest for `/ai-service`, Vitest for `/web`.
 - Explicit typed code: Pydantic models in Python; TypeScript types/Zod schemas in Next.js.

@@ -67,7 +67,9 @@ Phases are built in order — see `backend-plan.md` for the full spec of each.
 | 3 — AI service core (Slop Guard, RAG, Writer/Critic/Reviser) | done        |
 | 4 — Trigger.dev orchestration        | done        |
 | 5 — Next.js API routes (generate, CRUD, run status) | done        |
-| 6 — Hardening (quota enforcement, CI, deploy) | not started |
+| 6 — Hardening (quota enforcement, CI, deploy) | in progress |
+
+**Phase 6 so far**: request rate limiting on `/generate` (Upstash, per-user sliding window), timeout + graceful handling of `ai-service` outages, provider error reclassification (4xx vs 500), input bounds on generate schema, race-condition fix in result persistence, folderId validation. Still open: free-tier quota counter (Redis), structured logging, CI, deploy configs (Fly.io/Railway for `ai-service`).
 
 ## Local setup
 

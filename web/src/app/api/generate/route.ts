@@ -6,11 +6,33 @@ import {
   SlopGuardUnavailableError,
 } from "@/lib/generation/generateService";
 import { generatePostSchema } from "@/lib/generation/schema";
+import { checkRateLimit, createRateLimiter } from "@/lib/redis/rateLimit";
+
+// 10 generations/minute/user — covers the sync Slop Guard call cost even for
+// BYOK requests, since per-platform free-tier vs BYOK isn't resolved until
+// deeper in the pipeline (see resolveKey.ts TODO for the real quota counter).
+const generateLimiter = createRateLimiter({ tokens: 10, window: "60 s" });
 
 export async function POST(request: Request) {
   const userId = await getAuthenticatedUserId();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const rateLimit = await checkRateLimit(generateLimiter, userId);
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests, please slow down" },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": Math.max(
+            0,
+            Math.ceil((rateLimit.reset - Date.now()) / 1000),
+          ).toString(),
+        },
+      },
+    );
   }
 
   let body: unknown;
