@@ -8,6 +8,7 @@ import type {
   SlopStrictness,
   ThemeMode,
 } from "@/lib/genora/types";
+import { ButtonSpinner } from "./ButtonSpinner";
 import { Hoverable } from "./Hoverable";
 import { GREEN, PRIMARY, radioStyle } from "./styleHelpers";
 import type { GenoraViewProps } from "./viewProps";
@@ -377,7 +378,11 @@ export function SettingsBody({ state, derived, actions }: GenoraViewProps) {
                           onClick={() =>
                             actions.validateKey(pr.id as ProviderId)
                           }
+                          disabled={state.keyValidating[pr.id as ProviderId]}
                           style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 7,
                             border: `1px solid ${k.c ? "var(--c-borderStrong)" : PRIMARY}`,
                             background: k.c ? "transparent" : PRIMARY,
                             color: k.c
@@ -387,9 +392,24 @@ export function SettingsBody({ state, derived, actions }: GenoraViewProps) {
                             fontSize: 12.5,
                             fontWeight: 600,
                             padding: "9px 15px",
+                            ...(state.keyValidating[pr.id as ProviderId] && {
+                              cursor: "not-allowed",
+                            }),
                           }}
                         >
-                          {k.c ? "Update key" : "Save key"}
+                          {state.keyValidating[pr.id as ProviderId] && (
+                            <ButtonSpinner
+                              size={12}
+                              color={
+                                k.c ? "var(--c-text2)" : "var(--c-primaryText)"
+                              }
+                            />
+                          )}
+                          {state.keyValidating[pr.id as ProviderId]
+                            ? "Saving…"
+                            : k.c
+                              ? "Update key"
+                              : "Save key"}
                         </button>
                         {k.c && (
                           <Hoverable
@@ -563,7 +583,11 @@ export function SettingsBody({ state, derived, actions }: GenoraViewProps) {
                           <Hoverable
                             as="button"
                             onClick={() => actions.saveInstr(id)}
+                            disabled={state.instrSaving[id]}
                             style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 7,
                               alignSelf: "flex-start",
                               border: `1px solid ${PRIMARY}`,
                               background: PRIMARY,
@@ -572,10 +596,19 @@ export function SettingsBody({ state, derived, actions }: GenoraViewProps) {
                               fontSize: 12,
                               fontWeight: 600,
                               padding: "7px 13px",
+                              ...(state.instrSaving[id] && {
+                                cursor: "not-allowed",
+                              }),
                             }}
                             hoverStyle={{ opacity: 0.9 }}
                           >
-                            Save
+                            {state.instrSaving[id] && (
+                              <ButtonSpinner
+                                size={11}
+                                color="var(--c-primaryText)"
+                              />
+                            )}
+                            {state.instrSaving[id] ? "Saving…" : "Save"}
                           </Hoverable>
                         </div>
                       )}

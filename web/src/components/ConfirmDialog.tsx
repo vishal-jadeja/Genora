@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { ButtonSpinner } from "./ButtonSpinner";
 import { Hoverable } from "./Hoverable";
 import { dialogCardStyle, RED, PRIMARY } from "./styleHelpers";
 
@@ -10,7 +11,7 @@ export interface ConfirmDialogProps {
   description: string;
   confirmLabel?: string;
   destructive?: boolean;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
   onCancel: () => void;
 }
 
@@ -23,6 +24,8 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const [pending, setPending] = useState(false);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -33,6 +36,15 @@ export function ConfirmDialog({
   }, [open, onCancel]);
 
   if (!open) return null;
+
+  const handleConfirm = async () => {
+    setPending(true);
+    try {
+      await onConfirm();
+    } finally {
+      setPending(false);
+    }
+  };
 
   return (
     <>
@@ -78,6 +90,7 @@ export function ConfirmDialog({
           <Hoverable
             as="button"
             onClick={onCancel}
+            disabled={pending}
             style={{
               background: "none",
               border: "1px solid var(--c-borderStrong)",
@@ -85,14 +98,19 @@ export function ConfirmDialog({
               color: "var(--c-text2)",
               fontSize: 13,
               padding: "9px 15px",
+              ...(pending && { cursor: "not-allowed", opacity: 0.5 }),
             }}
             hoverStyle={{ borderColor: "var(--c-borderHover)" }}
           >
             Cancel
           </Hoverable>
           <button
-            onClick={onConfirm}
+            onClick={handleConfirm}
+            disabled={pending}
             style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
               border: "none",
               borderRadius: 8,
               padding: "9px 16px",
@@ -100,9 +118,17 @@ export function ConfirmDialog({
               fontWeight: 600,
               background: destructive ? RED : PRIMARY,
               color: destructive ? "#2a1010" : "var(--c-primaryText)",
+              ...(pending && { cursor: "not-allowed", opacity: 0.7 }),
             }}
           >
-            {confirmLabel}
+            {pending && (
+              <ButtonSpinner
+                size={13}
+                color={destructive ? "#2a1010" : "var(--c-primaryText)"}
+                trackColor={destructive ? "#2a101055" : undefined}
+              />
+            )}
+            {pending ? "Working…" : confirmLabel}
           </button>
         </div>
       </div>

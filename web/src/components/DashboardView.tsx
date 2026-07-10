@@ -7,6 +7,7 @@ import {
   STATUS_COLOR,
   STATUS_ICON,
 } from "@/lib/genora/data";
+import { ButtonSpinner } from "./ButtonSpinner";
 import { Hoverable } from "./Hoverable";
 import {
   chipStyle,
@@ -366,6 +367,7 @@ function Main({ state, derived, actions }: GenoraViewProps) {
                     </Hoverable>
                     <button
                       onClick={actions.dashGenerate}
+                      disabled={!derived.dashCanGen || state.generating}
                       style={{
                         display: "flex",
                         alignItems: "center",
@@ -385,9 +387,19 @@ function Main({ state, derived, actions }: GenoraViewProps) {
                             color: "var(--c-text5)",
                             cursor: "not-allowed",
                           }),
+                        ...(state.generating && { cursor: "not-allowed" }),
                       }}
                     >
-                      Generate<span style={{ fontSize: 13 }}>→</span>
+                      {state.generating ? (
+                        <>
+                          <ButtonSpinner color="var(--c-primaryText)" />
+                          Generating…
+                        </>
+                      ) : (
+                        <>
+                          Generate<span style={{ fontSize: 13 }}>→</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>

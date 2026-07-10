@@ -1,11 +1,11 @@
-import type { GenoraState } from "@/lib/genora/types";
 import type {
   GenoraActions,
   GenoraDerived,
+  GenoraDisplayState,
 } from "@/lib/genora/useGenoraController";
 
 export interface GenoraViewProps {
-  state: GenoraState;
+  state: GenoraDisplayState;
   derived: GenoraDerived;
   actions: GenoraActions;
 }

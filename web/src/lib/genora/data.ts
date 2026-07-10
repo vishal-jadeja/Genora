@@ -233,6 +233,7 @@ export function createInitialState(): GenoraState {
     keyError: {},
     instrOpen: null,
     instr: { ...INSTR_DEFAULTS },
+    instrSaving: {},
     voice: "",
     slopEnabled: true,
     slopStrictness: "balanced",

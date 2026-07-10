@@ -1112,10 +1112,21 @@ export function useGenoraController(nav: {
   }, []);
   const saveInstr = useCallback(
     (id: PlatformId) => {
-      saveInstructionsMutation.mutate({
-        platform: id,
-        instructions: state.instr[id],
-      });
+      setState((s) => ({
+        ...s,
+        instrSaving: { ...s.instrSaving, [id]: true },
+      }));
+      saveInstructionsMutation.mutate(
+        { platform: id, instructions: state.instr[id] },
+        {
+          onSettled: () => {
+            setState((s) => ({
+              ...s,
+              instrSaving: { ...s.instrSaving, [id]: false },
+            }));
+          },
+        },
+      );
     },
     [state.instr, saveInstructionsMutation],
   );
@@ -1436,8 +1447,11 @@ export function useGenoraController(nav: {
       versions: displayVersions,
       outputStatus,
       outputError,
-      generating:
-        outputsGenerating || regeneratingPlatforms.size > 0 || state.generating,
+      // Initial full-run only — a solo per-platform regenerate/retry must
+      // NOT flip this, since it gates the full-page overlay in OutputView
+      // that would otherwise hide already-successful sibling platforms.
+      generating: outputsGenerating || state.generating,
+      regeneratingPlatforms,
     };
   }, [
     state,
@@ -1602,3 +1616,6 @@ export function useGenoraController(nav: {
 
 export type GenoraActions = ReturnType<typeof useGenoraController>["actions"];
 export type GenoraDerived = ReturnType<typeof useGenoraController>["derived"];
+export type GenoraDisplayState = ReturnType<
+  typeof useGenoraController
+>["state"];

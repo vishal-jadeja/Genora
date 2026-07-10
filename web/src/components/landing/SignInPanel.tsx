@@ -1,6 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useFormStatus } from "react-dom";
+import { ButtonSpinner } from "../ButtonSpinner";
 import { Magnetic } from "./Magnetic";
 import { GoogleIcon } from "./GoogleIcon";
 import { GitHubIcon } from "./GitHubIcon";
@@ -26,6 +28,51 @@ type Provider = {
   color: string;
   border: string;
 };
+
+function SignInButton({
+  label,
+  icon,
+  background,
+  color,
+  border,
+}: {
+  label: string;
+  icon: ReactNode;
+  background: string;
+  color: string;
+  border: string;
+}) {
+  const { pending } = useFormStatus();
+  return (
+    <Magnetic
+      as="button"
+      type="submit"
+      disabled={pending}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 10,
+        width: "100%",
+        border,
+        cursor: pending ? "not-allowed" : "pointer",
+        background,
+        color,
+        fontFamily: MONO,
+        fontSize: 12,
+        letterSpacing: ".12em",
+        textTransform: "uppercase",
+        fontWeight: 500,
+        padding: "15px 20px",
+        borderRadius: 3,
+        opacity: pending ? 0.7 : 1,
+      }}
+    >
+      {pending ? <ButtonSpinner size={14} color={color} /> : icon}
+      {pending ? "Redirecting…" : label}
+    </Magnetic>
+  );
+}
 
 export function SignInPanel({
   actions,
@@ -115,31 +162,13 @@ export function SignInPanel({
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {providers.map((p) => (
           <form key={p.id} action={p.action}>
-            <Magnetic
-              as="button"
-              type="submit"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 10,
-                width: "100%",
-                border: p.border,
-                cursor: "pointer",
-                background: p.background,
-                color: p.color,
-                fontFamily: MONO,
-                fontSize: 12,
-                letterSpacing: ".12em",
-                textTransform: "uppercase",
-                fontWeight: 500,
-                padding: "15px 20px",
-                borderRadius: 3,
-              }}
-            >
-              {p.icon}
-              {p.label}
-            </Magnetic>
+            <SignInButton
+              label={p.label}
+              icon={p.icon}
+              background={p.background}
+              color={p.color}
+              border={p.border}
+            />
           </form>
         ))}
       </div>

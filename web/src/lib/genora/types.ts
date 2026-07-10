@@ -168,6 +168,7 @@ export interface GenoraState {
   keyError: Partial<Record<ProviderId, string>>;
   instrOpen: PlatformId | null;
   instr: Record<PlatformId, string>;
+  instrSaving: Partial<Record<PlatformId, boolean>>;
   voice: string;
   slopEnabled: boolean;
   slopStrictness: SlopStrictness;

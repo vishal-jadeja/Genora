@@ -1,6 +1,7 @@
 "use client";
 
 import { MODELS, ORDER, PLAT, REJECTS } from "@/lib/genora/data";
+import { ButtonSpinner } from "./ButtonSpinner";
 import { Hoverable } from "./Hoverable";
 import {
   AMBER,
@@ -543,15 +544,21 @@ export function ComposeView({ state, derived, actions }: GenoraViewProps) {
                 <Hoverable
                   as="button"
                   onClick={actions.generateAnyway}
+                  disabled={state.generating}
                   style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 7,
                     background: "none",
                     border: "none",
                     color: "var(--c-text3)",
                     fontSize: 12.5,
                     padding: "6px 8px",
+                    ...(state.generating && { cursor: "not-allowed" }),
                   }}
                   hoverStyle={{ color: "var(--c-text)" }}
                 >
+                  {state.generating && <ButtonSpinner size={11} />}
                   Generate anyway
                 </Hoverable>
               </div>
@@ -709,6 +716,7 @@ export function ComposeView({ state, derived, actions }: GenoraViewProps) {
               <div style={{ flex: 1 }} />
               <button
                 onClick={actions.generate}
+                disabled={!derived.canGen || state.generating}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -725,9 +733,20 @@ export function ComposeView({ state, derived, actions }: GenoraViewProps) {
                         color: "var(--c-text5)",
                         cursor: "not-allowed",
                       }),
+                  ...(state.generating && { cursor: "not-allowed" }),
                 }}
               >
-                Check &amp; generate<span style={{ fontSize: 14 }}>→</span>
+                {state.generating ? (
+                  <>
+                    <ButtonSpinner color="var(--c-primaryText)" />
+                    Generating…
+                  </>
+                ) : (
+                  <>
+                    Check &amp; generate
+                    <span style={{ fontSize: 14 }}>→</span>
+                  </>
+                )}
               </button>
             </div>
           </footer>

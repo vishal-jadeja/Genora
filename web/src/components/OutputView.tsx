@@ -2,8 +2,12 @@
 
 import { useState } from "react";
 import { PLAT } from "@/lib/genora/data";
-import type { GenoraState, PlatformId } from "@/lib/genora/types";
-import type { GenoraActions } from "@/lib/genora/useGenoraController";
+import type { PlatformId } from "@/lib/genora/types";
+import type {
+  GenoraActions,
+  GenoraDisplayState,
+} from "@/lib/genora/useGenoraController";
+import { ButtonSpinner } from "./ButtonSpinner";
 import { Hoverable } from "./Hoverable";
 import { PRIMARY, RED, popoverStyle } from "./styleHelpers";
 import type { GenoraViewProps } from "./viewProps";
@@ -23,6 +27,7 @@ export function OutputView({ state, derived, actions }: GenoraViewProps) {
   const [viewMode, setViewMode] = useState<OutputViewMode>("tabs");
   const canSideBySide = state.outPlatforms.length > 1;
   const activeFailed = state.outputStatus[state.activeTab] === "failed";
+  const activeRegenerating = state.regeneratingPlatforms.has(state.activeTab);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
@@ -218,7 +223,11 @@ export function OutputView({ state, derived, actions }: GenoraViewProps) {
                     <Hoverable
                       as="button"
                       onClick={() => actions.retryPlatform(id)}
+                      disabled={state.regeneratingPlatforms.has(id)}
                       style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
                         background: "none",
                         border: "1px solid var(--c-borderStrong)",
                         borderRadius: 6,
@@ -229,6 +238,9 @@ export function OutputView({ state, derived, actions }: GenoraViewProps) {
                       }}
                       hoverStyle={{ borderColor: RED }}
                     >
+                      {state.regeneratingPlatforms.has(id) && (
+                        <ButtonSpinner size={10} color={RED} />
+                      )}
                       Retry
                     </Hoverable>
                   )}
@@ -603,6 +615,9 @@ export function OutputView({ state, derived, actions }: GenoraViewProps) {
                     as="button"
                     onClick={() => actions.retryPlatform(state.activeTab)}
                     style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
                       background: "none",
                       border: "1px solid var(--c-borderStrong)",
                       borderRadius: 8,
@@ -617,6 +632,27 @@ export function OutputView({ state, derived, actions }: GenoraViewProps) {
                   >
                     Retry {PLAT[state.activeTab].label}
                   </Hoverable>
+                </div>
+              ) : activeRegenerating && !derived.activeContent ? (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 14,
+                    background: "var(--c-surface)",
+                    border: "1px solid var(--c-borderStrong)",
+                    borderRadius: 12,
+                    padding: 24,
+                    minHeight: 300,
+                    flex: 1,
+                  }}
+                >
+                  <ButtonSpinner size={20} />
+                  <span style={{ fontSize: 13.5, color: "var(--c-text2)" }}>
+                    Regenerating {PLAT[state.activeTab].label}…
+                  </span>
                 </div>
               ) : (
                 <textarea
@@ -685,6 +721,7 @@ export function OutputView({ state, derived, actions }: GenoraViewProps) {
                   <Hoverable
                     as="button"
                     onClick={() => actions.regenerate()}
+                    disabled={activeRegenerating}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -695,26 +732,31 @@ export function OutputView({ state, derived, actions }: GenoraViewProps) {
                       color: "var(--c-text2)",
                       fontSize: 13,
                       padding: "9px 15px",
+                      ...(activeRegenerating && { cursor: "not-allowed" }),
                     }}
                     hoverStyle={{
                       background: "var(--c-popover)",
                       borderColor: "var(--c-borderHover)",
                     }}
                   >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.9"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M21 12a9 9 0 1 1-3-6.7L21 8" />
-                      <path d="M21 4v4h-4" />
-                    </svg>
-                    Regenerate
+                    {activeRegenerating ? (
+                      <ButtonSpinner size={13} />
+                    ) : (
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.9"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M21 12a9 9 0 1 1-3-6.7L21 8" />
+                        <path d="M21 4v4h-4" />
+                      </svg>
+                    )}
+                    {activeRegenerating ? "Regenerating…" : "Regenerate"}
                   </Hoverable>
                   <Hoverable
                     as="button"
@@ -836,7 +878,7 @@ function PlatformPanel({
   actions,
 }: {
   id: PlatformId;
-  state: GenoraState;
+  state: GenoraDisplayState;
   actions: GenoraActions;
 }) {
   const meta = PLAT[id];
@@ -850,6 +892,7 @@ function PlatformPanel({
   const limit = meta.limit;
   const over = limit ? alen > limit : false;
   const failed = state.outputStatus[id] === "failed";
+  const regenerating = state.regeneratingPlatforms.has(id);
 
   return (
     <div
@@ -941,6 +984,25 @@ function PlatformPanel({
           >
             Retry
           </Hoverable>
+        </div>
+      )}
+      {regenerating && !content && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            background: "var(--c-canvas)",
+            border: "1px solid var(--c-borderStrong)",
+            borderRadius: 10,
+            padding: 14,
+            marginBottom: 10,
+            fontSize: 12.5,
+            color: "var(--c-text2)",
+          }}
+        >
+          <ButtonSpinner size={14} />
+          <span>Regenerating…</span>
         </div>
       )}
 
@@ -1062,7 +1124,7 @@ function PlatformPanel({
         </div>
       </div>
 
-      {!failed && (
+      {!failed && !(regenerating && !content) && (
         <textarea
           value={content}
           onChange={(e) => actions.onEditContent(e.target.value, id)}
@@ -1133,20 +1195,26 @@ function PlatformPanel({
           <Hoverable
             as="button"
             onClick={() => actions.regenerate(id)}
+            disabled={regenerating}
             style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 7,
               background: "none",
               border: "1px solid var(--c-borderStrong)",
               borderRadius: 8,
               color: "var(--c-text2)",
               fontSize: 12,
               padding: "7px 11px",
+              ...(regenerating && { cursor: "not-allowed" }),
             }}
             hoverStyle={{
               background: "var(--c-popover)",
               borderColor: "var(--c-borderHover)",
             }}
           >
-            Regenerate
+            {regenerating && <ButtonSpinner size={11} />}
+            {regenerating ? "Regenerating…" : "Regenerate"}
           </Hoverable>
           <Hoverable
             as="button"
