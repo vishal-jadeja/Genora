@@ -474,49 +474,35 @@ export function PlatformsSection() {
         </div>
       </div>
 
-      <div
-        id="platScrollSpace"
-        style={{ position: "relative", height: "100vh" }}
-      >
+      <div style={{ maxWidth: 1180, margin: "0 auto" }}>
         <div
-          id="platViewport"
+          id="platTrack"
+          data-lenis-prevent
           style={{
-            position: "sticky",
-            top: 88,
             display: "flex",
-            flexDirection: "column",
-            padding: "16px 0",
-            overflow: "hidden",
+            gap: 34,
+            padding: "16px 40px",
+            overflowX: "auto",
             WebkitOverflowScrolling: "touch",
           }}
         >
-          <div
-            id="platTrack"
-            style={{
-              display: "flex",
-              gap: 34,
-              padding: "0 40px",
-              width: "max-content",
-            }}
-          >
-            <FeedCards />
-          </div>
-          <div
-            style={{
-              maxWidth: 1180,
-              margin: "20px auto 0",
-              padding: "0 40px",
-              width: "100%",
-              fontFamily: MONO,
-              fontSize: 10,
-              letterSpacing: ".14em",
-              textTransform: "uppercase",
-              color: "#5f594f",
-            }}
-          >
-            ↓ scroll to browse the feed →
-          </div>
+          <FeedCards />
         </div>
+      </div>
+      <div
+        style={{
+          maxWidth: 1180,
+          margin: "20px auto 0",
+          padding: "0 40px",
+          width: "100%",
+          fontFamily: MONO,
+          fontSize: 10,
+          letterSpacing: ".14em",
+          textTransform: "uppercase",
+          color: "#5f594f",
+        }}
+      >
+        → scroll to browse the feed
       </div>
     </section>
   );

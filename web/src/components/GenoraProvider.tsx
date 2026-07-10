@@ -41,6 +41,16 @@ export function useGenora(): GenoraViewProps {
 }
 
 export function GenoraProvider({ children }: { children: React.ReactNode }) {
+  const [queryClient] = useState(() => new QueryClient());
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <GenoraProviderInner>{children}</GenoraProviderInner>
+    </QueryClientProvider>
+  );
+}
+
+function GenoraProviderInner({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const nav = useMemo(
     () => ({ push: router.push, replace: router.replace }),
@@ -48,7 +58,6 @@ export function GenoraProvider({ children }: { children: React.ReactNode }) {
   );
   const { state, derived, actions } = useGenoraController(nav);
   const [systemDark, setSystemDark] = useState(true);
-  const [queryClient] = useState(() => new QueryClient());
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
@@ -72,31 +81,29 @@ export function GenoraProvider({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <GenoraContext.Provider value={{ state, derived, actions }}>
-        <div
-          style={{
-            height: "100%",
-            width: "100%",
-            overflow: "hidden",
-            position: "relative",
-            background: "var(--c-shell)",
-            color: "var(--c-text)",
-            ...themeVars,
-          }}
-        >
-          {children}
-          <ConfirmDialog
-            open={!!state.confirmDialog}
-            title={derived.confirmDialogContent?.title ?? ""}
-            description={derived.confirmDialogContent?.description ?? ""}
-            confirmLabel={derived.confirmDialogContent?.confirmLabel}
-            onConfirm={actions.confirmDialogAction}
-            onCancel={actions.closeConfirmDialog}
-          />
-          <NewFolderDialog state={state} actions={actions} />
-        </div>
-      </GenoraContext.Provider>
-    </QueryClientProvider>
+    <GenoraContext.Provider value={{ state, derived, actions }}>
+      <div
+        style={{
+          height: "100%",
+          width: "100%",
+          overflow: "hidden",
+          position: "relative",
+          background: "var(--c-shell)",
+          color: "var(--c-text)",
+          ...themeVars,
+        }}
+      >
+        {children}
+        <ConfirmDialog
+          open={!!state.confirmDialog}
+          title={derived.confirmDialogContent?.title ?? ""}
+          description={derived.confirmDialogContent?.description ?? ""}
+          confirmLabel={derived.confirmDialogContent?.confirmLabel}
+          onConfirm={actions.confirmDialogAction}
+          onCancel={actions.closeConfirmDialog}
+        />
+        <NewFolderDialog state={state} actions={actions} />
+      </div>
+    </GenoraContext.Provider>
   );
 }
