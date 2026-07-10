@@ -1,10 +1,66 @@
-# Genora
+<div align="center">
 
-**Write once. Repurpose everywhere.**
+<img src="web/public/logo-with-text.webp" alt="Genora" width="360" />
 
-Genora is a writing-first AI content tool: you write a raw thought exactly once, pick the platforms you want it to land on, and Genora turns it into a platform-native post for each — in your own voice, not a generic paraphrase.
+### Write once. Repurpose everywhere.
 
-Full build plan, architecture decisions, and phase roadmap live in [`backend-plan.md`](./backend-plan.md) — read that before touching backend code, its decisions are settled.
+Genora is a writing-first AI content tool: write a raw thought exactly once, pick the platforms
+you want it to land on, and Genora turns it into a platform-native post for each — in your own
+voice, not a generic paraphrase.
+
+[![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js&logoColor=white)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-service-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Trigger.dev](https://img.shields.io/badge/Trigger.dev-v4-2C2C2C?logo=triggerdotdev&logoColor=white)](https://trigger.dev)
+[![Postgres](https://img.shields.io/badge/Postgres-Neon-336791?logo=postgresql&logoColor=white)](https://neon.tech)
+
+</div>
+
+<br />
+
+<details open>
+<summary><strong>📸 Screenshots</strong> — placeholders below, swap the URLs for real screenshots whenever you have them</summary>
+<br />
+
+<table>
+<tr>
+<td width="50%">
+
+**Dashboard**
+<img src="https://placehold.co/900x560/0E0D0B/E8853A?text=Dashboard&font=raleway" alt="Dashboard screenshot placeholder" width="100%" />
+
+</td>
+<td width="50%">
+
+**Compose — write once**
+<img src="https://placehold.co/900x560/0E0D0B/E8853A?text=Compose&font=raleway" alt="Compose screenshot placeholder" width="100%" />
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**Output — one post per platform**
+<img src="https://placehold.co/900x560/0E0D0B/E8853A?text=Output+View&font=raleway" alt="Output view screenshot placeholder" width="100%" />
+
+</td>
+<td width="50%">
+
+**Settings — BYOK & Slop Guard**
+<img src="https://placehold.co/900x560/0E0D0B/E8853A?text=Settings&font=raleway" alt="Settings screenshot placeholder" width="100%" />
+
+</td>
+</tr>
+</table>
+
+</details>
+
+<br />
+
+Full build plan, architecture decisions, and phase roadmap live in
+[`backend-plan.md`](./backend-plan.md) — read that before touching backend code, its decisions
+are settled.
 
 ## How a generation actually runs
 
@@ -59,21 +115,27 @@ backend-plan.md   authoritative build plan (read before backend work)
 
 Phases are built in order — see `backend-plan.md` for the full spec of each.
 
-| Phase                              | Status      |
-| ----------------------------------- | ----------- |
-| 0 — Scaffolding                     | done        |
-| 1 — Data layer (Drizzle, pgvector)  | done        |
-| 2 — Auth + BYOK key management      | done        |
-| 3 — AI service core (Slop Guard, RAG, Writer/Critic/Reviser) | done        |
-| 4 — Trigger.dev orchestration        | done        |
-| 5 — Next.js API routes (generate, CRUD, run status) | done        |
-| 6 — Hardening (quota enforcement, CI, deploy) | in progress |
+| Phase                                                         | Status      |
+| -------------------------------------------------------------- | ----------- |
+| 0 — Scaffolding                                                 | ✅ done      |
+| 1 — Data layer (Drizzle, pgvector)                              | ✅ done      |
+| 2 — Auth + BYOK key management                                  | ✅ done      |
+| 3 — AI service core (Slop Guard, RAG, Writer/Critic/Reviser)    | ✅ done      |
+| 4 — Trigger.dev orchestration                                   | ✅ done      |
+| 5 — Next.js API routes (generate, CRUD, run status)             | ✅ done      |
+| 6 — Hardening (quota enforcement, CI, deploy)                   | 🚧 in progress |
 
-**Phase 6 so far**: request rate limiting on `/generate` (Upstash, per-user sliding window), timeout + graceful handling of `ai-service` outages, provider error reclassification (4xx vs 500), input bounds on generate schema, race-condition fix in result persistence, folderId validation. Still open: free-tier quota counter (Redis), structured logging, CI, deploy configs (Fly.io/Railway for `ai-service`).
+**Phase 6 so far**: request rate limiting on `/generate` and `/regenerate` (Upstash, per-user
+sliding window), free-tier quota counter (Upstash, sliding window, consumed once per platform
+generation rather than per retry), timeout + graceful handling of `ai-service` outages, provider
+error reclassification (4xx vs 500) across all four adapters, redacted provider auth-error
+messages, input bounds on the generate schema, race-condition fix in result persistence, folderId
+validation. Still open: structured logging, CI, deploy configs (Fly.io/Railway for `ai-service`).
 
 ## Local setup
 
-### `/web`
+<details>
+<summary><strong>▸ /web</strong></summary>
 
 ```
 cd web
@@ -98,10 +160,16 @@ npm run dev                  # http://localhost:3000
 - `UPSTASH_REDIS_REST_URL` / `_TOKEN` — Upstash Redis
 - `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `AUTH_URL` — NextAuth v5 (Google OAuth)
 - `ENCRYPTION_KEY` — AES-256-GCM key for BYOK keys at rest, 32 bytes base64
-- `PLATFORM_GROQ_API_KEY`, `PLATFORM_GEMINI_API_KEY` — platform-owned keys backing the two free-tier models (Groq, Gemini — both have real free API tiers; Anthropic/OpenAI don't, so those models are BYOK-only)
-- `TRIGGER_PROJECT_REF`, `TRIGGER_SECRET_KEY` — from a real Trigger.dev project (`npx trigger.dev@latest init`)
+- `PLATFORM_GROQ_API_KEY`, `PLATFORM_GEMINI_API_KEY` — platform-owned keys backing the two
+  free-tier models (Groq, Gemini — both have real free API tiers; Anthropic/OpenAI don't, so those
+  models are BYOK-only)
+- `TRIGGER_PROJECT_REF`, `TRIGGER_SECRET_KEY` — from a real Trigger.dev project
+  (`npx trigger.dev@latest init`)
 
-### `/ai-service`
+</details>
+
+<details>
+<summary><strong>▸ /ai-service</strong></summary>
 
 Requires [uv](https://docs.astral.sh/uv/).
 
@@ -124,6 +192,8 @@ uv run uvicorn app.main:app --reload   # http://localhost:8000
 - `INTERNAL_SERVICE_SECRET` — must match `/web`'s value; gates every route
 - `GEMINI_API_KEY` — platform-owned key for `gemini-embedding-001` (RAG)
 
+</details>
+
 ### Health checks
 
 - `GET http://localhost:3000/api/health` → `{"status":"ok"}`
@@ -138,4 +208,13 @@ uv run uvicorn app.main:app --reload   # http://localhost:8000
 - Upstash Redis instance
 - A Trigger.dev project (`npx trigger.dev@latest init`)
 
-BYOK provider keys (Anthropic, OpenAI, Gemini, Groq) are supplied by end users at runtime — not configured here.
+BYOK provider keys (Anthropic, OpenAI, Gemini, Groq) are supplied by end users at runtime — not
+configured here.
+
+<div align="center">
+
+<br />
+
+<sub>Built with Next.js, Trigger.dev, and FastAPI — see <a href="./backend-plan.md">backend-plan.md</a> for the full architecture.</sub>
+
+</div>
