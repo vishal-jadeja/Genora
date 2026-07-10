@@ -22,7 +22,7 @@ describe("GET /api/quota", () => {
   it("returns 401 when there is no session", async () => {
     getAuthenticatedUserIdMock.mockResolvedValue(null);
 
-    const response = await GET();
+    const response = await GET(new Request("http://localhost/api/quota"));
 
     expect(response.status).toBe(401);
     expect(peekQuotaMock).not.toHaveBeenCalled();
@@ -37,7 +37,7 @@ describe("GET /api/quota", () => {
       resetAt: new Date("2026-08-01T00:00:00.000Z"),
     });
 
-    const response = await GET();
+    const response = await GET(new Request("http://localhost/api/quota"));
     const body = await response.json();
 
     expect(peekQuotaMock).toHaveBeenCalledWith("user-1");

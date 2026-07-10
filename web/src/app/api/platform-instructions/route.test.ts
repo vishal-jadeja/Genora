@@ -23,7 +23,9 @@ describe("GET /api/platform-instructions", () => {
   it("returns 401 when there is no session", async () => {
     getAuthenticatedUserIdMock.mockResolvedValue(null);
 
-    const response = await GET();
+    const response = await GET(
+      new Request("http://localhost/api/platform-instructions"),
+    );
 
     expect(response.status).toBe(401);
   });
@@ -34,7 +36,9 @@ describe("GET /api/platform-instructions", () => {
       { platform: "linkedin", instructions: "Be terse" },
     ]);
 
-    const response = await GET();
+    const response = await GET(
+      new Request("http://localhost/api/platform-instructions"),
+    );
     const body = await response.json();
 
     expect(response.status).toBe(200);

@@ -25,7 +25,7 @@ describe("GET /api/keys", () => {
   it("returns 401 when there is no session", async () => {
     getAuthenticatedUserIdMock.mockResolvedValue(null);
 
-    const response = await GET();
+    const response = await GET(new Request("http://localhost/api/keys"));
 
     expect(response.status).toBe(401);
   });
@@ -41,7 +41,7 @@ describe("GET /api/keys", () => {
       },
     ]);
 
-    const response = await GET();
+    const response = await GET(new Request("http://localhost/api/keys"));
     const body = await response.json();
 
     expect(response.status).toBe(200);

@@ -26,7 +26,7 @@ describe("GET /api/folders", () => {
   it("returns 401 when there is no session", async () => {
     getAuthenticatedUserIdMock.mockResolvedValue(null);
 
-    const response = await GET();
+    const response = await GET(new Request("http://localhost/api/folders"));
 
     expect(response.status).toBe(401);
   });
@@ -35,7 +35,7 @@ describe("GET /api/folders", () => {
     getAuthenticatedUserIdMock.mockResolvedValue("user-1");
     listFoldersMock.mockResolvedValue([{ id: "f1", name: "Ideas" }]);
 
-    const response = await GET();
+    const response = await GET(new Request("http://localhost/api/folders"));
     const body = await response.json();
 
     expect(response.status).toBe(200);
