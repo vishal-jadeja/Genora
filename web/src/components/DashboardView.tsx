@@ -62,10 +62,10 @@ function Main({ state, derived, actions }: GenoraViewProps) {
           {/* inline composer */}
           <div
             style={glassPanelStyle({
-              borderColor: dashExpanded
-                ? "var(--c-borderHover)"
-                : "var(--c-glassBorder)",
-              boxShadow: "0 16px 40px rgba(0,0,0,.25)",
+              border: dashExpanded
+                ? "1px solid var(--c-borderHover)"
+                : "1px solid var(--c-glassBorder)",
+              boxShadow: "0 10px 20px rgba(0,0,0,.1)",
               transition: "border-color .2s ease",
             })}
           >
@@ -377,14 +377,14 @@ function Main({ state, derived, actions }: GenoraViewProps) {
                         fontWeight: 600,
                         ...(derived.dashCanGen
                           ? {
-                              background: "var(--c-primaryBg)",
-                              color: "var(--c-primaryText)",
-                            }
+                            background: "var(--c-primaryBg)",
+                            color: "var(--c-primaryText)",
+                          }
                           : {
-                              background: "var(--c-popover)",
-                              color: "var(--c-text5)",
-                              cursor: "not-allowed",
-                            }),
+                            background: "var(--c-popover)",
+                            color: "var(--c-text5)",
+                            cursor: "not-allowed",
+                          }),
                       }}
                     >
                       Generate<span style={{ fontSize: 13 }}>→</span>

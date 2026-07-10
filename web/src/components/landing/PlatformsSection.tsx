@@ -477,13 +477,11 @@ export function PlatformsSection() {
       <div style={{ maxWidth: 1180, margin: "0 auto" }}>
         <div
           id="platTrack"
-          data-lenis-prevent
           style={{
             display: "flex",
             gap: 34,
             padding: "16px 40px",
             overflowX: "auto",
-            WebkitOverflowScrolling: "touch",
           }}
         >
           <FeedCards />
@@ -491,7 +489,7 @@ export function PlatformsSection() {
       </div>
       <div
         style={{
-          maxWidth: 1180,
+          // maxWidth: 1180,
           margin: "20px auto 0",
           padding: "0 40px",
           width: "100%",
