@@ -48,7 +48,8 @@ export function useGenerationRun({
     queryClient.invalidateQueries({ queryKey: postDetailKey(postId) });
   }, [run, postId, queryClient]);
 
-  const runIsActive = !!runId && run?.status !== "COMPLETED" && run?.status !== "FAILED";
+  const runIsActive =
+    !!runId && run?.status !== "COMPLETED" && run?.status !== "FAILED";
 
   return {
     shouldPoll: runIsActive && (!hasToken || !!error),

@@ -12,8 +12,13 @@ vi.mock("@/db/client", () => ({
   },
 }));
 
-const { persistFailure, persistSuccess, persistManualEdit, restoreVersion, VersionNotFoundError } =
-  await import("./persistResult");
+const {
+  persistFailure,
+  persistSuccess,
+  persistManualEdit,
+  restoreVersion,
+  VersionNotFoundError,
+} = await import("./persistResult");
 
 const tx = {
   select: (...args: unknown[]) => selectMock(...args),
@@ -180,9 +185,9 @@ describe("restoreVersion", () => {
       from: vi.fn().mockReturnValue({ where: targetWhere }),
     });
 
-    await expect(
-      restoreVersion("post-1", "linkedin", 99),
-    ).rejects.toThrow(VersionNotFoundError);
+    await expect(restoreVersion("post-1", "linkedin", 99)).rejects.toThrow(
+      VersionNotFoundError,
+    );
     expect(updateMock).not.toHaveBeenCalled();
   });
 

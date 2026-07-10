@@ -130,7 +130,9 @@ export function useGenoraController(nav: {
   // slot, platforms B/C from the original run would stop being polled while
   // still in flight.
   const [activeRuns, setActiveRuns] = useState<
-    Partial<Record<PlatformId, { runId: string; publicAccessToken: string | null }>>
+    Partial<
+      Record<PlatformId, { runId: string; publicAccessToken: string | null }>
+    >
   >({});
   const setRunForPlatforms = useCallback(
     (
@@ -207,7 +209,9 @@ export function useGenoraController(nav: {
       ...s,
       outPlatforms: s.outPlatforms.length > 0 ? s.outPlatforms : fromServer,
       activeTab:
-        s.outPlatforms.length > 0 ? s.activeTab : (fromServer[0] ?? s.activeTab),
+        s.outPlatforms.length > 0
+          ? s.activeTab
+          : (fromServer[0] ?? s.activeTab),
     }));
   }, [postDetailQuery.data]);
 
@@ -668,7 +672,10 @@ export function useGenoraController(nav: {
           rawText: state.draft,
           title: state.composeTitle || undefined,
           folderId: state.composeFolder ?? undefined,
-          platforms: sel.map((platform) => ({ platform, modelId: state.model })),
+          platforms: sel.map((platform) => ({
+            platform,
+            modelId: state.model,
+          })),
         },
         {
           onSuccess: (outcome) => {
@@ -1105,7 +1112,10 @@ export function useGenoraController(nav: {
   }, []);
   const saveInstr = useCallback(
     (id: PlatformId) => {
-      saveInstructionsMutation.mutate({ platform: id, instructions: state.instr[id] });
+      saveInstructionsMutation.mutate({
+        platform: id,
+        instructions: state.instr[id],
+      });
     },
     [state.instr, saveInstructionsMutation],
   );
@@ -1153,7 +1163,12 @@ export function useGenoraController(nav: {
         .map((v) => v.content ?? "");
     }
     return result;
-  }, [state.outPlatforms, state.historyOpen, postDetailQuery.data, versionsQuery.data]);
+  }, [
+    state.outPlatforms,
+    state.historyOpen,
+    postDetailQuery.data,
+    versionsQuery.data,
+  ]);
 
   // ---- derived (pure data, no styling) ------------------------------------
   const derived = useMemo(() => {
@@ -1391,15 +1406,23 @@ export function useGenoraController(nav: {
   // connected/stored status from the server.
   const displayState = useMemo(() => {
     const connected = new Set(
-      (apiKeysQuery.data ?? []).filter((k) => k.connected).map((k) => k.provider),
+      (apiKeysQuery.data ?? [])
+        .filter((k) => k.connected)
+        .map((k) => k.provider),
     );
     const keys = { ...state.keys };
     (Object.keys(keys) as ProviderId[]).forEach((id) => {
       keys[id] = { ...keys[id], c: connected.has(id) };
     });
 
-    const { outputStatus, outputError, generating: outputsGenerating } =
-      computeOutputs(state.outPlatforms, postDetailQuery.data?.platformOutputs);
+    const {
+      outputStatus,
+      outputError,
+      generating: outputsGenerating,
+    } = computeOutputs(
+      state.outPlatforms,
+      postDetailQuery.data?.platformOutputs,
+    );
     regeneratingPlatforms.forEach((pid) => {
       outputStatus[pid] = "pending";
     });

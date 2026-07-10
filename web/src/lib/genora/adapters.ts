@@ -1,6 +1,12 @@
 import type { FolderRecord } from "@/lib/folders/service";
 import type { PlatformOutputSummary, PostSummary } from "@/lib/posts/service";
-import type { Folder, PlatformId, PlatformOutputStatus, Post, PostStatus } from "./types";
+import type {
+  Folder,
+  PlatformId,
+  PlatformOutputStatus,
+  Post,
+  PostStatus,
+} from "./types";
 
 const STATUS_MAP: Record<string, PostStatus> = {
   draft: "Draft",
@@ -66,9 +72,12 @@ export function computeOutputs(
       outputStatus[pid] = "pending";
     } else {
       outputStatus[pid] = o.status as PlatformOutputStatus;
-      if (o.status === "failed" && o.errorReason) outputError[pid] = o.errorReason;
+      if (o.status === "failed" && o.errorReason)
+        outputError[pid] = o.errorReason;
     }
   });
-  const generating = outPlatforms.some((pid) => outputStatus[pid] === "pending");
+  const generating = outPlatforms.some(
+    (pid) => outputStatus[pid] === "pending",
+  );
   return { outputStatus, outputError, generating };
 }

@@ -478,9 +478,7 @@ export function SettingsBody({ state, derived, actions }: GenoraViewProps) {
                 Tone, structure, and formatting rules Genora follows for each
                 platform. Override any of these per post.
               </p>
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: 8 }}
-              >
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {ORDER.map((id) => {
                   const open = state.instrOpen === id;
                   return (
@@ -546,7 +544,9 @@ export function SettingsBody({ state, derived, actions }: GenoraViewProps) {
                         >
                           <textarea
                             value={state.instr[id]}
-                            onChange={(e) => actions.onInstr(id, e.target.value)}
+                            onChange={(e) =>
+                              actions.onInstr(id, e.target.value)
+                            }
                             style={{
                               width: "100%",
                               background: "var(--c-surface)",
@@ -660,9 +660,9 @@ export function SettingsBody({ state, derived, actions }: GenoraViewProps) {
                 }}
               >
                 Genora warns you locally, before you even hit generate, when
-                your input has no real thought behind it. Set how hard it
-                pushes back — the server runs its own separate, fixed check
-                regardless of this setting.
+                your input has no real thought behind it. Set how hard it pushes
+                back — the server runs its own separate, fixed check regardless
+                of this setting.
               </p>
               <div
                 style={{
@@ -687,8 +687,7 @@ export function SettingsBody({ state, derived, actions }: GenoraViewProps) {
                       marginTop: 3,
                     }}
                   >
-                    {state.blockedCount} low-substance drafts turned away so
-                    far
+                    {state.blockedCount} low-substance drafts turned away so far
                   </div>
                 </div>
                 <button
@@ -721,7 +720,9 @@ export function SettingsBody({ state, derived, actions }: GenoraViewProps) {
                   />
                 </button>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: 10 }}
+              >
                 {SLOP_OPTIONS.map((o) => {
                   const selected = state.slopStrictness === o.id;
                   return (
@@ -787,7 +788,9 @@ export function SettingsBody({ state, derived, actions }: GenoraViewProps) {
               >
                 {derived.modelPageNote}
               </p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: 10 }}
+              >
                 {MODELS.map((m) => {
                   const locked = !m.free && !derived.hasKey;
                   const selected = state.model === m.id;

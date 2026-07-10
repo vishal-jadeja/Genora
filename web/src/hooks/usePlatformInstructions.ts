@@ -48,7 +48,11 @@ export function useResetAllInstructions() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () =>
-      Promise.all(ORDER.map((platform) => resetPlatformInstructions(platform as Platform))),
+      Promise.all(
+        ORDER.map((platform) =>
+          resetPlatformInstructions(platform as Platform),
+        ),
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: platformInstructionsKey });
     },

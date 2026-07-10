@@ -1,6 +1,12 @@
 "use client";
 
-import { MODELS, ORDER, PLAT, STATUS_COLOR, STATUS_ICON } from "@/lib/genora/data";
+import {
+  MODELS,
+  ORDER,
+  PLAT,
+  STATUS_COLOR,
+  STATUS_ICON,
+} from "@/lib/genora/data";
 import { Hoverable } from "./Hoverable";
 import {
   chipStyle,

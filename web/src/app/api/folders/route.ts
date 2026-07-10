@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { handleKnownError, internalErrorResponse } from "@/lib/api/errorResponse";
+import {
+  handleKnownError,
+  internalErrorResponse,
+} from "@/lib/api/errorResponse";
 import { getAuthenticatedUserId } from "@/lib/auth/session";
 import {
   createFolder,

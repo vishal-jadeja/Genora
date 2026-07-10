@@ -3,7 +3,15 @@
 import Link from "next/link";
 import { Hoverable } from "@/components/Hoverable";
 import { SignInPanel } from "./SignInPanel";
-import { ANTON, GROTESK, INK, MONO, ORANGE, TEXT, linkStyle } from "./constants";
+import {
+  ANTON,
+  GROTESK,
+  INK,
+  MONO,
+  ORANGE,
+  TEXT,
+  linkStyle,
+} from "./constants";
 import styles from "@/app/signin/signin.module.css";
 
 export function SignInPage({

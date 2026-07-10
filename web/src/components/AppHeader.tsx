@@ -6,7 +6,11 @@ import { Hoverable } from "./Hoverable";
 import { moveOptStyle, popoverStyle } from "./styleHelpers";
 import type { GenoraViewProps } from "./viewProps";
 
-type HeaderUser = { name?: string | null; email?: string | null; image?: string | null };
+type HeaderUser = {
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+};
 
 export function AppHeader({
   state,
@@ -37,7 +41,9 @@ export function AppHeader({
     >
       <Hoverable
         as="button"
-        title={collapsed ? "Expand sidebar (Ctrl+B)" : "Collapse sidebar (Ctrl+B)"}
+        title={
+          collapsed ? "Expand sidebar (Ctrl+B)" : "Collapse sidebar (Ctrl+B)"
+        }
         onClick={actions.toggleSidebarCollapsed}
         onMouseEnter={collapsed ? onToggleMouseEnter : undefined}
         onMouseLeave={collapsed ? onToggleMouseLeave : undefined}

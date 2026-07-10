@@ -14,7 +14,11 @@ export function AppShell({
 }: {
   children: ReactNode;
   modal: ReactNode;
-  user: { name?: string | null; email?: string | null; image?: string | null } | null;
+  user: {
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  } | null;
 }) {
   const { state, derived, actions } = useGenora();
   const collapsed = state.sidebarCollapsed;
@@ -52,7 +56,9 @@ export function AppShell({
         onToggleMouseLeave={scheduleHidePeek}
       />
 
-      <div style={{ position: "relative", display: "flex", flex: 1, minHeight: 0 }}>
+      <div
+        style={{ position: "relative", display: "flex", flex: 1, minHeight: 0 }}
+      >
         {!collapsed && (
           <Sidebar state={state} derived={derived} actions={actions} />
         )}

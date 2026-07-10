@@ -7,7 +7,7 @@ import {
   Space_Grotesk,
 } from "next/font/google";
 import "./globals.css";
-import { Analytics } from '@vercel/analytics/next';
+import { Analytics } from "@vercel/analytics/next";
 
 const newsreader = Newsreader({
   subsets: ["latin"],

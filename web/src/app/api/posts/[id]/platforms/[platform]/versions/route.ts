@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { platformEnum } from "@/db/schema";
-import { handleKnownError, internalErrorResponse } from "@/lib/api/errorResponse";
+import {
+  handleKnownError,
+  internalErrorResponse,
+} from "@/lib/api/errorResponse";
 import { getAuthenticatedUserId } from "@/lib/auth/session";
 import type { Platform } from "@/lib/generation/types";
 import {
@@ -8,7 +11,10 @@ import {
   getOrCreateCorrelationId,
 } from "@/lib/logging/correlationId";
 import { createRequestLogger } from "@/lib/logging/logger";
-import { listPlatformOutputVersions, PostNotFoundError } from "@/lib/posts/service";
+import {
+  listPlatformOutputVersions,
+  PostNotFoundError,
+} from "@/lib/posts/service";
 
 function isPlatform(value: string): value is Platform {
   return (platformEnum.enumValues as readonly string[]).includes(value);

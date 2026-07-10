@@ -23,7 +23,10 @@ export function handleKnownError(
       log.warn({ err }, mapping.test.name);
       return NextResponse.json(
         { error: mapping.message(err) },
-        { status: mapping.status, headers: { [CORRELATION_HEADER]: correlationId } },
+        {
+          status: mapping.status,
+          headers: { [CORRELATION_HEADER]: correlationId },
+        },
       );
     }
   }

@@ -4,7 +4,17 @@ import type { ReactNode } from "react";
 import { Magnetic } from "./Magnetic";
 import { GoogleIcon } from "./GoogleIcon";
 import { GitHubIcon } from "./GitHubIcon";
-import { CARD, GROTESK, INK, MONO, MUTED, MUTED2, ORANGE, RED, TEXT } from "./constants";
+import {
+  CARD,
+  GROTESK,
+  INK,
+  MONO,
+  MUTED,
+  MUTED2,
+  ORANGE,
+  RED,
+  TEXT,
+} from "./constants";
 import styles from "@/app/signin/signin.module.css";
 
 type Provider = {

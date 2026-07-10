@@ -1,5 +1,8 @@
 import type { FolderRecord } from "@/lib/folders/service";
-import type { CreateFolderInput, RenameFolderInput } from "@/lib/folders/schema";
+import type {
+  CreateFolderInput,
+  RenameFolderInput,
+} from "@/lib/folders/schema";
 import { api } from "./http";
 
 export function listFolders(): Promise<FolderRecord[]> {

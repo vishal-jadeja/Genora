@@ -248,9 +248,8 @@ describe("generatePost", () => {
   });
 
   it("records a failure and never triggers the child task when key resolution fails (e.g. quota exhausted)", async () => {
-    const { GenerationKeyError } = await import(
-      "@/lib/generation/resolveGenerationKey"
-    );
+    const { GenerationKeyError } =
+      await import("@/lib/generation/resolveGenerationKey");
     resolveGenerationKeyMock.mockRejectedValue(
       new GenerationKeyError("free-tier quota exhausted"),
     );

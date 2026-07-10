@@ -23,7 +23,6 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
-  
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {

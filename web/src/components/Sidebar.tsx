@@ -116,10 +116,7 @@ export function Sidebar({ state, derived, actions }: GenoraViewProps) {
         </span>
       </Hoverable>
 
-      <button
-        onClick={actions.homeClick}
-        style={navItemStyle(isDashboard)}
-      >
+      <button onClick={actions.homeClick} style={navItemStyle(isDashboard)}>
         <svg
           width="16"
           height="16"

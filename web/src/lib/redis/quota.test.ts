@@ -9,7 +9,10 @@ const slidingWindowMock = vi.fn((tokens: number, window: string) => ({
 const limitMock = vi.fn();
 const getRemainingMock = vi.fn();
 const RatelimitMock = vi.fn(function (this: unknown) {
-  Object.assign(this as object, { limit: limitMock, getRemaining: getRemainingMock });
+  Object.assign(this as object, {
+    limit: limitMock,
+    getRemaining: getRemainingMock,
+  });
 });
 (
   RatelimitMock as unknown as { slidingWindow: typeof slidingWindowMock }

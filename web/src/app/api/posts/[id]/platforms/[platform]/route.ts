@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { platformEnum } from "@/db/schema";
-import { handleKnownError, internalErrorResponse } from "@/lib/api/errorResponse";
+import {
+  handleKnownError,
+  internalErrorResponse,
+} from "@/lib/api/errorResponse";
 import { getAuthenticatedUserId } from "@/lib/auth/session";
 import type { Platform } from "@/lib/generation/types";
 import {

@@ -46,7 +46,11 @@ export async function requestRaw<T>(
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const { status, body } = await requestRaw<T>(path, init);
   if (status < 200 || status >= 300) {
-    throw new ApiError(status, errorMessage(body, `request failed (${status})`), body);
+    throw new ApiError(
+      status,
+      errorMessage(body, `request failed (${status})`),
+      body,
+    );
   }
   return body;
 }

@@ -42,7 +42,8 @@ export function useRegeneratePlatform() {
       postId: string;
       platform: Platform;
       modelId?: ModelId;
-    }) => regeneratePlatform(postId, platform, modelId ? { modelId } : undefined),
+    }) =>
+      regeneratePlatform(postId, platform, modelId ? { modelId } : undefined),
     onSuccess: (_data, { postId }) => {
       queryClient.invalidateQueries({ queryKey: postDetailKey(postId) });
       queryClient.invalidateQueries({ queryKey: quotaKey });

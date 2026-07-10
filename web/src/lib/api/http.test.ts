@@ -57,11 +57,13 @@ describe("api.get/post/patch/delete", () => {
   });
 
   it("falls back to a generic message when the error body has no string error field", async () => {
-    fetchMock.mockResolvedValue(jsonResponse(400, { error: { fieldErrors: {} } }));
-
-    await expect(api.post("/api/folders", { name: "" })).rejects.toMatchObject(
-      { status: 400 },
+    fetchMock.mockResolvedValue(
+      jsonResponse(400, { error: { fieldErrors: {} } }),
     );
+
+    await expect(api.post("/api/folders", { name: "" })).rejects.toMatchObject({
+      status: 400,
+    });
   });
 
   it("sends a JSON body and content-type header on post", async () => {
@@ -74,7 +76,9 @@ describe("api.get/post/patch/delete", () => {
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify({ name: "Work" }),
-        headers: expect.objectContaining({ "Content-Type": "application/json" }),
+        headers: expect.objectContaining({
+          "Content-Type": "application/json",
+        }),
       }),
     );
   });

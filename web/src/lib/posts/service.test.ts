@@ -188,7 +188,9 @@ describe("editPlatformOutputContent", () => {
     const postWhere = vi.fn().mockResolvedValue([post]);
     const outputsWhere = vi
       .fn()
-      .mockResolvedValue((post as { platformOutputs?: unknown[] }).platformOutputs ?? []);
+      .mockResolvedValue(
+        (post as { platformOutputs?: unknown[] }).platformOutputs ?? [],
+      );
     selectMock
       .mockReturnValueOnce({
         from: vi.fn().mockReturnValue({ where: postWhere }),
@@ -272,12 +274,10 @@ describe("listPlatformOutputVersions", () => {
   it("returns all versions for the post+platform, ordered by the versions query", async () => {
     const postWhere = vi.fn().mockResolvedValue([{ id: "p1" }]);
     const outputsWhere = vi.fn().mockResolvedValue([]);
-    const orderBy = vi
-      .fn()
-      .mockResolvedValue([
-        { version: 2, isCurrent: true },
-        { version: 1, isCurrent: false },
-      ]);
+    const orderBy = vi.fn().mockResolvedValue([
+      { version: 2, isCurrent: true },
+      { version: 1, isCurrent: false },
+    ]);
     const versionsWhere = vi.fn().mockReturnValue({ orderBy });
     selectMock
       .mockReturnValueOnce({
@@ -290,11 +290,7 @@ describe("listPlatformOutputVersions", () => {
         from: vi.fn().mockReturnValue({ where: versionsWhere }),
       });
 
-    const result = await listPlatformOutputVersions(
-      "user-1",
-      "p1",
-      "linkedin",
-    );
+    const result = await listPlatformOutputVersions("user-1", "p1", "linkedin");
 
     expect(result).toEqual([
       { version: 2, isCurrent: true },

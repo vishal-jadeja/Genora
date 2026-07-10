@@ -146,7 +146,10 @@ export function DraftRow({ post, state, derived, actions }: DraftRowProps) {
             borderRadius: 7,
             color: "var(--c-text3)",
           }}
-          hoverStyle={{ borderColor: "var(--c-borderHover)", color: "var(--c-text)" }}
+          hoverStyle={{
+            borderColor: "var(--c-borderHover)",
+            color: "var(--c-text)",
+          }}
         >
           <svg
             width="13"
@@ -223,7 +226,10 @@ export function DraftRow({ post, state, derived, actions }: DraftRowProps) {
           <button
             onClick={() => {
               actions.toggleMove(post.id);
-              actions.openConfirmDialog({ kind: "deletePost", postId: post.id });
+              actions.openConfirmDialog({
+                kind: "deletePost",
+                postId: post.id,
+              });
             }}
             style={{ ...moveOptStyle, color: "#d47a7a" }}
           >

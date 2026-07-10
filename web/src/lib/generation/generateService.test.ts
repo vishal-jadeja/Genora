@@ -133,11 +133,7 @@ describe("runGenerate", () => {
     folderBelongsToUserMock.mockResolvedValue(false);
 
     await expect(
-      runGenerate(
-        "user-1",
-        { ...validInput, folderId: "folder-1" },
-        "corr-1",
-      ),
+      runGenerate("user-1", { ...validInput, folderId: "folder-1" }, "corr-1"),
     ).rejects.toThrow(FolderNotOwnedError);
     expect(callAiServiceMock).not.toHaveBeenCalled();
     expect(insertMock).not.toHaveBeenCalled();
@@ -171,9 +167,9 @@ describe("runGenerate", () => {
     deleteMock.mockReturnValue({ where: deleteWhere });
     triggerMock.mockRejectedValue(new Error("trigger.dev unavailable"));
 
-    await expect(
-      runGenerate("user-1", validInput, "corr-1"),
-    ).rejects.toThrow("trigger.dev unavailable");
+    await expect(runGenerate("user-1", validInput, "corr-1")).rejects.toThrow(
+      "trigger.dev unavailable",
+    );
     expect(deleteMock).toHaveBeenCalledTimes(1);
     expect(deleteWhere).toHaveBeenCalledTimes(1);
     expect(createPublicTokenMock).not.toHaveBeenCalled();
@@ -202,9 +198,9 @@ describe("runGenerate", () => {
   it("throws SlopGuardUnavailableError without creating a post when the slop guard call fails", async () => {
     callAiServiceMock.mockRejectedValue(new Error("network error"));
 
-    await expect(
-      runGenerate("user-1", validInput, "corr-1"),
-    ).rejects.toThrow(SlopGuardUnavailableError);
+    await expect(runGenerate("user-1", validInput, "corr-1")).rejects.toThrow(
+      SlopGuardUnavailableError,
+    );
     expect(insertMock).not.toHaveBeenCalled();
     expect(triggerMock).not.toHaveBeenCalled();
   });
@@ -238,16 +234,17 @@ describe("regeneratePlatform", () => {
       },
       { tags: ["user:user-1"] },
     );
-    expect(result).toEqual({ runId: "run-1", publicAccessToken: "public-token" });
+    expect(result).toEqual({
+      runId: "run-1",
+      publicAccessToken: "public-token",
+    });
   });
 
   it("infers modelId from the current platform_outputs row when none is given", async () => {
     getPostMock.mockResolvedValue({
       id: "post-1",
       rawContent: "a genuinely substantive raw thought",
-      platformOutputs: [
-        { platform: "linkedin", model: "openai/gpt-oss-120b" },
-      ],
+      platformOutputs: [{ platform: "linkedin", model: "openai/gpt-oss-120b" }],
     });
     triggerMock.mockResolvedValue({ id: "run-1" });
     createPublicTokenMock.mockResolvedValue("public-token");

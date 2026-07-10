@@ -506,7 +506,10 @@ export function OutputView({ state, derived, actions }: GenoraViewProps) {
                             key={i}
                             as="button"
                             onClick={() =>
-                              actions.restoreVersion(state.activeTab, versionIdx)
+                              actions.restoreVersion(
+                                state.activeTab,
+                                versionIdx,
+                              )
                             }
                             style={{
                               display: "flex",
