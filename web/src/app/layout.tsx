@@ -8,6 +8,7 @@ import {
 } from "next/font/google";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
+import { NavigationProgress } from "@/components/NavigationProgress";
 
 const newsreader = Newsreader({
   subsets: ["latin"],
@@ -61,6 +62,7 @@ export default function RootLayout({
       className={`${newsreader.variable} ${hankenGrotesk.variable} ${jetbrainsMono.variable} ${anton.variable} ${spaceGrotesk.variable}`}
     >
       <body suppressHydrationWarning>
+        <NavigationProgress />
         {children}
         <Analytics />
       </body>

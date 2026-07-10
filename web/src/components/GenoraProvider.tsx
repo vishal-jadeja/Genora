@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { DARK_THEME, LIGHT_THEME } from "@/lib/genora/data";
 import { useGenoraController } from "@/lib/genora/useGenoraController";
+import { startNavProgress } from "@/lib/navProgress";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { NewFolderDialog } from "./NewFolderDialog";
 import type { GenoraViewProps } from "./viewProps";
@@ -53,7 +54,16 @@ export function GenoraProvider({ children }: { children: React.ReactNode }) {
 function GenoraProviderInner({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const nav = useMemo(
-    () => ({ push: router.push, replace: router.replace }),
+    () => ({
+      push: (href: string) => {
+        startNavProgress();
+        router.push(href);
+      },
+      replace: (href: string) => {
+        startNavProgress();
+        router.replace(href);
+      },
+    }),
     [router],
   );
   const { state, derived, actions } = useGenoraController(nav);
