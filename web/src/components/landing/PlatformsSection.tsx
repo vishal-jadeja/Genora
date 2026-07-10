@@ -9,7 +9,7 @@ function FeedCards() {
       <TiltCard
         style={{
           flex: "0 0 auto",
-          width: 360,
+          width: 440,
           background: "#fff",
           color: "#1a1a1a",
           borderRadius: 10,
@@ -101,7 +101,7 @@ function FeedCards() {
       <TiltCard
         style={{
           flex: "0 0 auto",
-          width: 360,
+          width: 440,
           background: "#000",
           color: "#e7e9ea",
           border: "1px solid #2f3336",
@@ -179,7 +179,7 @@ function FeedCards() {
       <TiltCard
         style={{
           flex: "0 0 auto",
-          width: 360,
+          width: 440,
           background: "#fff",
           color: "#1a1a1a",
           border: "1px solid #ececec",
@@ -252,7 +252,7 @@ function FeedCards() {
       <TiltCard
         style={{
           flex: "0 0 auto",
-          width: 360,
+          width: 440,
           background: "#fff",
           color: "#242424",
           borderRadius: 10,
@@ -326,7 +326,7 @@ function FeedCards() {
       <TiltCard
         style={{
           flex: "0 0 auto",
-          width: 360,
+          width: 440,
           background: "#FFF6E9",
           color: "#2b2b2b",
           border: "1px solid #efe1cb",
@@ -476,17 +476,16 @@ export function PlatformsSection() {
 
       <div
         id="platScrollSpace"
-        style={{ position: "relative", height: "180vh" }}
+        style={{ position: "relative", height: "100vh" }}
       >
         <div
           id="platViewport"
           style={{
             position: "sticky",
-            top: 0,
-            height: "100vh",
+            top: 88,
             display: "flex",
             flexDirection: "column",
-            justifyContent: "center",
+            padding: "16px 0",
             overflow: "hidden",
             WebkitOverflowScrolling: "touch",
           }}
@@ -495,7 +494,7 @@ export function PlatformsSection() {
             id="platTrack"
             style={{
               display: "flex",
-              gap: 26,
+              gap: 34,
               padding: "0 40px",
               width: "max-content",
             }}

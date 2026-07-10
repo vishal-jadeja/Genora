@@ -168,9 +168,40 @@ export function useLandingMotion() {
       }
 
       const platTrack = document.getElementById("platTrack");
-      if (platTrack && !reduced) {
+      const platScrollSpace = document.getElementById("platScrollSpace");
+      const platViewport = document.getElementById("platViewport");
+      if (platTrack && platScrollSpace && platViewport && !reduced) {
         const getMax = () =>
           Math.max(platTrack.scrollWidth - window.innerWidth, 0);
+        const NAV_CLEARANCE = 88;
+        // Center the sticky card row in the viewport (position:sticky's
+        // percentage `top` resolves against this tall container, not the
+        // viewport, so centering has to be computed in px), never letting it
+        // sit above the fixed nav.
+        const setViewportTop = () => {
+          const boxHeight = platViewport.getBoundingClientRect().height;
+          const centered = (window.innerHeight - boxHeight) / 2;
+          platViewport.style.top = Math.max(centered, NAV_CLEARANCE) + "px";
+        };
+        // Tie the pinned scroll distance 1:1 to the horizontal travel needed,
+        // so vertical scroll input maps directly to horizontal movement
+        // instead of an arbitrary vh guess that may over- or under-shoot it.
+        // Stuck duration for a sticky element is (container height) - (its
+        // own height + top offset), so the space must add those back in to
+        // get an exact getMax()-length stuck window.
+        const setSpaceHeight = () => {
+          setViewportTop();
+          const topOffset = parseFloat(getComputedStyle(platViewport).top) || 0;
+          const viewportBoxHeight = platViewport.getBoundingClientRect().height;
+          platScrollSpace.style.height =
+            viewportBoxHeight + topOffset + getMax() + "px";
+        };
+        setSpaceHeight();
+        ScrollTrigger.addEventListener("refreshInit", setSpaceHeight);
+        cleanup.push(() =>
+          ScrollTrigger.removeEventListener("refreshInit", setSpaceHeight),
+        );
+
         gsap.fromTo(
           platTrack,
           { x: 0 },
@@ -181,7 +212,7 @@ export function useLandingMotion() {
               trigger: "#platScrollSpace",
               start: "top top",
               end: "bottom bottom",
-              scrub: 0.6,
+              scrub: true,
               invalidateOnRefresh: true,
             },
           },
