@@ -1,9 +1,12 @@
+import logging
+
 from fastapi import APIRouter
 
 from app.schemas.generate import GenerateRequest, GenerateResponse
 from app.services.pipeline.orchestrator import run_pipeline
 from app.services.providers.registry import build_adapter
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -12,6 +15,11 @@ async def generate(request: GenerateRequest) -> GenerateResponse:
     # request.provider is a Literal of the 4 supported providers, so
     # build_adapter's KeyError branch is unreachable from this path.
     adapter = build_adapter(request.provider, request.api_key)
+    logger.info(
+        "generation request received: provider=%s platform=%s",
+        request.provider,
+        request.platform,
+    )
 
     try:
         result = await run_pipeline(
@@ -29,6 +37,7 @@ async def generate(request: GenerateRequest) -> GenerateResponse:
         # or they leak under sustained traffic.
         await adapter.aclose()
 
+    logger.info("generation request completed: revision_count=%d", result.revision_count)
     return GenerateResponse(
         content=result.content, revision_count=result.revision_count, usage=result.usage
     )

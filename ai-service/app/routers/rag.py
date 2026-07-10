@@ -1,3 +1,5 @@
+import logging
+
 import asyncpg
 from fastapi import APIRouter, Depends
 
@@ -6,6 +8,7 @@ from app.schemas.rag import RagRetrieveRequest, RagRetrieveResponse
 from app.services.embeddings import GeminiEmbedder, get_embedder
 from app.services.rag import find_similar_posts
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -17,4 +20,5 @@ async def retrieve_similar(
 ) -> RagRetrieveResponse:
     query_embedding = await embedder.embed(request.query_text)
     matches = await find_similar_posts(conn, request.user_id, query_embedding, request.limit)
+    logger.info("rag retrieve: %d matches", len(matches))
     return RagRetrieveResponse(matches=matches)

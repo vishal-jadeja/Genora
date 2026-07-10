@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     env: str = "development"
+    log_level: str = "INFO"
     internal_service_secret: str = "dev-secret-change-me"
     database_url: str = ""
     # Platform-owned key, independent of a user's BYOK provider choice — keeps
