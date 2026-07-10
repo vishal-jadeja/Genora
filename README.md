@@ -123,14 +123,17 @@ Phases are built in order — see `backend-plan.md` for the full spec of each.
 | 3 — AI service core (Slop Guard, RAG, Writer/Critic/Reviser)    | ✅ done      |
 | 4 — Trigger.dev orchestration                                   | ✅ done      |
 | 5 — Next.js API routes (generate, CRUD, run status)             | ✅ done      |
-| 6 — Hardening (quota enforcement, CI, deploy)                   | 🚧 in progress |
+| 6 — Hardening (quota enforcement, CI, deploy)                   | ✅ done      |
 
-**Phase 6 so far**: request rate limiting on `/generate` and `/regenerate` (Upstash, per-user
-sliding window), free-tier quota counter (Upstash, sliding window, consumed once per platform
-generation rather than per retry), timeout + graceful handling of `ai-service` outages, provider
-error reclassification (4xx vs 500) across all four adapters, redacted provider auth-error
-messages, input bounds on the generate schema, race-condition fix in result persistence, folderId
-validation. Still open: structured logging, CI, deploy configs (Fly.io/Railway for `ai-service`).
+**Phase 6**: request rate limiting on `/generate` and `/regenerate` (Upstash, per-user sliding
+window), free-tier quota counter (Upstash, sliding window, consumed once per platform generation
+rather than per retry), timeout + graceful handling of `ai-service` outages, provider error
+reclassification (4xx vs 500) across all four adapters, redacted provider auth-error messages,
+input bounds on the generate schema, race-condition fix in result persistence, folderId
+validation, structured JSON logging with an `X-Correlation-Id` traced across web → Trigger.dev →
+ai-service, a shared error-response helper (web) and expanded exception handlers (ai-service), a
+GitHub Actions CI workflow for both apps, and deploy configs (Fly.io for `ai-service`, Vercel
+region pin for `web`).
 
 ## Local setup
 
