@@ -506,7 +506,7 @@ export function OutputView({ state, derived, actions }: GenoraViewProps) {
                             key={i}
                             as="button"
                             onClick={() =>
-                              actions.restoreVersion(state.activeTab, t)
+                              actions.restoreVersion(state.activeTab, versionIdx)
                             }
                             style={{
                               display: "flex",
@@ -1008,7 +1008,7 @@ function PlatformPanel({
                   <Hoverable
                     key={i}
                     as="button"
-                    onClick={() => actions.restoreVersion(id, t)}
+                    onClick={() => actions.restoreVersion(id, versionIdx)}
                     style={{
                       display: "flex",
                       alignItems: "center",

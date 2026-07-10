@@ -216,6 +216,71 @@ async def test_anthropic_adapter_maps_bad_request_error():
         await adapter.complete(model="claude-x", system="sys", user="hi", max_tokens=100)
 
 
+async def test_anthropic_adapter_maps_request_too_large_error_to_bad_request():
+    # 413 has no dedicated exception class caught by name — this is exactly
+    # the class of permanent error that used to fall through uncaught (and
+    # therefore get retried 3x by Trigger.dev as if it were transient).
+    adapter = AnthropicAdapter(api_key="unused")
+
+    async def fake_create(**kwargs):
+        raise anthropic.RequestTooLargeError(
+            "request too large", response=_http_error_response(413), body=None
+        )
+
+    adapter._client = SimpleNamespace(messages=SimpleNamespace(create=fake_create))
+
+    with pytest.raises(ProviderBadRequestError):
+        await adapter.complete(model="claude-x", system="sys", user="hi", max_tokens=100)
+
+
+async def test_anthropic_adapter_maps_conflict_error_to_bad_request():
+    adapter = AnthropicAdapter(api_key="unused")
+
+    async def fake_create(**kwargs):
+        raise anthropic.ConflictError("conflict", response=_http_error_response(409), body=None)
+
+    adapter._client = SimpleNamespace(messages=SimpleNamespace(create=fake_create))
+
+    with pytest.raises(ProviderBadRequestError):
+        await adapter.complete(model="claude-x", system="sys", user="hi", max_tokens=100)
+
+
+async def test_anthropic_adapter_does_not_wrap_5xx_errors():
+    # 5xx must propagate bare (not become ProviderBadRequestError) so the
+    # caller's status >= 500 check still treats it as retryable.
+    adapter = AnthropicAdapter(api_key="unused")
+
+    async def fake_create(**kwargs):
+        raise anthropic.InternalServerError(
+            "server exploded", response=_http_error_response(500), body=None
+        )
+
+    adapter._client = SimpleNamespace(messages=SimpleNamespace(create=fake_create))
+
+    with pytest.raises(anthropic.InternalServerError):
+        await adapter.complete(model="claude-x", system="sys", user="hi", max_tokens=100)
+
+
+async def test_anthropic_adapter_redacts_auth_error_message():
+    # The raw SDK message can contain a masked fragment of the BYOK key
+    # (e.g. "Incorrect API key provided: sk-ant-...wxyz") and this message
+    # flows through to Postgres + the UI, so it must never be forwarded.
+    adapter = AnthropicAdapter(api_key="unused")
+
+    async def fake_create(**kwargs):
+        raise anthropic.AuthenticationError(
+            "Incorrect API key provided: sk-ant-abc...wxyz",
+            response=_http_error_response(401),
+            body=None,
+        )
+
+    adapter._client = SimpleNamespace(messages=SimpleNamespace(create=fake_create))
+
+    with pytest.raises(ProviderAuthError) as exc_info:
+        await adapter.complete(model="claude-x", system="sys", user="hi", max_tokens=100)
+    assert "sk-ant" not in str(exc_info.value)
+
+
 async def test_openai_adapter_maps_auth_error():
     adapter = OpenAIAdapter(api_key="unused")
 
@@ -260,6 +325,55 @@ async def test_openai_adapter_maps_permission_denied_error_to_auth_error():
 
     with pytest.raises(ProviderAuthError):
         await adapter.complete(model="gpt-x", system="sys", user="hi", max_tokens=100)
+
+
+async def test_openai_adapter_maps_conflict_error_to_bad_request():
+    adapter = OpenAIAdapter(api_key="unused")
+
+    async def fake_create(**kwargs):
+        raise openai.ConflictError("conflict", response=_http_error_response(409), body=None)
+
+    adapter._client = SimpleNamespace(
+        chat=SimpleNamespace(completions=SimpleNamespace(create=fake_create))
+    )
+
+    with pytest.raises(ProviderBadRequestError):
+        await adapter.complete(model="gpt-x", system="sys", user="hi", max_tokens=100)
+
+
+async def test_openai_adapter_does_not_wrap_5xx_errors():
+    adapter = OpenAIAdapter(api_key="unused")
+
+    async def fake_create(**kwargs):
+        raise openai.InternalServerError(
+            "server exploded", response=_http_error_response(500), body=None
+        )
+
+    adapter._client = SimpleNamespace(
+        chat=SimpleNamespace(completions=SimpleNamespace(create=fake_create))
+    )
+
+    with pytest.raises(openai.InternalServerError):
+        await adapter.complete(model="gpt-x", system="sys", user="hi", max_tokens=100)
+
+
+async def test_openai_adapter_redacts_auth_error_message():
+    adapter = OpenAIAdapter(api_key="unused")
+
+    async def fake_create(**kwargs):
+        raise openai.AuthenticationError(
+            "Incorrect API key provided: sk-abc...wxyz",
+            response=_http_error_response(401),
+            body=None,
+        )
+
+    adapter._client = SimpleNamespace(
+        chat=SimpleNamespace(completions=SimpleNamespace(create=fake_create))
+    )
+
+    with pytest.raises(ProviderAuthError) as exc_info:
+        await adapter.complete(model="gpt-x", system="sys", user="hi", max_tokens=100)
+    assert "sk-" not in str(exc_info.value)
 
 
 async def test_groq_adapter_maps_auth_error():
@@ -308,6 +422,36 @@ async def test_groq_adapter_maps_permission_denied_error_to_auth_error():
         await adapter.complete(model="llama-x", system="sys", user="hi", max_tokens=100)
 
 
+async def test_groq_adapter_maps_conflict_error_to_bad_request():
+    adapter = GroqAdapter(api_key="unused")
+
+    async def fake_create(**kwargs):
+        raise groq.ConflictError("conflict", response=_http_error_response(409), body=None)
+
+    adapter._client = SimpleNamespace(
+        chat=SimpleNamespace(completions=SimpleNamespace(create=fake_create))
+    )
+
+    with pytest.raises(ProviderBadRequestError):
+        await adapter.complete(model="llama-x", system="sys", user="hi", max_tokens=100)
+
+
+async def test_groq_adapter_does_not_wrap_5xx_errors():
+    adapter = GroqAdapter(api_key="unused")
+
+    async def fake_create(**kwargs):
+        raise groq.InternalServerError(
+            "server exploded", response=_http_error_response(500), body=None
+        )
+
+    adapter._client = SimpleNamespace(
+        chat=SimpleNamespace(completions=SimpleNamespace(create=fake_create))
+    )
+
+    with pytest.raises(groq.InternalServerError):
+        await adapter.complete(model="llama-x", system="sys", user="hi", max_tokens=100)
+
+
 async def test_gemini_adapter_maps_auth_error():
     adapter = GeminiAdapter(api_key="unused")
 
@@ -348,6 +492,21 @@ async def test_gemini_adapter_maps_rate_limit_error():
 
     with pytest.raises(ProviderRateLimitError):
         await adapter.complete(model="gemini-x", system="sys", user="hi", max_tokens=100)
+
+
+async def test_gemini_adapter_redacts_auth_error_message():
+    adapter = GeminiAdapter(api_key="unused")
+
+    async def fake_generate_content(**kwargs):
+        raise ClientError(401, {"error": {"message": "API key not valid: AIza...wxyz"}})
+
+    adapter._client = SimpleNamespace(
+        aio=SimpleNamespace(models=SimpleNamespace(generate_content=fake_generate_content))
+    )
+
+    with pytest.raises(ProviderAuthError) as exc_info:
+        await adapter.complete(model="gemini-x", system="sys", user="hi", max_tokens=100)
+    assert "AIza" not in str(exc_info.value)
 
 
 async def test_gemini_adapter_maps_other_client_error_to_bad_request():

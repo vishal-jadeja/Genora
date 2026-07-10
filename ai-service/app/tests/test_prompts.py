@@ -70,3 +70,17 @@ def test_parse_critic_response_defaults_missing_fields():
 
     assert verdict.approved is False
     assert verdict.feedback == ""
+
+
+def test_parse_critic_response_ignores_trailing_chatter_with_braces():
+    # Regression test: a naive greedy regex spanning the first `{` to the
+    # *last* `}` in the whole response would swallow this trailing remark
+    # (which itself contains a brace) and fail to parse, silently turning a
+    # real approval into a rejection.
+    verdict = parse_critic_response(
+        '{"approved": true, "feedback": ""} Sounds good! Let me know if you '
+        "want tweaks like {this}."
+    )
+
+    assert verdict.approved is True
+    assert verdict.feedback == ""

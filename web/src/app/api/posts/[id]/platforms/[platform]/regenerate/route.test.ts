@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getAuthenticatedUserIdMock = vi.fn();
 const regeneratePlatformMock = vi.fn();
+const checkRateLimitMock = vi.fn();
 
 class MockPostNotFoundError extends Error {}
 class MockModelRequiredError extends Error {}
@@ -19,6 +20,11 @@ vi.mock("@/lib/posts/service", () => ({
   PostNotFoundError: MockPostNotFoundError,
 }));
 
+vi.mock("@/lib/redis/rateLimit", () => ({
+  createRateLimiter: vi.fn(),
+  checkRateLimit: (...args: unknown[]) => checkRateLimitMock(...args),
+}));
+
 const { POST } = await import("./route");
 
 function ctx(id: string, platform: string) {
@@ -28,6 +34,13 @@ function ctx(id: string, platform: string) {
 beforeEach(() => {
   getAuthenticatedUserIdMock.mockReset();
   regeneratePlatformMock.mockReset();
+  checkRateLimitMock.mockReset();
+  checkRateLimitMock.mockResolvedValue({
+    allowed: true,
+    limit: 10,
+    remaining: 9,
+    reset: Date.now() + 60_000,
+  });
 });
 
 describe("POST /api/posts/[id]/platforms/[platform]/regenerate", () => {
@@ -153,5 +166,41 @@ describe("POST /api/posts/[id]/platforms/[platform]/regenerate", () => {
     );
 
     expect(response.status).toBe(400);
+  });
+
+  it("returns 429 with Retry-After when the user is rate limited", async () => {
+    getAuthenticatedUserIdMock.mockResolvedValue("user-1");
+    checkRateLimitMock.mockResolvedValue({
+      allowed: false,
+      limit: 10,
+      remaining: 0,
+      reset: Date.now() + 30_000,
+    });
+
+    const response = await POST(
+      new Request("http://localhost", { method: "POST" }),
+      ctx("post-1", "linkedin"),
+    );
+
+    expect(response.status).toBe(429);
+    expect(Number(response.headers.get("Retry-After"))).toBeGreaterThan(0);
+    expect(regeneratePlatformMock).not.toHaveBeenCalled();
+  });
+
+  it("fails open (proceeds) when the rate limit check itself throws", async () => {
+    getAuthenticatedUserIdMock.mockResolvedValue("user-1");
+    checkRateLimitMock.mockRejectedValue(new Error("ECONNREFUSED"));
+    regeneratePlatformMock.mockResolvedValue({
+      runId: "run-1",
+      publicAccessToken: "token",
+    });
+
+    const response = await POST(
+      new Request("http://localhost", { method: "POST" }),
+      ctx("post-1", "linkedin"),
+    );
+
+    expect(response.status).toBe(202);
+    expect(regeneratePlatformMock).toHaveBeenCalled();
   });
 });

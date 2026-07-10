@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("./client", () => ({ redis: {} }));
 
-const fixedWindowMock = vi.fn((tokens: number, window: string) => ({
+const slidingWindowMock = vi.fn((tokens: number, window: string) => ({
   tokens,
   window,
 }));
@@ -12,8 +12,8 @@ const RatelimitMock = vi.fn(function (this: unknown) {
   Object.assign(this as object, { limit: limitMock, getRemaining: getRemainingMock });
 });
 (
-  RatelimitMock as unknown as { fixedWindow: typeof fixedWindowMock }
-).fixedWindow = fixedWindowMock;
+  RatelimitMock as unknown as { slidingWindow: typeof slidingWindowMock }
+).slidingWindow = slidingWindowMock;
 
 vi.mock("@upstash/ratelimit", () => ({ Ratelimit: RatelimitMock }));
 
@@ -26,8 +26,11 @@ beforeEach(() => {
 });
 
 describe("quota module setup", () => {
-  it("builds a fixed-window Ratelimit with the genora:quota prefix", () => {
-    expect(fixedWindowMock).toHaveBeenCalledWith(FREE_TIER_MONTHLY_LIMIT, "30 d");
+  it("builds a sliding-window Ratelimit with the genora:quota prefix", () => {
+    expect(slidingWindowMock).toHaveBeenCalledWith(
+      FREE_TIER_MONTHLY_LIMIT,
+      "30 d",
+    );
     expect(RatelimitMock).toHaveBeenCalledWith(
       expect.objectContaining({ prefix: "genora:quota" }),
     );

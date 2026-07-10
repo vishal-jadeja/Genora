@@ -9,7 +9,7 @@ export const FREE_TIER_MONTHLY_LIMIT = 30;
 
 const quotaLimiter = new Ratelimit({
   redis,
-  limiter: Ratelimit.fixedWindow(FREE_TIER_MONTHLY_LIMIT, "30 d"),
+  limiter: Ratelimit.slidingWindow(FREE_TIER_MONTHLY_LIMIT, "30 d"),
   prefix: "genora:quota",
 });
 

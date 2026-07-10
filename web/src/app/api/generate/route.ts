@@ -10,7 +10,8 @@ import { checkRateLimit, createRateLimiter } from "@/lib/redis/rateLimit";
 
 // 10 generations/minute/user — covers the sync Slop Guard call cost even for
 // BYOK requests, since per-platform free-tier vs BYOK isn't resolved until
-// deeper in the pipeline (see resolveKey.ts TODO for the real quota counter).
+// deeper in the pipeline (see resolveGenerationKey.ts / redis/quota.ts for
+// the real free-tier quota counter, separate from this abuse-rate limit).
 const generateLimiter = createRateLimiter({ tokens: 10, window: "60 s" });
 
 export async function POST(request: Request) {

@@ -31,6 +31,7 @@ import {
   useRestoreVersion,
 } from "@/hooks/useGeneration";
 import { computeOutputs, toMockFolder, toMockPost } from "./adapters";
+import { getModelCatalogEntry } from "@/lib/generation/modelCatalog";
 import {
   INSTR_DEFAULTS,
   MODELS,
@@ -43,6 +44,7 @@ import {
 import { thresholds, wordCount } from "./logic";
 import type {
   GenoraState,
+  ModelId,
   ModelMeta,
   PlatformId,
   Post,
@@ -55,6 +57,8 @@ import type {
 
 const THEME_MODE_KEY = "genora-theme-mode";
 const SIDEBAR_COLLAPSED_KEY = "genora-sidebar-collapsed";
+const SLOP_ENABLED_KEY = "genora-slop-enabled";
+const SLOP_STRICTNESS_KEY = "genora-slop-strictness";
 
 // Cleared on every route change so a stale popover/menu from one page never
 // bleeds into the next (previously handled by `setView`).
@@ -113,20 +117,71 @@ export function useGenoraController(nav: {
   const regeneratePlatformMutation = useRegeneratePlatform();
   const editPlatformContentMutation = useEditPlatformContent();
   const restoreVersionMutation = useRestoreVersion();
-  // In-memory only — the run id/token from the most recent trigger in *this*
-  // browser session. Not persisted anywhere (posts has no run FK — ownership
-  // is Trigger.dev tag-based), so a cold revisit to a still-generating post
-  // has no token and falls back to whatever's already in the DB; it won't
-  // live-update until the user refreshes. Known, disclosed limitation.
-  const [activeRun, setActiveRun] = useState<{
-    runId: string | null;
-    publicAccessToken: string | null;
-  }>({ runId: null, publicAccessToken: null });
-  const { shouldPoll } = useGenerationRun({
-    postId: state.composePostId ?? "",
-    runId: activeRun.runId,
-    publicAccessToken: activeRun.publicAccessToken,
+  // In-memory only — the run id/token per platform from the most recent
+  // trigger in *this* browser session. Not persisted anywhere (posts has no
+  // run FK — ownership is Trigger.dev tag-based), so a cold revisit to a
+  // still-generating post has no token and falls back to whatever's already
+  // in the DB; it won't live-update until the user refreshes. Known,
+  // disclosed limitation.
+  //
+  // Tracked per platform (not as one shared run) because a single-platform
+  // regenerate fires its own run independent of the original multi-platform
+  // generate — if regenerating platform A overwrote a single shared run
+  // slot, platforms B/C from the original run would stop being polled while
+  // still in flight.
+  const [activeRuns, setActiveRuns] = useState<
+    Partial<Record<PlatformId, { runId: string; publicAccessToken: string | null }>>
+  >({});
+  const setRunForPlatforms = useCallback(
+    (
+      platforms: PlatformId[],
+      run: { runId: string; publicAccessToken: string | null },
+    ) => {
+      setActiveRuns((prev) => {
+        const next = { ...prev };
+        platforms.forEach((p) => {
+          next[p] = run;
+        });
+        return next;
+      });
+    },
+    [],
+  );
+  // Rules of hooks require a fixed number of hook calls — PlatformId is a
+  // fixed 5-value union (see ORDER in ./data), so one call per platform here
+  // is the entire set, not a dynamic loop.
+  const postIdForRuns = state.composePostId ?? "";
+  const linkedinRun = useGenerationRun({
+    postId: postIdForRuns,
+    runId: activeRuns.linkedin?.runId ?? null,
+    publicAccessToken: activeRuns.linkedin?.publicAccessToken ?? null,
   });
+  const xRun = useGenerationRun({
+    postId: postIdForRuns,
+    runId: activeRuns.x?.runId ?? null,
+    publicAccessToken: activeRuns.x?.publicAccessToken ?? null,
+  });
+  const redditRun = useGenerationRun({
+    postId: postIdForRuns,
+    runId: activeRuns.reddit?.runId ?? null,
+    publicAccessToken: activeRuns.reddit?.publicAccessToken ?? null,
+  });
+  const mediumRun = useGenerationRun({
+    postId: postIdForRuns,
+    runId: activeRuns.medium?.runId ?? null,
+    publicAccessToken: activeRuns.medium?.publicAccessToken ?? null,
+  });
+  const substackRun = useGenerationRun({
+    postId: postIdForRuns,
+    runId: activeRuns.substack?.runId ?? null,
+    publicAccessToken: activeRuns.substack?.publicAccessToken ?? null,
+  });
+  const shouldPoll =
+    linkedinRun.shouldPoll ||
+    xRun.shouldPoll ||
+    redditRun.shouldPoll ||
+    mediumRun.shouldPoll ||
+    substackRun.shouldPoll;
   const postDetailQuery = usePost(state.composePostId ?? undefined, {
     refetchInterval: shouldPoll ? 2500 : false,
   });
@@ -469,15 +524,28 @@ export function useGenoraController(nav: {
     [patch],
   );
 
+  // Without a modelId, checks whether *any* provider key is connected (used
+  // for copy like "BYOK active" that doesn't depend on which provider). With
+  // one, checks the specific provider that model needs — a Groq-only user
+  // isn't "unlocked" for an Anthropic-only model just because some key
+  // exists.
   const hasKey = useCallback(
-    () => (apiKeysQuery.data ?? []).some((k) => k.connected),
+    (modelId?: ModelId) => {
+      const keys = apiKeysQuery.data ?? [];
+      if (!modelId) return keys.some((k) => k.connected);
+      const provider = getModelCatalogEntry(modelId)?.provider;
+      if (!provider) return false;
+      return keys.some((k) => k.connected && k.provider === provider);
+    },
     [apiKeysQuery.data],
   );
 
   const pickModel = useCallback(
     (m: ModelMeta) => {
       setState((s) => {
-        if (m.free || hasKey()) return { ...s, model: m.id, modelOpen: false };
+        if (m.free || hasKey(m.id)) {
+          return { ...s, model: m.id, modelOpen: false };
+        }
         return s;
       });
     },
@@ -534,7 +602,7 @@ export function useGenoraController(nav: {
         { postId, platform: id },
         {
           onSuccess: (result) => {
-            setActiveRun({
+            setRunForPlatforms([id], {
               runId: result.runId,
               publicAccessToken: result.publicAccessToken,
             });
@@ -550,7 +618,7 @@ export function useGenoraController(nav: {
         },
       );
     },
-    [state.composePostId, regeneratePlatformMutation],
+    [state.composePostId, regeneratePlatformMutation, setRunForPlatforms],
   );
   const retryPlatform = useCallback(
     (id: PlatformId) => regenerateForPlatform(id),
@@ -565,7 +633,7 @@ export function useGenoraController(nav: {
   // a same-tick push+replace pair into a single replace of *that* page).
   const runGenerate = useCallback(
     (navMode: "push" | "replace" = "replace") => {
-      if (!hasKey() && (quotaQuery.data?.remaining ?? 0) <= 0) {
+      if (!hasKey(state.model) && (quotaQuery.data?.remaining ?? 0) <= 0) {
         // No silent redirect — the caller's screen already shows an inline
         // "out of free generations" banner (derived.quotaExhausted) with its
         // own explicit "Add a key" action. Pre-select the right settings tab
@@ -613,7 +681,7 @@ export function useGenoraController(nav: {
               }));
               return;
             }
-            setActiveRun({
+            setRunForPlatforms(sel, {
               runId: outcome.runId,
               publicAccessToken: outcome.publicAccessToken,
             });
@@ -629,7 +697,16 @@ export function useGenoraController(nav: {
         },
       );
     },
-    [hasKey, quotaQuery.data, state, patch, navigate, replace, generateMutation],
+    [
+      hasKey,
+      quotaQuery.data,
+      state,
+      patch,
+      navigate,
+      replace,
+      generateMutation,
+      setRunForPlatforms,
+    ],
   );
 
   const generate = useCallback(() => {
@@ -756,25 +833,35 @@ export function useGenoraController(nav: {
     });
   }, []);
   const restoreVersion = useCallback(
-    (tab: PlatformId, text: string) => {
+    (tab: PlatformId, version: number) => {
       const postId = state.composePostId;
       if (!postId) return;
-      const match = (versionsQuery.data ?? []).find((v) => v.content === text);
-      if (match) {
-        restoreVersionMutation.mutate(
-          { postId, platform: tab, version: match.version },
-          {
-            onError: (err) => {
-              console.error("Failed to restore version", err);
-            },
+      // Match by version number, not content — two versions (e.g. two
+      // failed attempts) can share identical content, and matching by
+      // content risked restoring the wrong one.
+      const match = (versionsQuery.data ?? []).find(
+        (v) => v.version === version,
+      );
+      if (!match) return;
+      restoreVersionMutation.mutate(
+        { postId, platform: tab, version },
+        {
+          // Only update local state once the restore actually lands — an
+          // optimistic update here would show "restored" even when the
+          // mutation fails or the match was stale, only to have the next
+          // refetch silently revert it.
+          onSuccess: () => {
+            setState((s) => ({
+              ...s,
+              content: { ...s.content, [tab]: match.content ?? "" },
+              historyOpen: null,
+            }));
           },
-        );
-      }
-      setState((s) => ({
-        ...s,
-        content: { ...s.content, [tab]: text },
-        historyOpen: null,
-      }));
+          onError: (err) => {
+            console.error("Failed to restore version", err);
+          },
+        },
+      );
     },
     [state.composePostId, versionsQuery.data, restoreVersionMutation],
   );
@@ -1024,10 +1111,21 @@ export function useGenoraController(nav: {
   );
   const onVoice = useCallback((v: string) => patch({ voice: v }), [patch]);
   const toggleSlop = useCallback(() => {
-    setState((s) => ({ ...s, slopEnabled: !s.slopEnabled }));
+    setState((s) => {
+      const next = !s.slopEnabled;
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(SLOP_ENABLED_KEY, next ? "1" : "0");
+      }
+      return { ...s, slopEnabled: next };
+    });
   }, []);
   const setSlopStrictness = useCallback(
-    (v: SlopStrictness) => patch({ slopStrictness: v }),
+    (v: SlopStrictness) => {
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(SLOP_STRICTNESS_KEY, v);
+      }
+      patch({ slopStrictness: v });
+    },
     [patch],
   );
 
@@ -1065,7 +1163,7 @@ export function useGenoraController(nav: {
 
     const quotaText = hk
       ? "BYOK · unlimited"
-      : `${freeLeft} free generation${freeLeft === 1 ? "" : "s"} left today`;
+      : `${freeLeft} free generation${freeLeft === 1 ? "" : "s"} left this month`;
     const quotaLow = !hk && freeLeft <= 1;
     const quotaExhausted = !hk && freeLeft <= 0;
 
@@ -1132,8 +1230,8 @@ export function useGenoraController(nav: {
     const genCountText = `Repurposing your thought for ${S.outPlatforms.length} platform${S.outPlatforms.length === 1 ? "" : "s"}…`;
 
     const tierBanner = hk
-      ? "BYOK active — the daily cap is lifted and full model selection is unlocked."
-      : `You're on the free tier: ${freeLeft} generations left today on Claude Sonnet 4.5. Add any key to remove the cap and choose models.`;
+      ? "BYOK active — the monthly cap is lifted and full model selection is unlocked."
+      : `You're on the free tier: ${freeLeft} generations left this month on Claude Sonnet 4.5. Add any key to remove the cap and choose models.`;
     const voiceStatus = S.voice.trim()
       ? `Calibrated on ${wordCount(S.voice)} words of your writing.`
       : "Not calibrated yet — generations use platform defaults.";
@@ -1269,6 +1367,25 @@ export function useGenoraController(nav: {
     }
   }, [patch]);
 
+  useEffect(() => {
+    const savedEnabled = window.localStorage.getItem(SLOP_ENABLED_KEY);
+    const savedStrictness = window.localStorage.getItem(SLOP_STRICTNESS_KEY);
+    const patchValues: Partial<GenoraState> = {};
+    if (savedEnabled === "1" || savedEnabled === "0") {
+      patchValues.slopEnabled = savedEnabled === "1";
+    }
+    if (
+      savedStrictness === "lenient" ||
+      savedStrictness === "balanced" ||
+      savedStrictness === "strict"
+    ) {
+      patchValues.slopStrictness = savedStrictness;
+    }
+    if (Object.keys(patchValues).length > 0) {
+      patch(patchValues);
+    }
+  }, [patch]);
+
   // SettingsBody reads state.keys[id].c per provider — .v stays purely local
   // (BYOK keys are never returned by GET /api/keys), .c reflects the real
   // connected/stored status from the server.
@@ -1344,6 +1461,7 @@ export function useGenoraController(nav: {
       togglePlatform,
       openModel,
       pickModel,
+      hasKey,
       openFolderPicker,
       pickComposeFolder,
       generate,
@@ -1415,6 +1533,7 @@ export function useGenoraController(nav: {
       togglePlatform,
       openModel,
       pickModel,
+      hasKey,
       openFolderPicker,
       pickComposeFolder,
       generate,

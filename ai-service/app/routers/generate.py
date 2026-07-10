@@ -13,14 +13,22 @@ async def generate(request: GenerateRequest) -> GenerateResponse:
     # build_adapter's KeyError branch is unreachable from this path.
     adapter = build_adapter(request.provider, request.api_key)
 
-    result = await run_pipeline(
-        adapter=adapter,
-        model=request.model,
-        raw_text=request.raw_text,
-        platform=request.platform,
-        platform_instructions=request.platform_instructions,
-        rag_context=request.rag_context,
-    )
+    try:
+        result = await run_pipeline(
+            adapter=adapter,
+            model=request.model,
+            raw_text=request.raw_text,
+            platform=request.platform,
+            platform_instructions=request.platform_instructions,
+            rag_context=request.rag_context,
+        )
+    finally:
+        # Each adapter builds a fresh, uncached client for this request only
+        # (see registry.py — required so a BYOK key is never reused across
+        # requests); that client's connections must be released explicitly
+        # or they leak under sustained traffic.
+        await adapter.aclose()
+
     return GenerateResponse(
         content=result.content, revision_count=result.revision_count, usage=result.usage
     )

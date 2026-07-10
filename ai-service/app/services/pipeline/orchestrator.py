@@ -22,6 +22,12 @@ MAX_REVISIONS = 2
 # Generous for a single social/newsletter post; not user-configurable.
 MAX_TOKENS_PER_CALL = 1024
 
+# One-shot fallback budget when a stage comes back truncated (hit
+# max_tokens rather than stopping naturally) — cheaper than silently
+# shipping content cut off mid-sentence, and platforms like Medium/Substack
+# are explicitly meant to run long-form (see prompts.py platform briefs).
+MAX_TOKENS_PER_CALL_RETRY = 4096
+
 
 @dataclass
 class PipelineResult:
@@ -38,7 +44,16 @@ async def _complete_stage(
     HTTP status — without this, a 401 tells the caller a key is bad but not
     which of the three calls in a single generate request hit it."""
     try:
-        return await adapter.complete(**kwargs)
+        result = await adapter.complete(**kwargs)
+    except (ProviderAuthError, ProviderRateLimitError, ProviderBadRequestError) as exc:
+        raise type(exc)(f"{stage} stage: {exc}") from exc
+
+    if not result.truncated:
+        return result
+
+    retry_kwargs = {**kwargs, "max_tokens": MAX_TOKENS_PER_CALL_RETRY}
+    try:
+        return await adapter.complete(**retry_kwargs)
     except (ProviderAuthError, ProviderRateLimitError, ProviderBadRequestError) as exc:
         raise type(exc)(f"{stage} stage: {exc}") from exc
 

@@ -1,5 +1,4 @@
 import json
-import re
 from dataclasses import dataclass
 
 # Baseline tone/format framing per platform. Always applied underneath the
@@ -20,8 +19,6 @@ _PLATFORM_BRIEFS = {
         "who subscribed."
     ),
 }
-
-_JSON_OBJECT_RE = re.compile(r"\{.*\}", re.DOTALL)
 
 
 def _platform_context(platform: str, platform_instructions: str) -> str:
@@ -84,20 +81,34 @@ class CriticVerdict:
 
 
 def parse_critic_response(text: str) -> CriticVerdict:
-    """Parses the critic's JSON verdict, tolerating markdown fences around it.
+    """Parses the critic's JSON verdict, tolerating markdown fences and any
+    chatter the model adds before/after the JSON object.
 
-    Falls back to "not approved, raw text as feedback" on any parse failure
-    rather than raising — a malformed critic response should push the draft
-    through another revision round, not crash the pipeline. The revision cap
-    in the orchestrator bounds how many times that fallback can loop.
+    Tries `json.loads` from every `{` in the text (via `raw_decode`, which
+    parses just the one JSON value starting there and ignores whatever
+    follows) and accepts the first one that parses as an object. This is
+    deliberately not a greedy regex spanning the whole response: a naive
+    `\\{.*\\}` match anchored on the *last* `}` in the text would swallow
+    trailing chatter that happens to contain a brace (e.g. "...Sounds good!
+    Let me know if you want tweaks like {this}.") and fail to parse, silently
+    downgrading a real approval into a rejection.
+
+    Falls back to "not approved, raw text as feedback" if no candidate
+    parses — a malformed critic response should push the draft through
+    another revision round, not crash the pipeline. The revision cap in the
+    orchestrator bounds how many times that fallback can loop.
     """
-    match = _JSON_OBJECT_RE.search(text)
-    if match is None:
-        return CriticVerdict(approved=False, feedback=text.strip())
-    try:
-        data = json.loads(match.group(0))
-    except json.JSONDecodeError:
-        return CriticVerdict(approved=False, feedback=text.strip())
-    return CriticVerdict(
-        approved=bool(data.get("approved", False)), feedback=str(data.get("feedback", ""))
-    )
+    decoder = json.JSONDecoder()
+    idx = text.find("{")
+    while idx != -1:
+        try:
+            data, _ = decoder.raw_decode(text, idx)
+        except json.JSONDecodeError:
+            idx = text.find("{", idx + 1)
+            continue
+        if isinstance(data, dict):
+            return CriticVerdict(
+                approved=bool(data.get("approved", False)), feedback=str(data.get("feedback", ""))
+            )
+        idx = text.find("{", idx + 1)
+    return CriticVerdict(approved=False, feedback=text.strip())

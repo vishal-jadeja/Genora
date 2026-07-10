@@ -2,10 +2,10 @@
 
 import { signIn } from "@/auth";
 
-export async function signInWithGoogle() {
-  await signIn("google", { redirectTo: "/dashboard" });
+export async function signInWithGoogle(callbackUrl?: string) {
+  await signIn("google", { redirectTo: callbackUrl || "/dashboard" });
 }
 
-export async function signInWithGitHub() {
-  await signIn("github", { redirectTo: "/dashboard" });
+export async function signInWithGitHub(callbackUrl?: string) {
+  await signIn("github", { redirectTo: callbackUrl || "/dashboard" });
 }

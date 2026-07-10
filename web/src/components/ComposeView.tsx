@@ -181,7 +181,7 @@ export function ComposeView({ state, derived, actions }: GenoraViewProps) {
                 }}
               >
                 {MODELS.map((m) => {
-                  const locked = !m.free && !derived.hasKey;
+                  const locked = !m.free && !actions.hasKey(m.id);
                   const selected = state.model === m.id;
                   return (
                     <button
@@ -584,8 +584,8 @@ export function ComposeView({ state, derived, actions }: GenoraViewProps) {
                 lineHeight: 1.4,
               }}
             >
-              One free generation left today. Add your own API key to keep
-              going, unlimited.
+              One free generation left this month. Add your own API key to
+              keep going, unlimited.
             </span>
             <button
               onClick={() => actions.goSettings("keys")}

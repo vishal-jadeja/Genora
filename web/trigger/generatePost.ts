@@ -8,6 +8,10 @@ import {
   type ModelCatalogEntry,
   type ModelId,
 } from "@/lib/generation/modelCatalog";
+import {
+  GenerationKeyError,
+  resolveGenerationKey,
+} from "@/lib/generation/resolveGenerationKey";
 import type { Platform } from "@/lib/generation/types";
 import {
   generatePlatformPost,
@@ -72,12 +76,37 @@ export const generatePost = task({
     const results = await Promise.all(
       selections.map(
         async ({ selection, catalogEntry }): Promise<GeneratePostResult> => {
+          // Resolved (and, for free-tier models, quota-consumed) exactly
+          // once here — never inside generatePlatformPost, which retries up
+          // to 3x and would otherwise re-consume quota per retry.
+          let generationKey;
+          try {
+            generationKey = await resolveGenerationKey(
+              payload.userId,
+              selection.modelId,
+            );
+          } catch (err) {
+            if (err instanceof GenerationKeyError) {
+              await persistFailureSafe({
+                postId: payload.postId,
+                userId: payload.userId,
+                platform: selection.platform,
+                provider: catalogEntry.provider,
+                apiModel: catalogEntry.apiModel,
+                errorReason: err.message,
+              });
+              return { platform: selection.platform, status: "failed" };
+            }
+            throw err;
+          }
+
           const childPayload: GeneratePlatformPostPayload = {
             postId: payload.postId,
             userId: payload.userId,
             platform: selection.platform,
             rawText: payload.rawText,
             modelId: selection.modelId,
+            generationKey,
           };
 
           const run = await generatePlatformPost.triggerAndWait(childPayload);

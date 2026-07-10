@@ -186,29 +186,47 @@ describe("restoreVersion", () => {
     expect(updateMock).not.toHaveBeenCalled();
   });
 
-  it("supersedes current, then flips the target version to current", async () => {
-    const targetWhere = vi
-      .fn()
-      .mockResolvedValue([{ id: "output-1", version: 2 }]);
+  it("supersedes current, then inserts the target's content as a new current version", async () => {
+    // select #1: the target row being restored (old version 2). select #2
+    // (nextVersion) falls through to the beforeEach default, which resolves
+    // maxVersion: 2 -> next version 3.
+    const targetWhere = vi.fn().mockResolvedValue([
+      {
+        id: "output-1",
+        version: 2,
+        content: "old content",
+        status: "success",
+        revisionCount: 1,
+        errorReason: null,
+        provider: "anthropic",
+        model: "claude-sonnet-4-5",
+      },
+    ]);
     selectMock.mockReturnValueOnce({
       from: vi.fn().mockReturnValue({ where: targetWhere }),
     });
 
-    const supersedeWhere = vi.fn().mockResolvedValue(undefined);
-    const restoreReturning = vi
+    const returning = vi
       .fn()
-      .mockResolvedValue([{ id: "output-1", version: 2, isCurrent: true }]);
-    const restoreWhere = vi.fn().mockReturnValue({ returning: restoreReturning });
-    updateMock
-      .mockReturnValueOnce({ set: vi.fn().mockReturnValue({ where: supersedeWhere }) })
-      .mockReturnValueOnce({ set: vi.fn().mockReturnValue({ where: restoreWhere }) });
+      .mockResolvedValue([{ id: "output-3", version: 3, isCurrent: true }]);
+    const outputsValues = vi.fn().mockReturnValue({ returning });
+    insertMock.mockReturnValueOnce({ values: outputsValues });
 
     const result = await restoreVersion("post-1", "linkedin", 2);
 
     expect(executeMock).toHaveBeenCalledTimes(1);
-    expect(updateMock).toHaveBeenCalledTimes(2);
-    expect(restoreWhere).toHaveBeenCalled();
-    expect(result).toEqual({ id: "output-1", version: 2, isCurrent: true });
+    // supersedeCurrent is the only update call — restoring no longer flips
+    // the old row's isCurrent in place, it inserts a new version instead.
+    expect(updateMock).toHaveBeenCalledTimes(1);
+    expect(outputsValues.mock.calls[0][0]).toMatchObject({
+      postId: "post-1",
+      platform: "linkedin",
+      version: 3,
+      content: "old content",
+      status: "success",
+      isCurrent: true,
+    });
+    expect(result).toEqual({ id: "output-3", version: 3, isCurrent: true });
   });
 });
 

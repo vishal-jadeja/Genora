@@ -35,14 +35,31 @@ class GeminiAdapter:
             )
         except ClientError as exc:
             if exc.code in (401, 403):
-                raise ProviderAuthError(str(exc)) from exc
+                # Never forward the raw SDK message here: provider auth
+                # errors can echo back a masked fragment of the BYOK key,
+                # and this message is persisted to Postgres and shown in
+                # the UI.
+                raise ProviderAuthError(
+                    "the provided API key was rejected by the provider"
+                ) from exc
             if exc.code == 429:
                 raise ProviderRateLimitError(str(exc)) from exc
             raise ProviderBadRequestError(str(exc)) from exc
 
         usage = response.usage_metadata
+        candidates = getattr(response, "candidates", None) or []
+        truncated = bool(candidates) and (
+            getattr(candidates[0], "finish_reason", None) == types.FinishReason.MAX_TOKENS
+        )
         return CompletionResult(
             text=response.text or "",
             prompt_tokens=(usage.prompt_token_count or 0) if usage else 0,
             completion_tokens=(usage.candidates_token_count or 0) if usage else 0,
+            truncated=truncated,
         )
+
+    async def aclose(self) -> None:
+        # genai.Client.close() is sync (unlike the other three SDKs) but
+        # closes the shared _api_client that backs both the sync and .aio
+        # (async) surfaces — the only one we actually use.
+        self._client.close()

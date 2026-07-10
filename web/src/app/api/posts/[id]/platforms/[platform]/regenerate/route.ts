@@ -8,10 +8,16 @@ import {
 import { regeneratePlatformSchema } from "@/lib/generation/regenerateSchema";
 import type { Platform } from "@/lib/generation/types";
 import { PostNotFoundError } from "@/lib/posts/service";
+import { checkRateLimit, createRateLimiter } from "@/lib/redis/rateLimit";
 
 function isPlatform(value: string): value is Platform {
   return (platformEnum.enumValues as readonly string[]).includes(value);
 }
+
+// Same cap as /api/generate — regenerate triggers the identical costly
+// pipeline (real LLM call, possible free-tier quota burn, BYOK provider
+// spend) and needs the same abuse-rate throttle.
+const regenerateLimiter = createRateLimiter({ tokens: 10, window: "60 s" });
 
 export async function POST(
   request: Request,
@@ -20,6 +26,28 @@ export async function POST(
   const userId = await getAuthenticatedUserId();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Rate limiting is a safety net, not a core dependency — an Upstash outage
+  // shouldn't take down regeneration entirely, so fail open on error.
+  try {
+    const rateLimit = await checkRateLimit(regenerateLimiter, userId);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many requests, please slow down" },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": Math.max(
+              0,
+              Math.ceil((rateLimit.reset - Date.now()) / 1000),
+            ).toString(),
+          },
+        },
+      );
+    }
+  } catch (err) {
+    console.error("Rate limit check failed, failing open", err);
   }
 
   const { id, platform } = await ctx.params;

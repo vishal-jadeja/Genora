@@ -6,6 +6,13 @@ export function useLandingMotion() {
       "(prefers-reduced-motion: reduce)",
     ).matches;
     const cleanup: Array<() => void> = [];
+    // Set synchronously by the effect's cleanup, checked after the async
+    // imports below resolve — without this, a fast unmount (before the
+    // dynamic import promise settles) still goes on to create a Lenis
+    // instance, a gsap.ticker entry, and ScrollTrigger instances bound to a
+    // document that's already navigated away, none of which the already-run
+    // cleanup function can ever tear down.
+    let cancelled = false;
 
     // cursor crosshair inside hero
     const hero = document.getElementById("heroPin");
@@ -53,6 +60,7 @@ export function useLandingMotion() {
           import("gsap/ScrollTrigger"),
           import("lenis"),
         ]);
+      if (cancelled) return;
       gsap.registerPlugin(ScrollTrigger);
 
       if (!reduced) {
@@ -251,6 +259,9 @@ export function useLandingMotion() {
       });
     })();
 
-    return () => cleanup.forEach((fn) => fn());
+    return () => {
+      cancelled = true;
+      cleanup.forEach((fn) => fn());
+    };
   }, []);
 }

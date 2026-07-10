@@ -169,10 +169,13 @@ export interface PlatformOutputRow {
   createdAt: Date;
 }
 
-// Flips an older (or failed) version back to current — the inverse of
-// supersedeCurrent. Same advisory-lock transaction pattern as
-// persistSuccess/persistFailure/persistManualEdit so a restore can't race a
-// concurrent generation for the same post+platform.
+// Restores an older (or failed) version's content as a new current version —
+// append-only, same as persistSuccess/persistManualEdit, rather than flipping
+// isCurrent onto the old row in place. Reusing the old row's version number
+// in place would make the version count (and history list) shrink right
+// after a restore, misrepresenting how many real versions exist. Same
+// advisory-lock transaction pattern so a restore can't race a concurrent
+// generation for the same post+platform.
 export async function restoreVersion(
   postId: string,
   platform: Platform,
@@ -197,11 +200,22 @@ export async function restoreVersion(
     }
 
     await supersedeCurrent(tx, postId, platform);
+    const newVersion = await nextVersion(tx, postId, platform);
 
     const [restored] = await tx
-      .update(platformOutputs)
-      .set({ isCurrent: true })
-      .where(eq(platformOutputs.id, target.id))
+      .insert(platformOutputs)
+      .values({
+        postId,
+        platform,
+        version: newVersion,
+        content: target.content,
+        status: target.status,
+        revisionCount: target.revisionCount,
+        errorReason: target.errorReason,
+        provider: target.provider,
+        model: target.model,
+        isCurrent: true,
+      })
       .returning();
 
     return restored as PlatformOutputRow;

@@ -1,4 +1,4 @@
-import { task, AbortTaskRunError } from "@trigger.dev/sdk";
+import { task } from "@trigger.dev/sdk";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { platformInstructions } from "@/db/schema";
@@ -8,14 +8,8 @@ import type {
   GenerateResponse,
   RagRetrieveResponse,
 } from "@/lib/aiService/types";
-import {
-  getModelCatalogEntry,
-  type ModelId,
-} from "@/lib/generation/modelCatalog";
-import {
-  GenerationKeyError,
-  resolveGenerationKey,
-} from "@/lib/generation/resolveGenerationKey";
+import type { ModelId } from "@/lib/generation/modelCatalog";
+import type { GenerationKey } from "@/lib/generation/resolveGenerationKey";
 import type { Platform } from "@/lib/generation/types";
 
 export interface GeneratePlatformPostPayload {
@@ -24,6 +18,11 @@ export interface GeneratePlatformPostPayload {
   platform: Platform;
   rawText: string;
   modelId: ModelId;
+  // Resolved (and, for free-tier models, quota-consumed) once by the parent
+  // generatePost task before fan-out — never re-resolved here, since this
+  // task's automatic retries would otherwise re-consume free-tier quota for
+  // the same logical attempt on every transient failure.
+  generationKey: GenerationKey;
 }
 
 export interface StageUsageOutput {
@@ -52,25 +51,7 @@ export const generatePlatformPost = task({
   run: async (
     payload: GeneratePlatformPostPayload,
   ): Promise<GeneratePlatformPostOutput> => {
-    const catalogEntry = getModelCatalogEntry(payload.modelId);
-    if (!catalogEntry) {
-      // Payload came from generatePost, which validates against the same
-      // catalog — reaching here means a real bug, not a transient failure.
-      throw new AbortTaskRunError(`unknown model id: ${payload.modelId}`);
-    }
-
-    let generationKey;
-    try {
-      generationKey = await resolveGenerationKey(
-        payload.userId,
-        payload.modelId,
-      );
-    } catch (err) {
-      if (err instanceof GenerationKeyError) {
-        return { status: "failed", errorReason: err.message };
-      }
-      throw err;
-    }
+    const generationKey = payload.generationKey;
 
     const [instructionsRow] = await db
       .select({ instructions: platformInstructions.instructions })

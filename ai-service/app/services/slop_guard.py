@@ -21,7 +21,17 @@ _MASH_MIN_TOKEN_CHARS = 22
 # input is judged to have no real substance ("test test test test test").
 _HARD_REJECT_REPETITION_RATIO = 0.6
 _SOFT_NUDGE_REPETITION_RATIO = 0.35
-_REPETITION_MIN_WORDS = 5
+
+# Minimum number of times the single most-common word must actually repeat
+# before the ratio above is trusted at all — gating on total word count
+# instead (e.g. "only check ratio once there are >= 5 words") let a handful
+# of long repeated words ("excruciatingly excruciatingly excruciatingly
+# excruciatingly", 4 words, 63 chars — past the soft-nudge char floor)
+# bypass repetition detection entirely. Gating on the repeat count itself
+# still avoids flagging ordinary short text, where one legitimate word with
+# no repeats at all can produce a high ratio purely from a tiny denominator
+# (e.g. "great job", top_count=1, ratio=1/2=0.5).
+_REPETITION_MIN_COUNT = 3
 
 # Python's `re` matches Unicode by default for str patterns — this covers
 # Cyrillic/CJK/Arabic/Devanagari/accented Latin, not just ASCII. Known
@@ -63,8 +73,8 @@ def evaluate_slop_guard(raw_text: str) -> SlopGuardResult:
             reason="looks like keyboard mashing rather than real words",
         )
 
-    if len(words) >= _REPETITION_MIN_WORDS:
-        top_word, top_count = Counter(w.lower() for w in words).most_common(1)[0]
+    top_word, top_count = Counter(w.lower() for w in words).most_common(1)[0]
+    if top_count >= _REPETITION_MIN_COUNT:
         repetition_ratio = top_count / len(words)
         if repetition_ratio > _HARD_REJECT_REPETITION_RATIO:
             return SlopGuardResult(

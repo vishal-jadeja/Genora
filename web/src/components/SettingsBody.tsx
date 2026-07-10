@@ -659,8 +659,10 @@ export function SettingsBody({ state, derived, actions }: GenoraViewProps) {
                   lineHeight: 1.5,
                 }}
               >
-                Genora refuses to generate from input with no real thought
-                behind it. Set how hard it pushes back.
+                Genora warns you locally, before you even hit generate, when
+                your input has no real thought behind it. Set how hard it
+                pushes back — the server runs its own separate, fixed check
+                regardless of this setting.
               </p>
               <div
                 style={{

@@ -5,7 +5,6 @@ import type {
 } from "./generatePlatformPost";
 
 const callAiServiceMock = vi.fn();
-const resolveGenerationKeyMock = vi.fn();
 const selectMock = vi.fn();
 
 vi.mock("@trigger.dev/sdk", () => ({
@@ -25,12 +24,6 @@ class MockAiServiceError extends Error {
 vi.mock("@/lib/aiService/client", () => ({
   AiServiceError: MockAiServiceError,
   callAiService: (...args: unknown[]) => callAiServiceMock(...args),
-}));
-
-vi.mock("@/lib/generation/resolveGenerationKey", () => ({
-  GenerationKeyError: class GenerationKeyError extends Error {},
-  resolveGenerationKey: (...args: unknown[]) =>
-    resolveGenerationKeyMock(...args),
 }));
 
 vi.mock("@/db/client", () => ({
@@ -55,18 +48,17 @@ const basePayload: GeneratePlatformPostPayload = {
   platform: "linkedin",
   rawText: "hello",
   modelId: "groq",
+  generationKey: {
+    provider: "groq",
+    apiModel: "openai/gpt-oss-120b",
+    apiKey: "test-key",
+  },
 };
 
 beforeEach(() => {
   callAiServiceMock.mockReset();
-  resolveGenerationKeyMock.mockReset();
   selectMock.mockReset();
 
-  resolveGenerationKeyMock.mockResolvedValue({
-    provider: "groq",
-    apiModel: "openai/gpt-oss-120b",
-    apiKey: "test-key",
-  });
   const where = vi.fn().mockResolvedValue([]);
   const from = vi.fn().mockReturnValue({ where });
   selectMock.mockReturnValue({ from });

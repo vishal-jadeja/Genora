@@ -49,6 +49,28 @@ def test_soft_nudges_heavy_repetition_short_of_reject_threshold():
     assert "great" in result.reason
 
 
+def test_rejects_few_long_repeated_words_past_the_char_floor():
+    # Regression test: 4 words is long enough in total characters (67) to
+    # clear the soft-nudge char floor, but previously fell under the old
+    # word-count-based gate (>= 5 words) for even running the repetition
+    # check at all, so this used to slip through as PASS.
+    result = evaluate_slop_guard(
+        "circumnavigation circumnavigation circumnavigation circumnavigation"
+    )
+    assert result.verdict == SlopGuardVerdict.HARD_REJECT
+    assert "repeated throughout" in result.reason
+
+
+def test_does_not_flag_ordinary_short_text_as_repetitive():
+    # A short, ordinary phrase with no real repetition shouldn't get flagged
+    # just because a small word count makes one word's share of the total
+    # look statistically high (e.g. "great" at 1/2 = 0.5).
+    result = evaluate_slop_guard(
+        "great job everyone, that was a genuinely solid piece of effort today"
+    )
+    assert result.verdict == SlopGuardVerdict.PASS
+
+
 def test_soft_nudges_thin_input():
     result = evaluate_slop_guard("had a decent idea about onboarding today, might explore it")
     assert result.verdict == SlopGuardVerdict.SOFT_NUDGE

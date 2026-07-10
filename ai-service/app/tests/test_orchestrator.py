@@ -1,6 +1,10 @@
 import pytest
 
-from app.services.pipeline.orchestrator import MAX_REVISIONS, run_pipeline
+from app.services.pipeline.orchestrator import (
+    MAX_REVISIONS,
+    MAX_TOKENS_PER_CALL_RETRY,
+    run_pipeline,
+)
 from app.services.providers.base import CompletionResult
 from app.services.providers.errors import ProviderAuthError
 
@@ -13,16 +17,26 @@ class _ScriptedAdapter:
         self.calls: list[dict] = []
 
     async def complete(self, *, model: str, system: str, user: str, max_tokens: int):
-        self.calls.append({"model": model, "system": system, "user": user})
+        self.calls.append(
+            {"model": model, "system": system, "user": user, "max_tokens": max_tokens}
+        )
         item = self._script.pop(0)
         if isinstance(item, Exception):
             raise item
         return item
 
 
-def _result(text: str, prompt_tokens: int = 10, completion_tokens: int = 20) -> CompletionResult:
+def _result(
+    text: str,
+    prompt_tokens: int = 10,
+    completion_tokens: int = 20,
+    truncated: bool = False,
+) -> CompletionResult:
     return CompletionResult(
-        text=text, prompt_tokens=prompt_tokens, completion_tokens=completion_tokens
+        text=text,
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
+        truncated=truncated,
     )
 
 
@@ -97,6 +111,25 @@ async def test_pipeline_aggregates_token_usage_per_stage():
     assert writer_usage.prompt_tokens == 100
     assert writer_usage.completion_tokens == 50
     assert writer_usage.total_tokens == 150
+
+
+async def test_pipeline_retries_a_truncated_stage_with_a_bigger_budget():
+    adapter = _ScriptedAdapter(
+        [
+            _result("first draft cut off mid-sen", truncated=True),
+            _result("first draft complete"),
+            _result('{"approved": true, "feedback": ""}'),
+        ]
+    )
+
+    result = await run_pipeline(adapter, "model-x", "raw thought", "medium", "", [])
+
+    assert result.content == "first draft complete"
+    # the retry call must ask for the bigger budget, not the original one
+    assert adapter.calls[1]["max_tokens"] == MAX_TOKENS_PER_CALL_RETRY
+    # a successful retry replaces the truncated attempt — it's not recorded
+    # as an extra revision round
+    assert result.revision_count == 0
 
 
 async def test_pipeline_tags_the_failing_stage_on_provider_error():
