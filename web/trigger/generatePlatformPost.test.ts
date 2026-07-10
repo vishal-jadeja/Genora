@@ -9,6 +9,7 @@ const selectMock = vi.fn();
 
 vi.mock("@trigger.dev/sdk", () => ({
   task: (params: unknown) => params,
+  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
   AbortTaskRunError: class AbortTaskRunError extends Error {},
 }));
 
@@ -53,6 +54,7 @@ const basePayload: GeneratePlatformPostPayload = {
     apiModel: "openai/gpt-oss-120b",
     apiKey: "test-key",
   },
+  correlationId: "corr-1",
 };
 
 beforeEach(() => {
@@ -114,7 +116,7 @@ describe("generatePlatformPost", () => {
     expect(callAiServiceMock).toHaveBeenCalledWith(
       "/generate",
       expect.anything(),
-      { timeoutMs: 90_000 },
+      { timeoutMs: 90_000, correlationId: "corr-1" },
     );
   });
 });

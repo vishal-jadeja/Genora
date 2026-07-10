@@ -113,6 +113,7 @@ describe("POST /api/posts/[id]/platforms/[platform]/regenerate", () => {
       "post-1",
       "linkedin",
       undefined,
+      expect.any(String),
     );
     expect(body).toEqual({ runId: "run-1", publicAccessToken: "token" });
   });
@@ -137,6 +138,7 @@ describe("POST /api/posts/[id]/platforms/[platform]/regenerate", () => {
       "post-1",
       "linkedin",
       "sonnet",
+      expect.any(String),
     );
   });
 

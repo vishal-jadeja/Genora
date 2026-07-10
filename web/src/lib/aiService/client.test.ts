@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AiServiceError, callAiService } from "./client";
+import { logger } from "@/lib/logging/logger";
 
 const originalFetch = global.fetch;
 const originalEnv = { ...process.env };
@@ -65,9 +66,9 @@ describe("callAiService", () => {
         "<html>internal gateway error, upstream=10.0.4.2</html>",
     }) as unknown as typeof fetch;
 
-    const consoleErrorSpy = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
+    const loggerErrorSpy = vi.spyOn(logger, "error").mockImplementation(() => {
+      /* no-op */
+    });
 
     await expect(
       callAiService("/generate", { raw_text: "hi" }),
@@ -75,8 +76,11 @@ describe("callAiService", () => {
       status: 502,
       message: expect.not.stringContaining("upstream=10.0.4.2"),
     });
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("upstream=10.0.4.2"),
+    expect(loggerErrorSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: expect.stringContaining("upstream=10.0.4.2"),
+      }),
+      "ai-service request failed",
     );
   });
 });

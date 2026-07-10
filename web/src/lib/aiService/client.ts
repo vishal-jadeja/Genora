@@ -1,3 +1,6 @@
+import { CORRELATION_HEADER } from "@/lib/logging/correlationId";
+import { logger } from "@/lib/logging/logger";
+
 export class AiServiceError extends Error {
   constructor(
     public readonly status: number,
@@ -13,7 +16,10 @@ const DEFAULT_TIMEOUT_MS = 15_000;
 export async function callAiService<TResponse>(
   path: string,
   body: unknown,
-  { timeoutMs = DEFAULT_TIMEOUT_MS }: { timeoutMs?: number } = {},
+  {
+    timeoutMs = DEFAULT_TIMEOUT_MS,
+    correlationId,
+  }: { timeoutMs?: number; correlationId?: string } = {},
 ): Promise<TResponse> {
   const baseUrl = process.env.AI_SERVICE_URL;
   const secret = process.env.INTERNAL_SERVICE_SECRET;
@@ -29,6 +35,7 @@ export async function callAiService<TResponse>(
       headers: {
         "Content-Type": "application/json",
         "X-Internal-Secret": secret,
+        ...(correlationId ? { [CORRELATION_HEADER]: correlationId } : {}),
       },
       body: JSON.stringify(body),
       signal: controller.signal,
@@ -41,7 +48,10 @@ export async function callAiService<TResponse>(
       // provider-returned reasons (e.g. "invalid API key") and are safe to
       // forward, capped so an oversized body can't bloat storage/responses.
       if (response.status >= 500) {
-        console.error(`ai-service ${path} failed: ${response.status} ${text}`);
+        logger.error(
+          { correlationId, path, status: response.status, body: text },
+          "ai-service request failed",
+        );
         throw new AiServiceError(
           response.status,
           `ai-service ${path} request failed`,

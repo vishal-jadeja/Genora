@@ -1,4 +1,4 @@
-import { task } from "@trigger.dev/sdk";
+import { task, logger } from "@trigger.dev/sdk";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { platformInstructions } from "@/db/schema";
@@ -23,6 +23,7 @@ export interface GeneratePlatformPostPayload {
   // task's automatic retries would otherwise re-consume free-tier quota for
   // the same logical attempt on every transient failure.
   generationKey: GenerationKey;
+  correlationId: string;
 }
 
 export interface StageUsageOutput {
@@ -72,11 +73,18 @@ export const generatePlatformPost = task({
           query_text: payload.rawText,
           limit: 5,
         },
+        { correlationId: payload.correlationId },
       );
       ragContext = ragResult.matches.map((m) => m.content);
-    } catch {
+    } catch (err) {
       // RAG is a quality enhancement, not a hard dependency — a flaky
       // embedding call shouldn't sink an otherwise-good generation.
+      logger.warn("RAG retrieval failed, continuing without context", {
+        correlationId: payload.correlationId,
+        postId: payload.postId,
+        platform: payload.platform,
+        err,
+      });
       ragContext = [];
     }
 
@@ -98,7 +106,7 @@ export const generatePlatformPost = task({
       result = await callAiService<GenerateResponse>(
         "/generate",
         generateRequest,
-        { timeoutMs: 90_000 },
+        { timeoutMs: 90_000, correlationId: payload.correlationId },
       );
     } catch (err) {
       if (err instanceof AiServiceError && err.status === 429) {
@@ -110,6 +118,12 @@ export const generatePlatformPost = task({
       if (err instanceof AiServiceError && err.status < 500) {
         // Bad request / invalid model / provider auth failure — retrying
         // would just fail the same way again.
+        logger.error("generation failed (non-retryable)", {
+          correlationId: payload.correlationId,
+          postId: payload.postId,
+          platform: payload.platform,
+          err,
+        });
         return { status: "failed", errorReason: err.message };
       }
       // Network error or 5xx — rethrow so the task's retry/backoff applies.

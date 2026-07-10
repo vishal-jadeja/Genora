@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { platformEnum } from "@/db/schema";
+import { handleKnownError, internalErrorResponse } from "@/lib/api/errorResponse";
 import { getAuthenticatedUserId } from "@/lib/auth/session";
 import {
   ModelRequiredError,
@@ -7,6 +8,11 @@ import {
 } from "@/lib/generation/generateService";
 import { regeneratePlatformSchema } from "@/lib/generation/regenerateSchema";
 import type { Platform } from "@/lib/generation/types";
+import {
+  CORRELATION_HEADER,
+  getOrCreateCorrelationId,
+} from "@/lib/logging/correlationId";
+import { createRequestLogger } from "@/lib/logging/logger";
 import { PostNotFoundError } from "@/lib/posts/service";
 import { checkRateLimit, createRateLimiter } from "@/lib/redis/rateLimit";
 
@@ -23,6 +29,11 @@ export async function POST(
   request: Request,
   ctx: RouteContext<"/api/posts/[id]/platforms/[platform]/regenerate">,
 ) {
+  const correlationId = getOrCreateCorrelationId(request);
+  const log = createRequestLogger(correlationId, {
+    route: "/api/posts/[id]/platforms/[platform]/regenerate",
+  });
+
   const userId = await getAuthenticatedUserId();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -42,12 +53,13 @@ export async function POST(
               0,
               Math.ceil((rateLimit.reset - Date.now()) / 1000),
             ).toString(),
+            [CORRELATION_HEADER]: correlationId,
           },
         },
       );
     }
   } catch (err) {
-    console.error("Rate limit check failed, failing open", err);
+    log.warn({ err }, "rate limit check failed, failing open");
   }
 
   const { id, platform } = await ctx.params;
@@ -79,15 +91,28 @@ export async function POST(
       id,
       platform,
       parsed.data.modelId,
+      correlationId,
     );
-    return NextResponse.json({ runId, publicAccessToken }, { status: 202 });
+    return NextResponse.json(
+      { runId, publicAccessToken },
+      { status: 202, headers: { [CORRELATION_HEADER]: correlationId } },
+    );
   } catch (err) {
-    if (err instanceof PostNotFoundError) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
-    if (err instanceof ModelRequiredError) {
-      return NextResponse.json({ error: err.message }, { status: 400 });
-    }
-    throw err;
+    const handled = handleKnownError(
+      err,
+      [
+        { test: PostNotFoundError, status: 404, message: () => "Not found" },
+        {
+          test: ModelRequiredError,
+          status: 400,
+          message: (e) => e.message,
+        },
+      ],
+      log,
+      correlationId,
+    );
+    if (handled) return handled;
+    log.error({ err }, "unhandled error in regenerate route");
+    return internalErrorResponse(correlationId);
   }
 }

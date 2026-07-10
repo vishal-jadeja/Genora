@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { handleKnownError, internalErrorResponse } from "@/lib/api/errorResponse";
 import { getAuthenticatedUserId } from "@/lib/auth/session";
 import {
   FolderNotOwnedError,
@@ -6,6 +7,11 @@ import {
   SlopGuardUnavailableError,
 } from "@/lib/generation/generateService";
 import { generatePostSchema } from "@/lib/generation/schema";
+import {
+  CORRELATION_HEADER,
+  getOrCreateCorrelationId,
+} from "@/lib/logging/correlationId";
+import { createRequestLogger } from "@/lib/logging/logger";
 import { checkRateLimit, createRateLimiter } from "@/lib/redis/rateLimit";
 
 // 10 generations/minute/user — covers the sync Slop Guard call cost even for
@@ -15,6 +21,9 @@ import { checkRateLimit, createRateLimiter } from "@/lib/redis/rateLimit";
 const generateLimiter = createRateLimiter({ tokens: 10, window: "60 s" });
 
 export async function POST(request: Request) {
+  const correlationId = getOrCreateCorrelationId(request);
+  const log = createRequestLogger(correlationId, { route: "/api/generate" });
+
   const userId = await getAuthenticatedUserId();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -34,12 +43,13 @@ export async function POST(request: Request) {
               0,
               Math.ceil((rateLimit.reset - Date.now()) / 1000),
             ).toString(),
+            [CORRELATION_HEADER]: correlationId,
           },
         },
       );
     }
   } catch (err) {
-    console.error("Rate limit check failed, failing open", err);
+    log.warn({ err }, "rate limit check failed, failing open");
   }
 
   let body: unknown;
@@ -59,27 +69,35 @@ export async function POST(request: Request) {
 
   let outcome;
   try {
-    outcome = await runGenerate(userId, parsed.data);
+    outcome = await runGenerate(userId, parsed.data, correlationId);
   } catch (err) {
-    if (err instanceof FolderNotOwnedError) {
-      return NextResponse.json(
-        { error: "folderId does not belong to this user" },
-        { status: 400 },
-      );
-    }
-    if (err instanceof SlopGuardUnavailableError) {
-      return NextResponse.json(
-        { error: "content check is temporarily unavailable, please try again" },
-        { status: 502 },
-      );
-    }
-    throw err;
+    const handled = handleKnownError(
+      err,
+      [
+        {
+          test: FolderNotOwnedError,
+          status: 400,
+          message: () => "folderId does not belong to this user",
+        },
+        {
+          test: SlopGuardUnavailableError,
+          status: 502,
+          message: () =>
+            "content check is temporarily unavailable, please try again",
+        },
+      ],
+      log,
+      correlationId,
+    );
+    if (handled) return handled;
+    log.error({ err }, "unhandled error in /api/generate");
+    return internalErrorResponse(correlationId);
   }
 
   if (outcome.status === "rejected") {
     return NextResponse.json(
       { error: "rejected", slopGuard: outcome.slopGuard },
-      { status: 422 },
+      { status: 422, headers: { [CORRELATION_HEADER]: correlationId } },
     );
   }
 
@@ -90,6 +108,6 @@ export async function POST(request: Request) {
       publicAccessToken: outcome.publicAccessToken,
       slopGuard: outcome.slopGuard,
     },
-    { status: 202 },
+    { status: 202, headers: { [CORRELATION_HEADER]: correlationId } },
   );
 }

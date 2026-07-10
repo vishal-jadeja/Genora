@@ -70,7 +70,7 @@ describe("runGenerate", () => {
       reason: "too short",
     });
 
-    const result = await runGenerate("user-1", validInput);
+    const result = await runGenerate("user-1", validInput, "corr-1");
 
     expect(result).toEqual({
       status: "rejected",
@@ -91,7 +91,7 @@ describe("runGenerate", () => {
     triggerMock.mockResolvedValue({ id: "run-1" });
     createPublicTokenMock.mockResolvedValue("public-token");
 
-    const result = await runGenerate("user-1", validInput);
+    const result = await runGenerate("user-1", validInput, "corr-1");
 
     expect(triggerMock).toHaveBeenCalledWith(
       {
@@ -99,6 +99,7 @@ describe("runGenerate", () => {
         userId: "user-1",
         rawText: validInput.rawText,
         platforms: validInput.platforms,
+        correlationId: "corr-1",
       },
       { tags: ["user:user-1"] },
     );
@@ -123,7 +124,7 @@ describe("runGenerate", () => {
     triggerMock.mockResolvedValue({ id: "run-1" });
     createPublicTokenMock.mockResolvedValue("public-token");
 
-    const result = await runGenerate("user-1", validInput);
+    const result = await runGenerate("user-1", validInput, "corr-1");
 
     expect(result.status).toBe("accepted");
   });
@@ -132,7 +133,11 @@ describe("runGenerate", () => {
     folderBelongsToUserMock.mockResolvedValue(false);
 
     await expect(
-      runGenerate("user-1", { ...validInput, folderId: "folder-1" }),
+      runGenerate(
+        "user-1",
+        { ...validInput, folderId: "folder-1" },
+        "corr-1",
+      ),
     ).rejects.toThrow(FolderNotOwnedError);
     expect(callAiServiceMock).not.toHaveBeenCalled();
     expect(insertMock).not.toHaveBeenCalled();
@@ -147,10 +152,11 @@ describe("runGenerate", () => {
     triggerMock.mockResolvedValue({ id: "run-1" });
     createPublicTokenMock.mockResolvedValue("public-token");
 
-    const result = await runGenerate("user-1", {
-      ...validInput,
-      folderId: "folder-1",
-    });
+    const result = await runGenerate(
+      "user-1",
+      { ...validInput, folderId: "folder-1" },
+      "corr-1",
+    );
 
     expect(folderBelongsToUserMock).toHaveBeenCalledWith("user-1", "folder-1");
     expect(result.status).toBe("accepted");
@@ -165,9 +171,9 @@ describe("runGenerate", () => {
     deleteMock.mockReturnValue({ where: deleteWhere });
     triggerMock.mockRejectedValue(new Error("trigger.dev unavailable"));
 
-    await expect(runGenerate("user-1", validInput)).rejects.toThrow(
-      "trigger.dev unavailable",
-    );
+    await expect(
+      runGenerate("user-1", validInput, "corr-1"),
+    ).rejects.toThrow("trigger.dev unavailable");
     expect(deleteMock).toHaveBeenCalledTimes(1);
     expect(deleteWhere).toHaveBeenCalledTimes(1);
     expect(createPublicTokenMock).not.toHaveBeenCalled();
@@ -181,7 +187,7 @@ describe("runGenerate", () => {
     triggerMock.mockResolvedValue({ id: "run-1" });
     createPublicTokenMock.mockRejectedValue(new Error("token service down"));
 
-    const result = await runGenerate("user-1", validInput);
+    const result = await runGenerate("user-1", validInput, "corr-1");
 
     expect(result).toEqual({
       status: "accepted",
@@ -196,9 +202,9 @@ describe("runGenerate", () => {
   it("throws SlopGuardUnavailableError without creating a post when the slop guard call fails", async () => {
     callAiServiceMock.mockRejectedValue(new Error("network error"));
 
-    await expect(runGenerate("user-1", validInput)).rejects.toThrow(
-      SlopGuardUnavailableError,
-    );
+    await expect(
+      runGenerate("user-1", validInput, "corr-1"),
+    ).rejects.toThrow(SlopGuardUnavailableError);
     expect(insertMock).not.toHaveBeenCalled();
     expect(triggerMock).not.toHaveBeenCalled();
   });
@@ -219,6 +225,7 @@ describe("regeneratePlatform", () => {
       "post-1",
       "linkedin",
       "groq",
+      "corr-1",
     );
 
     expect(triggerMock).toHaveBeenCalledWith(
@@ -227,6 +234,7 @@ describe("regeneratePlatform", () => {
         userId: "user-1",
         rawText: "a genuinely substantive raw thought",
         platforms: [{ platform: "linkedin", modelId: "groq" }],
+        correlationId: "corr-1",
       },
       { tags: ["user:user-1"] },
     );
@@ -244,7 +252,13 @@ describe("regeneratePlatform", () => {
     triggerMock.mockResolvedValue({ id: "run-1" });
     createPublicTokenMock.mockResolvedValue("public-token");
 
-    await regeneratePlatform("user-1", "post-1", "linkedin");
+    await regeneratePlatform(
+      "user-1",
+      "post-1",
+      "linkedin",
+      undefined,
+      "corr-1",
+    );
 
     expect(triggerMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -262,7 +276,7 @@ describe("regeneratePlatform", () => {
     });
 
     await expect(
-      regeneratePlatform("user-1", "post-1", "linkedin"),
+      regeneratePlatform("user-1", "post-1", "linkedin", undefined, "corr-1"),
     ).rejects.toThrow(ModelRequiredError);
     expect(triggerMock).not.toHaveBeenCalled();
   });
@@ -272,7 +286,7 @@ describe("regeneratePlatform", () => {
     getPostMock.mockRejectedValue(new PostNotFoundError("post-1"));
 
     await expect(
-      regeneratePlatform("user-1", "post-1", "linkedin", "groq"),
+      regeneratePlatform("user-1", "post-1", "linkedin", "groq", "corr-1"),
     ).rejects.toThrow(PostNotFoundError);
   });
 });

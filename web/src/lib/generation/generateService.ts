@@ -6,6 +6,7 @@ import { callAiService } from "@/lib/aiService/client";
 import type { SlopGuardResult } from "@/lib/aiService/types";
 import { folderBelongsToUser } from "@/lib/folders/service";
 import { findModelIdByApiModel, type ModelId } from "./modelCatalog";
+import { createRequestLogger } from "@/lib/logging/logger";
 import { getPost } from "@/lib/posts/service";
 import type { Platform } from "./types";
 import {
@@ -28,9 +29,10 @@ async function triggerGenerateRun(
   postId: string,
   rawText: string,
   platforms: GeneratePostPlatformSelection[],
+  correlationId: string,
 ): Promise<TriggeredRun> {
   const handle = await generatePost.trigger(
-    { postId, userId, rawText, platforms },
+    { postId, userId, rawText, platforms, correlationId },
     { tags: [`user:${userId}`] },
   );
 
@@ -44,7 +46,10 @@ async function triggerGenerateRun(
     // The job is already running server-side at this point — failing the
     // whole request would hide that from the caller. Degrade instead of
     // throwing; the client can still poll GET /api/generate/[runId].
-    console.error(`createPublicToken failed for run ${handle.id}`, err);
+    createRequestLogger(correlationId).error(
+      { err, runId: handle.id },
+      "createPublicToken failed",
+    );
     publicAccessToken = null;
   }
 
@@ -70,6 +75,7 @@ export type GenerateOutcome =
 export async function runGenerate(
   userId: string,
   input: GeneratePostInput,
+  correlationId: string,
 ): Promise<GenerateOutcome> {
   if (input.folderId && !(await folderBelongsToUser(userId, input.folderId))) {
     throw new FolderNotOwnedError(input.folderId);
@@ -77,9 +83,11 @@ export async function runGenerate(
 
   let slopGuard: SlopGuardResult;
   try {
-    slopGuard = await callAiService<SlopGuardResult>("/slop-guard", {
-      raw_text: input.rawText,
-    });
+    slopGuard = await callAiService<SlopGuardResult>(
+      "/slop-guard",
+      { raw_text: input.rawText },
+      { correlationId },
+    );
   } catch (err) {
     throw new SlopGuardUnavailableError(
       err instanceof Error ? err.message : "slop guard call failed",
@@ -108,6 +116,7 @@ export async function runGenerate(
       post.id,
       input.rawText,
       input.platforms,
+      correlationId,
     );
   } catch (err) {
     // No job was ever created for this post — don't leave an orphaned draft
@@ -135,7 +144,8 @@ export async function regeneratePlatform(
   userId: string,
   postId: string,
   platform: Platform,
-  modelId?: ModelId,
+  modelId: ModelId | undefined,
+  correlationId: string,
 ): Promise<RegeneratePlatformOutcome> {
   const post = await getPost(userId, postId);
 
@@ -152,7 +162,11 @@ export async function regeneratePlatform(
     );
   }
 
-  return triggerGenerateRun(userId, postId, post.rawContent, [
-    { platform, modelId: resolvedModelId },
-  ]);
+  return triggerGenerateRun(
+    userId,
+    postId,
+    post.rawContent,
+    [{ platform, modelId: resolvedModelId }],
+    correlationId,
+  );
 }

@@ -1,4 +1,4 @@
-import { task, AbortTaskRunError } from "@trigger.dev/sdk";
+import { task, logger, AbortTaskRunError } from "@trigger.dev/sdk";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { posts } from "@/db/schema";
@@ -28,6 +28,7 @@ export interface GeneratePostPayload {
   userId: string;
   rawText: string;
   platforms: GeneratePostPlatformSelection[];
+  correlationId: string;
 }
 
 export interface GeneratePostResult {
@@ -43,14 +44,17 @@ export interface GeneratePostOutput {
 // Promise.all either — same reasoning as the persistSuccess catch above.
 async function persistFailureSafe(
   input: Parameters<typeof persistFailure>[0],
+  correlationId: string,
 ): Promise<void> {
   try {
     await persistFailure(input);
   } catch (err) {
-    console.error(
-      `persistFailure failed for post ${input.postId} platform ${input.platform}`,
+    logger.error("persistFailure failed", {
+      correlationId,
+      postId: input.postId,
+      platform: input.platform,
       err,
-    );
+    });
   }
 }
 
@@ -87,14 +91,17 @@ export const generatePost = task({
             );
           } catch (err) {
             if (err instanceof GenerationKeyError) {
-              await persistFailureSafe({
-                postId: payload.postId,
-                userId: payload.userId,
-                platform: selection.platform,
-                provider: catalogEntry.provider,
-                apiModel: catalogEntry.apiModel,
-                errorReason: err.message,
-              });
+              await persistFailureSafe(
+                {
+                  postId: payload.postId,
+                  userId: payload.userId,
+                  platform: selection.platform,
+                  provider: catalogEntry.provider,
+                  apiModel: catalogEntry.apiModel,
+                  errorReason: err.message,
+                },
+                payload.correlationId,
+              );
               return { platform: selection.platform, status: "failed" };
             }
             throw err;
@@ -107,6 +114,7 @@ export const generatePost = task({
             rawText: payload.rawText,
             modelId: selection.modelId,
             generationKey,
+            correlationId: payload.correlationId,
           };
 
           const run = await generatePlatformPost.triggerAndWait(childPayload);
@@ -131,20 +139,25 @@ export const generatePost = task({
               // *entire* run, including platforms that already succeeded and
               // paid for a real generation. Degrade to a recorded failure
               // for this platform only.
-              console.error(
-                `persistSuccess failed for post ${payload.postId} platform ${selection.platform}`,
-                err,
-              );
-              await persistFailureSafe({
+              logger.error("persistSuccess failed", {
+                correlationId: payload.correlationId,
                 postId: payload.postId,
-                userId: payload.userId,
                 platform: selection.platform,
-                provider: catalogEntry.provider,
-                apiModel: catalogEntry.apiModel,
-                errorReason: `generation succeeded but result could not be saved: ${
-                  err instanceof Error ? err.message : String(err)
-                }`,
+                err,
               });
+              await persistFailureSafe(
+                {
+                  postId: payload.postId,
+                  userId: payload.userId,
+                  platform: selection.platform,
+                  provider: catalogEntry.provider,
+                  apiModel: catalogEntry.apiModel,
+                  errorReason: `generation succeeded but result could not be saved: ${
+                    err instanceof Error ? err.message : String(err)
+                  }`,
+                },
+                payload.correlationId,
+              );
               return { platform: selection.platform, status: "failed" };
             }
           }
@@ -157,14 +170,17 @@ export const generatePost = task({
               ? run.output.errorReason
               : "unknown generation failure";
 
-          await persistFailureSafe({
-            postId: payload.postId,
-            userId: payload.userId,
-            platform: selection.platform,
-            provider: catalogEntry.provider,
-            apiModel: catalogEntry.apiModel,
-            errorReason,
-          });
+          await persistFailureSafe(
+            {
+              postId: payload.postId,
+              userId: payload.userId,
+              platform: selection.platform,
+              provider: catalogEntry.provider,
+              apiModel: catalogEntry.apiModel,
+              errorReason,
+            },
+            payload.correlationId,
+          );
           return { platform: selection.platform, status: "failed" };
         },
       ),

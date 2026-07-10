@@ -9,6 +9,7 @@ const resolveGenerationKeyMock = vi.fn();
 
 vi.mock("@trigger.dev/sdk", () => ({
   task: (params: unknown) => params,
+  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
   AbortTaskRunError: class AbortTaskRunError extends Error {},
 }));
 
@@ -50,6 +51,7 @@ const basePayload = {
   postId: "post-1",
   userId: "user-1",
   rawText: "hello",
+  correlationId: "corr-1",
 };
 
 beforeEach(() => {
