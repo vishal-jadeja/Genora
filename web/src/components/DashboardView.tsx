@@ -380,14 +380,14 @@ function Main({ state, derived, actions }: GenoraViewProps) {
                         fontWeight: 600,
                         ...(derived.dashCanGen
                           ? {
-                            background: "var(--c-primaryBg)",
-                            color: "var(--c-primaryText)",
-                          }
+                              background: "var(--c-primaryBg)",
+                              color: "var(--c-primaryText)",
+                            }
                           : {
-                            background: "var(--c-popover)",
-                            color: "var(--c-text5)",
-                            cursor: "not-allowed",
-                          }),
+                              background: "var(--c-popover)",
+                              color: "var(--c-text5)",
+                              cursor: "not-allowed",
+                            }),
                         ...(state.generating && { cursor: "not-allowed" }),
                       }}
                     >
@@ -853,7 +853,8 @@ function Main({ state, derived, actions }: GenoraViewProps) {
                             onKeyDown={(e) => {
                               e.stopPropagation();
                               if (e.key === "Enter") actions.commitRenamePost();
-                              if (e.key === "Escape") actions.cancelRenamePost();
+                              if (e.key === "Escape")
+                                actions.cancelRenamePost();
                             }}
                             onBlur={actions.commitRenamePost}
                             onClick={(e) => e.stopPropagation()}
