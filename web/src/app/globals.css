@@ -67,7 +67,6 @@ svg {
 }
 
 @keyframes fpulse {
-
   0%,
   100% {
     opacity: 0.3;
@@ -128,7 +127,6 @@ svg {
 }
 
 @keyframes cueBob {
-
   0%,
   100% {
     transform: translateY(0);

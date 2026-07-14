@@ -63,7 +63,9 @@ export function NavigationProgress() {
         boxShadow: visible ? `0 0 8px ${ACCENT}` : "none",
         opacity: visible ? 1 : 0,
         transition:
-          progress === 0 ? "none" : "width 200ms ease-out, opacity 200ms ease-out",
+          progress === 0
+            ? "none"
+            : "width 200ms ease-out, opacity 200ms ease-out",
         zIndex: 9999,
         pointerEvents: "none",
       }}
