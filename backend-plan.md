@@ -13,7 +13,7 @@ This prompt is for the **backend only**. Frontend/UI is being designed separatel
 - **Upstash Redis** — free-tier rate limiting, caching
 - **NextAuth v5** — auth
 - **AES-256-GCM** — BYOK key encryption at rest
-- **Deploy**: Vercel (Next.js), Fly.io or Railway (Python service, EU region)
+- **Deploy**: Vercel (Next.js), Render free tier (Python service, Frankfurt region) — switched from the original Fly.io/Railway plan since both require a card on file even within free usage; Render's free web-service tier doesn't
 - **Monorepo layout**: `/web` (Next.js), `/ai-service` (Python FastAPI), Trigger.dev tasks live in `/web/trigger` (same repo as the app that triggers them)
 
 ## Core flow to implement (already decided — don't re-litigate)
@@ -92,4 +92,4 @@ This changes the `embeddings` table spec in Phase 1 from an unspecified dimensio
 - Rate limiting on `/generate` for free-tier users (Redis)
 - Consistent structured logging and error handling across both services
 - CI: GitHub Actions running both test suites on push
-- Deploy configs: Vercel for `/web`, Dockerfile-based deploy for `/ai-service` on Fly.io or Railway
+- Deploy configs: Vercel for `/web`, Dockerfile-based deploy for `/ai-service` on Render (free tier, no card required)

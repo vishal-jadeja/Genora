@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: genora-ai-service
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./ai-service/Dockerfile
+    dockerContext: ./ai-service
+    healthCheckPath: /health
+    envVars:
+      - key: ENV
+        value: production
+      # Set these in the Render dashboard after the first deploy — never
+      # commit real secrets into this file.
+      - key: DATABASE_URL
+        sync: false
+      - key: INTERNAL_SERVICE_SECRET
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
