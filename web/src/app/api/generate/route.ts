@@ -15,6 +15,7 @@ import {
   getOrCreateCorrelationId,
 } from "@/lib/logging/correlationId";
 import { createRequestLogger } from "@/lib/logging/logger";
+import { PostNotFoundError } from "@/lib/posts/service";
 import { checkRateLimit, createRateLimiter } from "@/lib/redis/rateLimit";
 
 // 10 generations/minute/user — covers the sync Slop Guard call cost even for
@@ -81,6 +82,11 @@ export async function POST(request: Request) {
           test: FolderNotOwnedError,
           status: 400,
           message: () => "folderId does not belong to this user",
+        },
+        {
+          test: PostNotFoundError,
+          status: 404,
+          message: () => "Not found",
         },
         {
           test: SlopGuardUnavailableError,

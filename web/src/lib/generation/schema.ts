@@ -6,6 +6,10 @@ const MODEL_IDS = Object.keys(MODEL_CATALOG) as [ModelId, ...ModelId[]];
 const modelIdEnum = z.enum(MODEL_IDS);
 
 export const generatePostSchema = z.object({
+  // When set, generation reuses this existing post (updates its
+  // rawContent/title/folderId in place) instead of creating a new one —
+  // e.g. re-generating from the editor after a post already exists.
+  postId: z.string().uuid().optional(),
   rawText: z.string().min(1).max(20_000),
   title: z.string().min(1).optional(),
   folderId: z.string().uuid().optional(),

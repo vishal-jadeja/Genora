@@ -1,5 +1,5 @@
 import { auth as triggerAuth } from "@trigger.dev/sdk";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { posts } from "@/db/schema";
 import { callAiService } from "@/lib/aiService/client";
@@ -98,36 +98,61 @@ export async function runGenerate(
     return { status: "rejected", slopGuard };
   }
 
-  const [post] = await db
-    .insert(posts)
-    .values({
-      userId,
-      folderId: input.folderId,
-      title: input.title,
-      rawContent: input.rawText,
-      status: "draft",
-    })
-    .returning({ id: posts.id });
+  // Re-generating from the editor for a post that already exists (e.g.
+  // resuming a draft, or going back to /compose from an already-generated
+  // post) updates that post in place — without this, every such call
+  // unconditionally inserted a new row, forking a duplicate and leaving the
+  // original orphaned.
+  let postId: string;
+  if (input.postId) {
+    await getPost(userId, input.postId); // ownership check
+    await db
+      .update(posts)
+      .set({
+        folderId: input.folderId ?? null,
+        title: input.title,
+        rawContent: input.rawText,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(posts.id, input.postId), eq(posts.userId, userId)));
+    postId = input.postId;
+  } else {
+    const [post] = await db
+      .insert(posts)
+      .values({
+        userId,
+        folderId: input.folderId,
+        title: input.title,
+        rawContent: input.rawText,
+        status: "draft",
+      })
+      .returning({ id: posts.id });
+    postId = post.id;
+  }
 
   let triggered: TriggeredRun;
   try {
     triggered = await triggerGenerateRun(
       userId,
-      post.id,
+      postId,
       input.rawText,
       input.platforms,
       correlationId,
     );
   } catch (err) {
-    // No job was ever created for this post — don't leave an orphaned draft
-    // row with nothing that will ever generate for it.
-    await db.delete(posts).where(eq(posts.id, post.id));
+    // No job was ever created for this post. For a freshly-inserted row,
+    // don't leave an orphaned draft with nothing that will ever generate
+    // for it — but a pre-existing post (input.postId) had real content
+    // before this call, so it must survive a failed trigger.
+    if (!input.postId) {
+      await db.delete(posts).where(eq(posts.id, postId));
+    }
     throw err;
   }
 
   return {
     status: "accepted",
-    postId: post.id,
+    postId,
     runId: triggered.runId,
     publicAccessToken: triggered.publicAccessToken,
     slopGuard,

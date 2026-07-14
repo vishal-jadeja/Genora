@@ -774,6 +774,13 @@ export function useGenoraController(nav: {
       generatingRef.current = true;
       const title = state.composeTitle || "Untitled";
 
+      // Generation is about to persist this exact content itself (insert or
+      // update, see below) — a pending debounced autosave firing afterward
+      // would still hold the pre-generate composePostId in its closure and
+      // could insert a second, now-redundant post.
+      if (draftSaveTimer.current) clearTimeout(draftSaveTimer.current);
+      patch({ draftSaving: false });
+
       lastSeenVersionRef.current.clear();
       seededOutPlatformsRef.current = null;
       setRegeneratingPlatforms(new Set());
@@ -793,6 +800,11 @@ export function useGenoraController(nav: {
 
       generateMutation.mutate(
         {
+          // Reuse the post already loaded in the editor (resuming a draft,
+          // or re-generating after going back from an already-generated
+          // post) instead of forking a new one — see generateService.ts's
+          // runGenerate for the update-in-place path this enables.
+          postId: state.composePostId ?? undefined,
           rawText: state.draft,
           title: state.composeTitle || undefined,
           folderId: state.composeFolder ?? undefined,

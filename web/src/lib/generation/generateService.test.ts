@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const callAiServiceMock = vi.fn();
 const insertMock = vi.fn();
+const updateMock = vi.fn();
 const deleteMock = vi.fn();
 const triggerMock = vi.fn();
 const createPublicTokenMock = vi.fn();
@@ -24,6 +25,7 @@ vi.mock("@/lib/posts/service", () => ({
 vi.mock("@/db/client", () => ({
   db: {
     insert: (...args: unknown[]) => insertMock(...args),
+    update: (...args: unknown[]) => updateMock(...args),
     delete: (...args: unknown[]) => deleteMock(...args),
   },
 }));
@@ -56,6 +58,7 @@ const validInput = {
 beforeEach(() => {
   callAiServiceMock.mockReset();
   insertMock.mockReset();
+  updateMock.mockReset();
   deleteMock.mockReset();
   triggerMock.mockReset();
   createPublicTokenMock.mockReset();
@@ -203,6 +206,70 @@ describe("runGenerate", () => {
     );
     expect(insertMock).not.toHaveBeenCalled();
     expect(triggerMock).not.toHaveBeenCalled();
+  });
+
+  it("updates the existing post in place instead of inserting when postId is given", async () => {
+    callAiServiceMock.mockResolvedValue({ verdict: "pass", reason: "" });
+    getPostMock.mockResolvedValue({ id: "post-1" });
+    const where = vi.fn().mockResolvedValue(undefined);
+    const set = vi.fn().mockReturnValue({ where });
+    updateMock.mockReturnValue({ set });
+    triggerMock.mockResolvedValue({ id: "run-1" });
+    createPublicTokenMock.mockResolvedValue("public-token");
+
+    const result = await runGenerate(
+      "user-1",
+      { ...validInput, postId: "post-1", title: "Reworked" },
+      "corr-1",
+    );
+
+    expect(getPostMock).toHaveBeenCalledWith("user-1", "post-1");
+    expect(insertMock).not.toHaveBeenCalled();
+    expect(set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        rawContent: validInput.rawText,
+        title: "Reworked",
+        folderId: null,
+      }),
+    );
+    expect(triggerMock).toHaveBeenCalledWith(
+      expect.objectContaining({ postId: "post-1" }),
+      expect.anything(),
+    );
+    expect(result).toEqual({
+      status: "accepted",
+      postId: "post-1",
+      runId: "run-1",
+      publicAccessToken: "public-token",
+      slopGuard: { verdict: "pass", reason: "" },
+    });
+  });
+
+  it("propagates PostNotFoundError without inserting or updating when postId isn't owned by the user", async () => {
+    const { PostNotFoundError } = await import("@/lib/posts/service");
+    callAiServiceMock.mockResolvedValue({ verdict: "pass", reason: "" });
+    getPostMock.mockRejectedValue(new PostNotFoundError("post-1"));
+
+    await expect(
+      runGenerate("user-1", { ...validInput, postId: "post-1" }, "corr-1"),
+    ).rejects.toThrow(PostNotFoundError);
+    expect(insertMock).not.toHaveBeenCalled();
+    expect(updateMock).not.toHaveBeenCalled();
+    expect(triggerMock).not.toHaveBeenCalled();
+  });
+
+  it("does not delete the pre-existing post when trigger() fails for a given postId", async () => {
+    callAiServiceMock.mockResolvedValue({ verdict: "pass", reason: "" });
+    getPostMock.mockResolvedValue({ id: "post-1" });
+    const where = vi.fn().mockResolvedValue(undefined);
+    const set = vi.fn().mockReturnValue({ where });
+    updateMock.mockReturnValue({ set });
+    triggerMock.mockRejectedValue(new Error("trigger.dev unavailable"));
+
+    await expect(
+      runGenerate("user-1", { ...validInput, postId: "post-1" }, "corr-1"),
+    ).rejects.toThrow("trigger.dev unavailable");
+    expect(deleteMock).not.toHaveBeenCalled();
   });
 });
 
