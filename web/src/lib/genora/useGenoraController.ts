@@ -14,6 +14,7 @@ import {
   useSaveInstructions,
 } from "@/hooks/usePlatformInstructions";
 import {
+  useCreatePost,
   useDeletePost,
   useDuplicatePost,
   useMovePost,
@@ -98,6 +99,7 @@ export function useGenoraController(nav: {
   const renameFolderMutation = useRenameFolder();
   const deleteFolderMutation = useDeleteFolder();
   const postsQuery = usePosts();
+  const createPostMutation = useCreatePost();
   const updatePostMutation = useUpdatePost();
   const movePostMutation = useMovePost();
   const deletePostMutation = useDeletePost();
@@ -344,6 +346,7 @@ export function useGenoraController(nav: {
 
   const newPost = useCallback(
     (folder?: string | null) => {
+      if (draftSaveTimer.current) clearTimeout(draftSaveTimer.current);
       patch({
         ...NAV_RESET,
         composePostId: null,
@@ -354,6 +357,7 @@ export function useGenoraController(nav: {
         softDismissed: false,
         slopHard: false,
         slopRejectReason: null,
+        draftSaving: false,
       });
       navigate("/compose");
     },
@@ -507,13 +511,113 @@ export function useGenoraController(nav: {
   }, [navigate]);
 
   // ---- compose --------------------------------------------------------
+  // Raw draft content has no dedicated live-typing endpoint, same
+  // constraint as onEditContent below — debounce, and coalesce concurrent
+  // creates behind a ref flag so a burst of edits before the first create
+  // resolves can't fork two post rows for one compose session.
+  const draftSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const creatingDraftRef = useRef(false);
+  const persistDraft = useCallback(
+    (
+      rawContent: string,
+      title: string,
+      folderId: string | null,
+      postId: string | null,
+    ) => {
+      if (!rawContent.trim()) {
+        patch({ draftSaving: false });
+        return;
+      }
+      if (postId) {
+        updatePostMutation.mutate(
+          {
+            id: postId,
+            input: { rawContent, title: title || undefined, folderId },
+          },
+          {
+            onSettled: () => patch({ draftSaving: false }),
+            onError: (err) => console.error("Failed to save draft", err),
+          },
+        );
+        return;
+      }
+      if (creatingDraftRef.current) return;
+      creatingDraftRef.current = true;
+      createPostMutation.mutate(
+        {
+          rawContent,
+          title: title || undefined,
+          folderId: folderId ?? undefined,
+        },
+        {
+          onSuccess: (created) => {
+            creatingDraftRef.current = false;
+            setState((s) =>
+              s.composePostId ? s : { ...s, composePostId: created.id },
+            );
+            patch({ draftSaving: false });
+          },
+          onError: (err) => {
+            creatingDraftRef.current = false;
+            console.error("Failed to save draft", err);
+            patch({ draftSaving: false });
+          },
+        },
+      );
+    },
+    [patch, updatePostMutation, createPostMutation],
+  );
+  const scheduleDraftSave = useCallback(
+    (
+      rawContent: string,
+      title: string,
+      folderId: string | null,
+      postId: string | null,
+    ) => {
+      if (!rawContent.trim()) return;
+      patch({ draftSaving: true });
+      if (draftSaveTimer.current) clearTimeout(draftSaveTimer.current);
+      draftSaveTimer.current = setTimeout(() => {
+        persistDraft(rawContent, title, folderId, postId);
+      }, 800);
+    },
+    [patch, persistDraft],
+  );
   const onTitle = useCallback(
-    (v: string) => patch({ composeTitle: v }),
-    [patch],
+    (v: string) => {
+      patch({ composeTitle: v });
+      scheduleDraftSave(
+        state.draft,
+        v,
+        state.composeFolder,
+        state.composePostId,
+      );
+    },
+    [
+      patch,
+      scheduleDraftSave,
+      state.draft,
+      state.composeFolder,
+      state.composePostId,
+    ],
   );
   const onDraft = useCallback(
-    (v: string) => patch({ draft: v, softNudge: false }),
-    [patch],
+    (v: string) => {
+      patch({ draft: v, softNudge: false });
+      scheduleDraftSave(
+        v,
+        state.composeTitle,
+        state.composeFolder,
+        state.composePostId,
+      );
+    },
+    [
+      patch,
+      scheduleDraftSave,
+      state.composeTitle,
+      state.composeFolder,
+      state.composePostId,
+    ],
   );
   const togglePlatform = useCallback((id: PlatformId) => {
     setState((s) => ({
@@ -528,9 +632,22 @@ export function useGenoraController(nav: {
     setState((s) => ({ ...s, folderPickerOpen: !s.folderPickerOpen }));
   }, []);
   const pickComposeFolder = useCallback(
-    (id: string | null) =>
-      patch({ composeFolder: id, folderPickerOpen: false }),
-    [patch],
+    (id: string | null) => {
+      patch({ composeFolder: id, folderPickerOpen: false });
+      scheduleDraftSave(
+        state.draft,
+        state.composeTitle,
+        id,
+        state.composePostId,
+      );
+    },
+    [
+      patch,
+      scheduleDraftSave,
+      state.draft,
+      state.composeTitle,
+      state.composePostId,
+    ],
   );
 
   // Without a modelId, checks whether *any* provider key is connected (used

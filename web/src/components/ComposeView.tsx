@@ -84,12 +84,18 @@ export function ComposeView({ state, derived, actions }: GenoraViewProps) {
               width: 6,
               height: 6,
               borderRadius: "50%",
-              background: "#6cae8e",
-              animation: "fpulse 2.4s ease infinite",
+              background: state.draftSaving ? "#d4a960" : "#6cae8e",
+              animation: state.draftSaving
+                ? undefined
+                : "fpulse 2.4s ease infinite",
             }}
           />
           <span style={{ fontSize: 12, color: "var(--c-text5)" }}>
-            Saved · autosaves as you write
+            {state.draftSaving
+              ? "Saving…"
+              : state.composePostId
+                ? "Saved · autosaves as you write"
+                : "Not saved yet — start typing"}
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

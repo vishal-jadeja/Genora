@@ -135,6 +135,7 @@ export interface GenoraState {
   folderPickerOpen: boolean;
   softNudge: boolean;
   softDismissed: boolean;
+  draftSaving: boolean;
 
   // generation
   generating: boolean;

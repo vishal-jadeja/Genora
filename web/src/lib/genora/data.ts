@@ -206,6 +206,7 @@ export function createInitialState(): GenoraState {
     folderPickerOpen: false,
     softNudge: false,
     softDismissed: false,
+    draftSaving: false,
     generating: false,
     slopHard: false,
     slopRejectReason: null,
