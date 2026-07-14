@@ -900,6 +900,25 @@ function Main({ state, derived, actions }: GenoraViewProps) {
                             {f.name}
                           </button>
                         ))}
+                        <div
+                          style={{
+                            height: 1,
+                            background: "var(--c-borderStrong)",
+                            margin: "4px 2px",
+                          }}
+                        />
+                        <button
+                          onClick={() => {
+                            actions.toggleMove(p.id);
+                            actions.openConfirmDialog({
+                              kind: "deletePost",
+                              postId: p.id,
+                            });
+                          }}
+                          style={{ ...moveOptStyle, color: "#d47a7a" }}
+                        >
+                          Delete
+                        </button>
                       </div>
                     )}
                   </div>
