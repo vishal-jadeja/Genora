@@ -1,5 +1,6 @@
 "use client";
 
+import type { KeyboardEvent, MouseEvent } from "react";
 import {
   MODELS,
   ORDER,
@@ -482,69 +483,170 @@ function Main({ state, derived, actions }: GenoraViewProps) {
                   gap: 12,
                 }}
               >
-                {state.folders.map((f) => (
-                  <Hoverable
-                    key={f.id}
-                    as="button"
-                    onClick={() => actions.selectFolder(f.id)}
-                    style={{
-                      minWidth: 0,
-                      textAlign: "left",
-                      background: "var(--c-surface)",
-                      border: "1px solid var(--c-borderStrong)",
-                      borderRadius: 12,
-                      padding: 16,
-                      display: "flex",
-                      alignItems: "flex-start",
-                      justifyContent: "space-between",
-                      gap: 10,
-                    }}
-                    hoverStyle={{
-                      borderColor: "var(--c-borderHover)",
-                      background: "var(--c-surfaceHover)",
-                    }}
-                  >
-                    <span
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 4,
-                        minWidth: 0,
-                      }}
-                    >
-                      <span
+                {state.folders.map((f) => {
+                  const renamingFolder = state.renamingFolderId === f.id;
+                  return (
+                    <div key={f.id} style={{ position: "relative" }}>
+                      <Hoverable
+                        as="div"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => actions.selectFolder(f.id)}
+                        onKeyDown={(e: KeyboardEvent) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            actions.selectFolder(f.id);
+                          }
+                        }}
                         style={{
-                          fontSize: 14,
-                          fontWeight: 600,
-                          color: "var(--c-text)",
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
+                          minWidth: 0,
+                          textAlign: "left",
+                          background: "var(--c-surface)",
+                          border: "1px solid var(--c-borderStrong)",
+                          borderRadius: 12,
+                          padding: 16,
+                          display: "flex",
+                          alignItems: "flex-start",
+                          justifyContent: "space-between",
+                          gap: 10,
+                          cursor: "pointer",
+                        }}
+                        hoverStyle={{
+                          borderColor: "var(--c-borderHover)",
+                          background: "var(--c-surfaceHover)",
                         }}
                       >
-                        {f.name}
-                      </span>
-                      <span style={{ fontSize: 12, color: "var(--c-text4)" }}>
-                        {derived.counts[f.id]}{" "}
-                        {derived.counts[f.id] === 1 ? "post" : "posts"}
-                      </span>
-                    </span>
-                    <span style={{ color: "var(--c-text5)", flex: "none" }}>
-                      <svg
-                        width="17"
-                        height="17"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.7"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
+                        <span
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 4,
+                            minWidth: 0,
+                            paddingRight: 22,
+                          }}
+                        >
+                          {renamingFolder ? (
+                            <input
+                              autoFocus
+                              value={state.renameFolderValue}
+                              onChange={(e) =>
+                                actions.onRenameFolderInput(e.target.value)
+                              }
+                              onKeyDown={(e) => {
+                                e.stopPropagation();
+                                if (e.key === "Enter")
+                                  actions.commitRenameFolder();
+                                if (e.key === "Escape")
+                                  actions.cancelRenameFolder();
+                              }}
+                              onBlur={actions.commitRenameFolder}
+                              onClick={(e) => e.stopPropagation()}
+                              onMouseDown={(e) => e.stopPropagation()}
+                              style={{
+                                width: "100%",
+                                background: "var(--c-popover)",
+                                border: "1px solid var(--c-borderHover)",
+                                borderRadius: 6,
+                                padding: "3px 7px",
+                                fontSize: 14,
+                                fontWeight: 600,
+                                color: "var(--c-text)",
+                              }}
+                            />
+                          ) : (
+                            <span
+                              style={{
+                                fontSize: 14,
+                                fontWeight: 600,
+                                color: "var(--c-text)",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                            >
+                              {f.name}
+                            </span>
+                          )}
+                          <span
+                            style={{ fontSize: 12, color: "var(--c-text4)" }}
+                          >
+                            {derived.counts[f.id]}{" "}
+                            {derived.counts[f.id] === 1 ? "post" : "posts"}
+                          </span>
+                        </span>
+                      </Hoverable>
+                      <Hoverable
+                        as="button"
+                        title="Folder options"
+                        onClick={(e: MouseEvent) => {
+                          e.stopPropagation();
+                          actions.toggleFolderMenu(f.id);
+                        }}
+                        style={{
+                          position: "absolute",
+                          top: 12,
+                          right: 12,
+                          width: 22,
+                          height: 22,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          background: "none",
+                          border: "none",
+                          borderRadius: 6,
+                          color: "var(--c-text5)",
+                        }}
+                        hoverStyle={{
+                          background: "var(--c-popover)",
+                          color: "var(--c-text)",
+                        }}
                       >
-                        <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                      </svg>
-                    </span>
-                  </Hoverable>
-                ))}
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.2"
+                          strokeLinecap="round"
+                        >
+                          <circle cx="5" cy="12" r="1" />
+                          <circle cx="12" cy="12" r="1" />
+                          <circle cx="19" cy="12" r="1" />
+                        </svg>
+                      </Hoverable>
+                      {state.folderMenu === f.id && (
+                        <div
+                          style={{
+                            ...popoverStyle,
+                            top: 38,
+                            right: 12,
+                            left: "auto",
+                          }}
+                        >
+                          <button
+                            onClick={() => actions.startRenameFolder(f.id)}
+                            style={moveOptStyle}
+                          >
+                            Rename
+                          </button>
+                          <button
+                            onClick={() => {
+                              actions.toggleFolderMenu(null);
+                              actions.openConfirmDialog({
+                                kind: "deleteFolder",
+                                folderId: f.id,
+                              });
+                            }}
+                            style={{ ...moveOptStyle, color: "#d47a7a" }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </>
           )}
@@ -678,8 +780,16 @@ function Main({ state, derived, actions }: GenoraViewProps) {
                 return (
                   <div key={p.id} style={{ position: "relative" }}>
                     <Hoverable
-                      as="button"
+                      as="div"
+                      role="button"
+                      tabIndex={0}
                       onClick={() => actions.openPost(p)}
+                      onKeyDown={(e: KeyboardEvent) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          actions.openPost(p);
+                        }
+                      }}
                       style={{
                         width: "100%",
                         minWidth: 0,
@@ -692,6 +802,7 @@ function Main({ state, derived, actions }: GenoraViewProps) {
                         flexDirection: "column",
                         gap: 12,
                         minHeight: 136,
+                        cursor: "pointer",
                       }}
                       hoverStyle={{
                         borderColor: "var(--c-borderHover)",
@@ -732,19 +843,48 @@ function Main({ state, derived, actions }: GenoraViewProps) {
                         </span>
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div
-                          style={{
-                            fontFamily: "var(--font-newsreader), serif",
-                            fontSize: 16,
-                            color: "var(--c-text)",
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            marginBottom: 4,
-                          }}
-                        >
-                          {p.title}
-                        </div>
+                        {state.renamingPostId === p.id ? (
+                          <input
+                            autoFocus
+                            value={state.renameDraftValue}
+                            onChange={(e) =>
+                              actions.onRenameDraftInput(e.target.value)
+                            }
+                            onKeyDown={(e) => {
+                              e.stopPropagation();
+                              if (e.key === "Enter") actions.commitRenamePost();
+                              if (e.key === "Escape") actions.cancelRenamePost();
+                            }}
+                            onBlur={actions.commitRenamePost}
+                            onClick={(e) => e.stopPropagation()}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            style={{
+                              width: "100%",
+                              background: "var(--c-popover)",
+                              border: "1px solid var(--c-borderHover)",
+                              borderRadius: 6,
+                              padding: "3px 7px",
+                              fontFamily: "var(--font-newsreader), serif",
+                              fontSize: 16,
+                              color: "var(--c-text)",
+                              marginBottom: 4,
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              fontFamily: "var(--font-newsreader), serif",
+                              fontSize: 16,
+                              color: "var(--c-text)",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              marginBottom: 4,
+                            }}
+                          >
+                            {p.title}
+                          </div>
+                        )}
                         <div
                           style={{
                             fontSize: 12.5,
@@ -874,11 +1014,23 @@ function Main({ state, derived, actions }: GenoraViewProps) {
                           left: "auto",
                         }}
                       >
+                        <button
+                          onClick={() => actions.duplicatePost(p.id)}
+                          style={moveOptStyle}
+                        >
+                          Duplicate
+                        </button>
+                        <button
+                          onClick={() => actions.startRenamePost(p.id)}
+                          style={moveOptStyle}
+                        >
+                          Rename
+                        </button>
                         <div
                           style={{
                             fontSize: 10.5,
                             color: "var(--c-text5)",
-                            padding: "5px 9px 6px",
+                            padding: "7px 9px 4px",
                             letterSpacing: ".06em",
                             textTransform: "uppercase",
                           }}
