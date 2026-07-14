@@ -1393,15 +1393,18 @@ export function useGenoraController(nav: {
     const versionLabel = "v" + Math.max(1, vArr.length);
     const genCountText = `Repurposing your thought for ${S.outPlatforms.length} platform${S.outPlatforms.length === 1 ? "" : "s"}…`;
 
+    const freeModelNames = MODELS.filter((m) => m.free)
+      .map((m) => m.label)
+      .join(" or ");
     const tierBanner = hk
       ? "BYOK active — the monthly cap is lifted and full model selection is unlocked."
-      : `You're on the free tier: ${freeLeft} generations left this month on Claude Sonnet 4.5. Add any key to remove the cap and choose models.`;
+      : `You're on the free tier: ${freeLeft} generations left this month on ${freeModelNames}. Add any key to remove the cap and choose models.`;
     const voiceStatus = S.voice.trim()
       ? `Calibrated on ${wordCount(S.voice)} words of your writing.`
       : "Not calibrated yet — generations use platform defaults.";
     const modelPageNote = hk
       ? "Your global default. Any folder or post can override it."
-      : "Free tier is fixed to Claude Sonnet 4.5. Add a key in API keys to unlock the rest.";
+      : `Free tier is fixed to ${freeModelNames}. Add a key in API keys to unlock the rest.`;
 
     // ---- drafts page ----
     const draftsSearchQ = S.draftsSearch.trim().toLowerCase();

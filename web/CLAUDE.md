@@ -6,6 +6,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 <!-- END:nextjs-agent-rules -->
 
 <!-- TRIGGER.DEV SKILLS START -->
+
 ## Trigger.dev agent skills
 
 This project has Trigger.dev agent skills installed in `.claude/skills/`. Before writing or changing Trigger.dev code (background tasks, scheduled tasks, realtime, or chat.agent AI agents), load the most relevant skill: `trigger-getting-started`, `trigger-realtime-and-frontend`.

@@ -132,8 +132,9 @@ reclassification (4xx vs 500) across all four adapters, redacted provider auth-e
 input bounds on the generate schema, race-condition fix in result persistence, folderId
 validation, structured JSON logging with an `X-Correlation-Id` traced across web → Trigger.dev →
 ai-service, a shared error-response helper (web) and expanded exception handlers (ai-service), a
-GitHub Actions CI workflow for both apps, and deploy configs (Fly.io for `ai-service`, Vercel
-region pin for `web`).
+GitHub Actions CI workflow for both apps, and deploy configs (Render for `ai-service` — no card
+required on the free tier, switched from the original Fly.io/Railway plan — Vercel region pin for
+`web`).
 
 ## Local setup
 

@@ -125,11 +125,11 @@ export const LIGHT_THEME: ThemeDef = {
 };
 
 export const MODELS: ModelMeta[] = [
-  { id: "sonnet", label: "Claude Sonnet 4.5", tag: "Free", free: true },
+  { id: "sonnet", label: "Claude Sonnet 4.5", tag: "BYOK", free: false },
   { id: "opus", label: "Claude Opus 4.1", tag: "BYOK", free: false },
   { id: "gpt5", label: "GPT-5", tag: "BYOK", free: false },
-  { id: "gemini", label: "Gemini 2.5 Pro", tag: "BYOK", free: false },
-  { id: "groq", label: "Llama 3.3 70B · Groq", tag: "BYOK", free: false },
+  { id: "gemini", label: "Gemini 2.5 Flash", tag: "Free", free: true },
+  { id: "groq", label: "GPT-OSS 120B · Groq", tag: "Free", free: true },
 ];
 
 export const PROVIDERS: ProviderMeta[] = [
@@ -200,7 +200,7 @@ export function createInitialState(): GenoraState {
       medium: false,
       substack: false,
     },
-    model: "sonnet" as ModelId,
+    model: "gemini" as ModelId,
     modelOpen: false,
     composeFolder: null,
     folderPickerOpen: false,
