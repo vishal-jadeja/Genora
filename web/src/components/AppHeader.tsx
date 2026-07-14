@@ -79,7 +79,16 @@ export function AppHeader({
         </svg>
       </Hoverable>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+      <Link
+        href="/dashboard"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 9,
+          textDecoration: "none",
+          color: "inherit",
+        }}
+      >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/logo.webp"
@@ -89,7 +98,7 @@ export function AppHeader({
           style={{ borderRadius: 7, flex: "none", objectFit: "cover" }}
         />
         <span style={{ fontSize: 14, fontWeight: 600 }}>Genora</span>
-      </div>
+      </Link>
 
       <div style={{ flex: 1 }} />
 

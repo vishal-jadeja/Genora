@@ -196,6 +196,11 @@ export function useGenoraController(nav: {
   // already on the post the first time it loads cold — e.g. opened from
   // Drafts rather than just-triggered — without clobbering an in-session
   // list a just-fired generate/regenerate call already set.
+  // Synchronous re-entrancy guard for runGenerate — state.generating is only
+  // read by the button's disabled attribute after React commits, so a second
+  // click landing before that commit would otherwise fire a second
+  // POST /api/generate and create a duplicate draft.
+  const generatingRef = useRef(false);
   const seededOutPlatformsRef = useRef<string | null>(null);
   useEffect(() => {
     if (!postDetailQuery.data) return;
@@ -648,6 +653,8 @@ export function useGenoraController(nav: {
 
       const sel = ORDER.filter((id) => state.platforms[id]);
       if (sel.length === 0) return;
+      if (generatingRef.current) return;
+      generatingRef.current = true;
       const title = state.composeTitle || "Untitled";
 
       lastSeenVersionRef.current.clear();
@@ -679,6 +686,7 @@ export function useGenoraController(nav: {
         },
         {
           onSuccess: (outcome) => {
+            generatingRef.current = false;
             if (outcome.status === "rejected") {
               setState((s) => ({
                 ...s,
@@ -698,6 +706,7 @@ export function useGenoraController(nav: {
             );
           },
           onError: (err) => {
+            generatingRef.current = false;
             console.error("Failed to start generation", err);
             setState((s) => ({ ...s, generating: false }));
           },
