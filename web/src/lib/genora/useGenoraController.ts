@@ -419,6 +419,9 @@ export function useGenoraController(nav: {
   }, []);
   const moveTo = useCallback(
     (postId: string, folderId: string | null) => {
+      // movePostMutation is only used here, so gating on its own isPending
+      // can't false-block an unrelated in-flight save.
+      if (movePostMutation.isPending) return;
       movePostMutation.mutate(
         { id: postId, folderId },
         {
@@ -1087,6 +1090,10 @@ export function useGenoraController(nav: {
   // prototype's instant clone; the duplicate starts as a fresh draft.
   const duplicatePost = useCallback(
     (postId: string) => {
+      // Guards against a rapid double-click firing two duplicates before
+      // the popover closes — safe to key off the mutation's own isPending
+      // since duplicatePostMutation is a single instance used only here.
+      if (duplicatePostMutation.isPending) return;
       duplicatePostMutation.mutate(postId, {
         onError: (err) => {
           console.error("Failed to duplicate post", err);
