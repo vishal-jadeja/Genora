@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { PLAT } from "@/lib/genora/data";
 import type { PlatformId } from "@/lib/genora/types";
 import type {
   GenoraActions,
   GenoraDisplayState,
 } from "@/lib/genora/useGenoraController";
+import { usePopoverDismiss } from "@/hooks/usePopoverDismiss";
 import { ButtonSpinner } from "./ButtonSpinner";
 import { Hoverable } from "./Hoverable";
 import { PRIMARY, RED, popoverStyle } from "./styleHelpers";
@@ -28,6 +29,10 @@ export function OutputView({ state, derived, actions }: GenoraViewProps) {
   const canSideBySide = state.outPlatforms.length > 1;
   const activeFailed = state.outputStatus[state.activeTab] === "failed";
   const activeRegenerating = state.regeneratingPlatforms.has(state.activeTab);
+  const historyRef = useRef<HTMLDivElement>(null);
+  usePopoverDismiss(historyRef, state.historyOpen === state.activeTab, () =>
+    actions.openHistory(),
+  );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
@@ -454,9 +459,11 @@ export function OutputView({ state, derived, actions }: GenoraViewProps) {
                 >
                   {FORMAT_HINTS[state.activeTab](derived.alen)}
                 </span>
-                <div style={{ position: "relative" }}>
+                <div ref={historyRef} style={{ position: "relative" }}>
                   <Hoverable
                     as="button"
+                    aria-haspopup="menu"
+                    aria-expanded={state.historyOpen === state.activeTab}
                     onClick={() => actions.openHistory()}
                     style={{
                       display: "flex",
@@ -491,6 +498,7 @@ export function OutputView({ state, derived, actions }: GenoraViewProps) {
                   </Hoverable>
                   {state.historyOpen === state.activeTab && (
                     <div
+                      role="menu"
                       style={{
                         ...popoverStyle,
                         top: 34,
@@ -517,6 +525,7 @@ export function OutputView({ state, derived, actions }: GenoraViewProps) {
                           <Hoverable
                             key={i}
                             as="button"
+                            role="menuitem"
                             onClick={() =>
                               actions.restoreVersion(
                                 state.activeTab,
@@ -857,6 +866,8 @@ function PlatformPanel({
   const vArr = state.versions[id] || [];
   const versionLabel = "v" + Math.max(1, vArr.length);
   const historyOpenHere = state.historyOpen === id;
+  const historyRef = useRef<HTMLDivElement>(null);
+  usePopoverDismiss(historyRef, historyOpenHere, () => actions.openHistory(id));
   const limit = meta.limit;
   const over = limit ? alen > limit : false;
   const failed = state.outputStatus[id] === "failed";
@@ -991,9 +1002,11 @@ function PlatformPanel({
         >
           {FORMAT_HINTS[id](alen)}
         </span>
-        <div style={{ position: "relative" }}>
+        <div ref={historyRef} style={{ position: "relative" }}>
           <Hoverable
             as="button"
+            aria-haspopup="menu"
+            aria-expanded={historyOpenHere}
             onClick={() => actions.openHistory(id)}
             style={{
               display: "flex",
@@ -1015,6 +1028,7 @@ function PlatformPanel({
           </Hoverable>
           {historyOpenHere && (
             <div
+              role="menu"
               style={{
                 ...popoverStyle,
                 top: 30,
@@ -1041,6 +1055,7 @@ function PlatformPanel({
                   <Hoverable
                     key={i}
                     as="button"
+                    role="menuitem"
                     onClick={() => actions.restoreVersion(id, versionIdx)}
                     style={{
                       display: "flex",

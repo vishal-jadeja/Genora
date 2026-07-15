@@ -1,8 +1,9 @@
 "use client";
 
-import type { KeyboardEvent } from "react";
+import { useRef, type KeyboardEvent } from "react";
 import { PLAT, STATUS_COLOR, STATUS_ICON } from "@/lib/genora/data";
 import type { Post } from "@/lib/genora/types";
+import { usePopoverDismiss } from "@/hooks/usePopoverDismiss";
 import { Hoverable } from "./Hoverable";
 import { moveOptStyle, popoverStyle } from "./styleHelpers";
 import type { GenoraViewProps } from "./viewProps";
@@ -16,6 +17,8 @@ export function DraftRow({ post, state, derived, actions }: DraftRowProps) {
   const renaming = state.renamingPostId === post.id;
   const menuOpen = state.moveMenu === post.id;
   const folderName = derived.folderName(post.folder) ?? "No folder";
+  const menuRef = useRef<HTMLDivElement>(null);
+  usePopoverDismiss(menuRef, menuOpen, () => actions.toggleMove(post.id));
 
   const onRenameKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") actions.commitRenamePost();
@@ -23,7 +26,7 @@ export function DraftRow({ post, state, derived, actions }: DraftRowProps) {
   };
 
   return (
-    <div style={{ position: "relative" }}>
+    <div ref={menuRef} style={{ position: "relative" }}>
       <div
         style={{
           display: "flex",
@@ -133,6 +136,8 @@ export function DraftRow({ post, state, derived, actions }: DraftRowProps) {
         <Hoverable
           as="button"
           title="More"
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
           onClick={() => actions.toggleMove(post.id)}
           style={{
             width: 26,
@@ -168,8 +173,12 @@ export function DraftRow({ post, state, derived, actions }: DraftRowProps) {
       </div>
 
       {menuOpen && (
-        <div style={{ ...popoverStyle, top: 48, right: 16, left: "auto" }}>
+        <div
+          role="menu"
+          style={{ ...popoverStyle, top: 48, right: 16, left: "auto" }}
+        >
           <button
+            role="menuitem"
             onClick={() => {
               actions.toggleMove(post.id);
               actions.openPost(post);
@@ -179,12 +188,14 @@ export function DraftRow({ post, state, derived, actions }: DraftRowProps) {
             Open
           </button>
           <button
+            role="menuitem"
             onClick={() => actions.duplicatePost(post.id)}
             style={moveOptStyle}
           >
             Duplicate
           </button>
           <button
+            role="menuitem"
             onClick={() => actions.startRenamePost(post.id)}
             style={moveOptStyle}
           >
@@ -202,6 +213,7 @@ export function DraftRow({ post, state, derived, actions }: DraftRowProps) {
             Move to
           </div>
           <button
+            role="menuitem"
             onClick={() => actions.moveTo(post.id, null)}
             style={moveOptStyle}
           >
@@ -210,6 +222,7 @@ export function DraftRow({ post, state, derived, actions }: DraftRowProps) {
           {state.folders.map((f) => (
             <button
               key={f.id}
+              role="menuitem"
               onClick={() => actions.moveTo(post.id, f.id)}
               style={moveOptStyle}
             >
@@ -224,6 +237,7 @@ export function DraftRow({ post, state, derived, actions }: DraftRowProps) {
             }}
           />
           <button
+            role="menuitem"
             onClick={() => {
               actions.toggleMove(post.id);
               actions.openConfirmDialog({

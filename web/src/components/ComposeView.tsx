@@ -1,6 +1,8 @@
 "use client";
 
+import { useRef } from "react";
 import { MODELS, ORDER, PLAT, REJECTS } from "@/lib/genora/data";
+import { usePopoverDismiss } from "@/hooks/usePopoverDismiss";
 import { ButtonSpinner } from "./ButtonSpinner";
 import { Hoverable } from "./Hoverable";
 import {
@@ -20,6 +22,15 @@ export function ComposeView({ state, derived, actions }: GenoraViewProps) {
     { id: null as string | null, name: "No folder" },
     ...state.folders.map((f) => ({ id: f.id, name: f.name })),
   ];
+
+  const folderPickerRef = useRef<HTMLDivElement>(null);
+  usePopoverDismiss(
+    folderPickerRef,
+    state.folderPickerOpen,
+    actions.openFolderPicker,
+  );
+  const modelPickerRef = useRef<HTMLDivElement>(null);
+  usePopoverDismiss(modelPickerRef, state.modelOpen, actions.openModel);
 
   let substanceColor = RED;
   let substanceLabel = "Needs a stance";
@@ -99,9 +110,11 @@ export function ComposeView({ state, derived, actions }: GenoraViewProps) {
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ position: "relative" }}>
+          <div ref={folderPickerRef} style={{ position: "relative" }}>
             <Hoverable
               as="button"
+              aria-haspopup="menu"
+              aria-expanded={state.folderPickerOpen}
               onClick={actions.openFolderPicker}
               style={{
                 display: "flex",
@@ -132,10 +145,14 @@ export function ComposeView({ state, derived, actions }: GenoraViewProps) {
               <span style={{ color: "var(--c-text5)", fontSize: 9 }}>▾</span>
             </Hoverable>
             {state.folderPickerOpen && (
-              <div style={{ ...popoverStyle, top: 40, right: 0, left: "auto" }}>
+              <div
+                role="menu"
+                style={{ ...popoverStyle, top: 40, right: 0, left: "auto" }}
+              >
                 {composeFolderOptions.map((o) => (
                   <button
                     key={o.id ?? "none"}
+                    role="menuitem"
                     onClick={() => actions.pickComposeFolder(o.id)}
                     style={optStyle(state.composeFolder === o.id)}
                   >
@@ -145,9 +162,11 @@ export function ComposeView({ state, derived, actions }: GenoraViewProps) {
               </div>
             )}
           </div>
-          <div style={{ position: "relative" }}>
+          <div ref={modelPickerRef} style={{ position: "relative" }}>
             <Hoverable
               as="button"
+              aria-haspopup="menu"
+              aria-expanded={state.modelOpen}
               onClick={actions.openModel}
               style={{
                 display: "flex",
@@ -179,6 +198,7 @@ export function ComposeView({ state, derived, actions }: GenoraViewProps) {
             </Hoverable>
             {state.modelOpen && (
               <div
+                role="menu"
                 style={{
                   ...popoverStyle,
                   top: 40,
@@ -193,6 +213,7 @@ export function ComposeView({ state, derived, actions }: GenoraViewProps) {
                   return (
                     <button
                       key={m.id}
+                      role="menuitem"
                       onClick={() => actions.pickModel(m)}
                       style={{
                         display: "flex",

@@ -3,6 +3,7 @@
 import type { CSSProperties, KeyboardEvent } from "react";
 import { usePathname } from "next/navigation";
 import type { Folder } from "@/lib/genora/types";
+import { usePopoverDismissBySelector } from "@/hooks/usePopoverDismiss";
 import { Hoverable } from "./Hoverable";
 import { moveOptStyle, popoverStyle } from "./styleHelpers";
 import type { GenoraViewProps } from "./viewProps";
@@ -59,6 +60,12 @@ export function Sidebar({ state, derived, actions }: GenoraViewProps) {
     if (e.key === "Enter") actions.commitRenameFolder();
     if (e.key === "Escape") actions.cancelRenameFolder();
   };
+
+  usePopoverDismissBySelector(
+    state.folderMenu !== null,
+    () => actions.toggleFolderMenu(state.folderMenu),
+    '[data-folder-menu-open="true"]',
+  );
 
   return (
     <aside
@@ -211,8 +218,13 @@ export function Sidebar({ state, derived, actions }: GenoraViewProps) {
             ? state.draftsFolderFilter === f.id
             : state.activeFolder === f.id;
           const renaming = state.renamingFolderId === f.id;
+          const menuOpen = state.folderMenu === f.id;
           return (
-            <div key={f.id} style={{ position: "relative" }}>
+            <div
+              key={f.id}
+              data-folder-menu-open={menuOpen ? "true" : undefined}
+              style={{ position: "relative" }}
+            >
               {renaming ? (
                 <input
                   autoFocus
@@ -282,6 +294,8 @@ export function Sidebar({ state, derived, actions }: GenoraViewProps) {
                 <Hoverable
                   as="button"
                   title="Folder options"
+                  aria-haspopup="menu"
+                  aria-expanded={menuOpen}
                   onClick={() => actions.toggleFolderMenu(f.id)}
                   style={{
                     position: "absolute",
@@ -318,17 +332,20 @@ export function Sidebar({ state, derived, actions }: GenoraViewProps) {
                   </svg>
                 </Hoverable>
               )}
-              {state.folderMenu === f.id && (
+              {menuOpen && (
                 <div
+                  role="menu"
                   style={{ ...popoverStyle, top: 30, right: 4, left: "auto" }}
                 >
                   <button
+                    role="menuitem"
                     onClick={() => actions.startRenameFolder(f.id)}
                     style={moveOptStyle}
                   >
                     Rename
                   </button>
                   <button
+                    role="menuitem"
                     onClick={() => {
                       actions.toggleFolderMenu(null);
                       actions.openConfirmDialog({

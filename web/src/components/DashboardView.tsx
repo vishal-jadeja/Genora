@@ -1,6 +1,6 @@
 "use client";
 
-import type { KeyboardEvent, MouseEvent } from "react";
+import { useRef, type KeyboardEvent, type MouseEvent } from "react";
 import {
   MODELS,
   ORDER,
@@ -8,6 +8,10 @@ import {
   STATUS_COLOR,
   STATUS_ICON,
 } from "@/lib/genora/data";
+import {
+  usePopoverDismiss,
+  usePopoverDismissBySelector,
+} from "@/hooks/usePopoverDismiss";
 import { ButtonSpinner } from "./ButtonSpinner";
 import { Hoverable } from "./Hoverable";
 import {
@@ -31,6 +35,25 @@ function Main({ state, derived, actions }: GenoraViewProps) {
     { id: null as string | null, name: "No folder" },
     ...state.folders.map((f) => ({ id: f.id, name: f.name })),
   ];
+
+  const folderPickerRef = useRef<HTMLDivElement>(null);
+  usePopoverDismiss(
+    folderPickerRef,
+    state.folderPickerOpen,
+    actions.openFolderPicker,
+  );
+  const modelPickerRef = useRef<HTMLDivElement>(null);
+  usePopoverDismiss(modelPickerRef, state.modelOpen, actions.openModel);
+  usePopoverDismissBySelector(
+    state.moveMenu !== null,
+    () => actions.toggleMove(state.moveMenu as string),
+    '[data-move-menu-open="true"]',
+  );
+  usePopoverDismissBySelector(
+    state.folderMenu !== null,
+    () => actions.toggleFolderMenu(state.folderMenu),
+    '[data-folder-menu-open="true"]',
+  );
 
   return (
     <main
@@ -153,9 +176,11 @@ function Main({ state, derived, actions }: GenoraViewProps) {
                     }}
                   >
                     {/* folder select */}
-                    <div style={{ position: "relative" }}>
+                    <div ref={folderPickerRef} style={{ position: "relative" }}>
                       <Hoverable
                         as="button"
+                        aria-haspopup="menu"
+                        aria-expanded={state.folderPickerOpen}
                         onClick={actions.openFolderPicker}
                         style={{
                           display: "flex",
@@ -188,10 +213,14 @@ function Main({ state, derived, actions }: GenoraViewProps) {
                         </span>
                       </Hoverable>
                       {state.folderPickerOpen && (
-                        <div style={{ ...popoverStyle, bottom: 40, left: 0 }}>
+                        <div
+                          role="menu"
+                          style={{ ...popoverStyle, bottom: 40, left: 0 }}
+                        >
                           {composeFolderOptions.map((o) => (
                             <button
                               key={o.id ?? "none"}
+                              role="menuitem"
                               onClick={() => actions.pickComposeFolder(o.id)}
                               style={optStyle(state.composeFolder === o.id)}
                             >
@@ -202,9 +231,11 @@ function Main({ state, derived, actions }: GenoraViewProps) {
                       )}
                     </div>
                     {/* model select */}
-                    <div style={{ position: "relative" }}>
+                    <div ref={modelPickerRef} style={{ position: "relative" }}>
                       <Hoverable
                         as="button"
+                        aria-haspopup="menu"
+                        aria-expanded={state.modelOpen}
                         onClick={actions.openModel}
                         style={{
                           display: "flex",
@@ -252,6 +283,7 @@ function Main({ state, derived, actions }: GenoraViewProps) {
                       </Hoverable>
                       {state.modelOpen && (
                         <div
+                          role="menu"
                           style={{
                             ...popoverStyle,
                             bottom: 40,
@@ -265,6 +297,7 @@ function Main({ state, derived, actions }: GenoraViewProps) {
                             return (
                               <button
                                 key={m.id}
+                                role="menuitem"
                                 onClick={() => actions.pickModel(m)}
                                 style={{
                                   display: "flex",
@@ -485,8 +518,15 @@ function Main({ state, derived, actions }: GenoraViewProps) {
               >
                 {state.folders.map((f) => {
                   const renamingFolder = state.renamingFolderId === f.id;
+                  const folderMenuOpen = state.folderMenu === f.id;
                   return (
-                    <div key={f.id} style={{ position: "relative" }}>
+                    <div
+                      key={f.id}
+                      data-folder-menu-open={
+                        folderMenuOpen ? "true" : undefined
+                      }
+                      style={{ position: "relative" }}
+                    >
                       <Hoverable
                         as="div"
                         role="button"
@@ -578,6 +618,8 @@ function Main({ state, derived, actions }: GenoraViewProps) {
                       <Hoverable
                         as="button"
                         title="Folder options"
+                        aria-haspopup="menu"
+                        aria-expanded={folderMenuOpen}
                         onClick={(e: MouseEvent) => {
                           e.stopPropagation();
                           actions.toggleFolderMenu(f.id);
@@ -615,8 +657,9 @@ function Main({ state, derived, actions }: GenoraViewProps) {
                           <circle cx="19" cy="12" r="1" />
                         </svg>
                       </Hoverable>
-                      {state.folderMenu === f.id && (
+                      {folderMenuOpen && (
                         <div
+                          role="menu"
                           style={{
                             ...popoverStyle,
                             top: 38,
@@ -625,12 +668,14 @@ function Main({ state, derived, actions }: GenoraViewProps) {
                           }}
                         >
                           <button
+                            role="menuitem"
                             onClick={() => actions.startRenameFolder(f.id)}
                             style={moveOptStyle}
                           >
                             Rename
                           </button>
                           <button
+                            role="menuitem"
                             onClick={() => {
                               actions.toggleFolderMenu(null);
                               actions.openConfirmDialog({
@@ -777,8 +822,13 @@ function Main({ state, derived, actions }: GenoraViewProps) {
             >
               {derived.rows.map((p) => {
                 const statusColor = STATUS_COLOR[p.status];
+                const moveMenuOpen = state.moveMenu === p.id;
                 return (
-                  <div key={p.id} style={{ position: "relative" }}>
+                  <div
+                    key={p.id}
+                    data-move-menu-open={moveMenuOpen ? "true" : undefined}
+                    style={{ position: "relative" }}
+                  >
                     <Hoverable
                       as="div"
                       role="button"
@@ -970,6 +1020,8 @@ function Main({ state, derived, actions }: GenoraViewProps) {
                     <Hoverable
                       as="button"
                       title="Move to folder"
+                      aria-haspopup="menu"
+                      aria-expanded={moveMenuOpen}
                       onClick={() => actions.toggleMove(p.id)}
                       style={{
                         position: "absolute",
@@ -1006,8 +1058,9 @@ function Main({ state, derived, actions }: GenoraViewProps) {
                         <circle cx="19" cy="12" r="1" />
                       </svg>
                     </Hoverable>
-                    {state.moveMenu === p.id && (
+                    {moveMenuOpen && (
                       <div
+                        role="menu"
                         style={{
                           ...popoverStyle,
                           top: 42,
@@ -1016,12 +1069,14 @@ function Main({ state, derived, actions }: GenoraViewProps) {
                         }}
                       >
                         <button
+                          role="menuitem"
                           onClick={() => actions.duplicatePost(p.id)}
                           style={moveOptStyle}
                         >
                           Duplicate
                         </button>
                         <button
+                          role="menuitem"
                           onClick={() => actions.startRenamePost(p.id)}
                           style={moveOptStyle}
                         >
@@ -1039,6 +1094,7 @@ function Main({ state, derived, actions }: GenoraViewProps) {
                           Move to
                         </div>
                         <button
+                          role="menuitem"
                           onClick={() => actions.moveTo(p.id, null)}
                           style={moveOptStyle}
                         >
@@ -1047,6 +1103,7 @@ function Main({ state, derived, actions }: GenoraViewProps) {
                         {state.folders.map((f) => (
                           <button
                             key={f.id}
+                            role="menuitem"
                             onClick={() => actions.moveTo(p.id, f.id)}
                             style={moveOptStyle}
                           >
@@ -1061,6 +1118,7 @@ function Main({ state, derived, actions }: GenoraViewProps) {
                           }}
                         />
                         <button
+                          role="menuitem"
                           onClick={() => {
                             actions.toggleMove(p.id);
                             actions.openConfirmDialog({
