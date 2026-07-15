@@ -815,38 +815,6 @@ export function OutputView({ state, derived, actions }: GenoraViewProps) {
                   </button>
                 </div>
               )}
-              {!!state.flashMsg && (
-                <div
-                  style={{
-                    position: "absolute",
-                    bottom: 16,
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    background: "var(--c-surfaceHover)",
-                    border: "1px solid var(--c-borderHover)",
-                    borderRadius: 9,
-                    padding: "10px 16px",
-                    fontSize: 13,
-                    color: "var(--c-text)",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 9,
-                    boxShadow: "0 10px 28px rgba(0,0,0,.6)",
-                    animation: "ffade .2s ease",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  <span
-                    style={{
-                      width: 7,
-                      height: 7,
-                      borderRadius: "50%",
-                      background: "#6cae8e",
-                    }}
-                  />
-                  {state.flashMsg}
-                </div>
-              )}
             </div>
           </div>
 

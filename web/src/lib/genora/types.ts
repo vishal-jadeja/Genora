@@ -112,6 +112,7 @@ export interface GenoraState {
   renamingPostId: string | null;
   renameDraftValue: string;
   confirmDialog: ConfirmDialogState | null;
+  flashKind: "success" | "error";
 
   // drafts page filters
   draftsSearch: string;

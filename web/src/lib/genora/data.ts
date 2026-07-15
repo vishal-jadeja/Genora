@@ -222,6 +222,7 @@ export function createInitialState(): GenoraState {
     historyOpen: null,
     redditSub: "",
     flashMsg: "",
+    flashKind: "success",
     freeLeft: 0,
     settingsTab: "keys",
     keys: {

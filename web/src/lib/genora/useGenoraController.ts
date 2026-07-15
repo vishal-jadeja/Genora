@@ -292,6 +292,20 @@ export function useGenoraController(nav: {
     setState((s) => ({ ...s, ...p }));
   }, []);
 
+  const flash = useCallback(
+    (msg: string, kind: "success" | "error" = "success") => {
+      patch({ flashMsg: msg, flashKind: kind });
+      if (flashTimer.current) clearTimeout(flashTimer.current);
+      // Errors stay up longer — they're often read while the user is mid
+      // click on something else, not watched for like a copy confirmation.
+      flashTimer.current = setTimeout(
+        () => patch({ flashMsg: "" }),
+        kind === "error" ? 5000 : 3200,
+      );
+    },
+    [patch],
+  );
+
   // ---- theme --------------------------------------------------------------
   const setThemeMode = useCallback(
     (mode: ThemeMode) => {
@@ -410,12 +424,13 @@ export function useGenoraController(nav: {
         {
           onError: (err) => {
             console.error("Failed to move post", err);
+            flash("Couldn't move the post — try again.", "error");
           },
         },
       );
       setState((s) => ({ ...s, moveMenu: null }));
     },
-    [movePostMutation],
+    [movePostMutation, flash],
   );
 
   // ---- folder management --------------------------------------------------
@@ -435,12 +450,13 @@ export function useGenoraController(nav: {
         {
           onError: (err) => {
             console.error("Failed to create folder", err);
+            flash("Couldn't create the folder — try again.", "error");
           },
         },
       );
       return { ...s, creatingFolder: false, newFolderDraft: "" };
     });
-  }, [createFolderMutation]);
+  }, [createFolderMutation, flash]);
   const cancelNewFolder = useCallback(
     () => patch({ creatingFolder: false, newFolderDraft: "" }),
     [patch],
@@ -476,12 +492,13 @@ export function useGenoraController(nav: {
         {
           onError: (err) => {
             console.error("Failed to rename folder", err);
+            flash("Couldn't rename the folder — try again.", "error");
           },
         },
       );
       return { ...s, renamingFolderId: null, renameFolderValue: "" };
     });
-  }, [renameFolderMutation]);
+  }, [renameFolderMutation, flash]);
   const cancelRenameFolder = useCallback(
     () => patch({ renamingFolderId: null, renameFolderValue: "" }),
     [patch],
@@ -536,7 +553,10 @@ export function useGenoraController(nav: {
           },
           {
             onSettled: () => patch({ draftSaving: false }),
-            onError: (err) => console.error("Failed to save draft", err),
+            onError: (err) => {
+              console.error("Failed to save draft", err);
+              flash("Couldn't save your draft — try again.", "error");
+            },
           },
         );
         return;
@@ -560,12 +580,13 @@ export function useGenoraController(nav: {
           onError: (err) => {
             creatingDraftRef.current = false;
             console.error("Failed to save draft", err);
+            flash("Couldn't save your draft — try again.", "error");
             patch({ draftSaving: false });
           },
         },
       );
     },
-    [patch, updatePostMutation, createPostMutation],
+    [patch, updatePostMutation, createPostMutation, flash],
   );
   const scheduleDraftSave = useCallback(
     (
@@ -735,6 +756,10 @@ export function useGenoraController(nav: {
           },
           onError: (err) => {
             console.error("Failed to regenerate platform", err);
+            flash(
+              `Couldn't regenerate ${PLAT[id].label} — try again.`,
+              "error",
+            );
             setRegeneratingPlatforms((prev) => {
               const next = new Set(prev);
               next.delete(id);
@@ -744,7 +769,12 @@ export function useGenoraController(nav: {
         },
       );
     },
-    [state.composePostId, regeneratePlatformMutation, setRunForPlatforms],
+    [
+      state.composePostId,
+      regeneratePlatformMutation,
+      setRunForPlatforms,
+      flash,
+    ],
   );
   const retryPlatform = useCallback(
     (id: PlatformId) => regenerateForPlatform(id),
@@ -837,6 +867,7 @@ export function useGenoraController(nav: {
           onError: (err) => {
             generatingRef.current = false;
             console.error("Failed to start generation", err);
+            flash("Couldn't start generation — try again.", "error");
             setState((s) => ({ ...s, generating: false }));
           },
         },
@@ -851,6 +882,7 @@ export function useGenoraController(nav: {
       replace,
       generateMutation,
       setRunForPlatforms,
+      flash,
     ],
   );
 
@@ -956,12 +988,13 @@ export function useGenoraController(nav: {
           {
             onError: (err) => {
               console.error("Failed to save edited content", err);
+              flash("Couldn't save your edit — try again.", "error");
             },
           },
         );
       }, 800);
     },
-    [state.activeTab, state.composePostId, editPlatformContentMutation],
+    [state.activeTab, state.composePostId, editPlatformContentMutation, flash],
   );
   const onRedditSub = useCallback(
     (v: string) => patch({ redditSub: v }),
@@ -1004,19 +1037,12 @@ export function useGenoraController(nav: {
           },
           onError: (err) => {
             console.error("Failed to restore version", err);
+            flash("Couldn't restore that version — try again.", "error");
           },
         },
       );
     },
-    [state.composePostId, versionsQuery.data, restoreVersionMutation],
-  );
-  const flash = useCallback(
-    (msg: string) => {
-      patch({ flashMsg: msg });
-      if (flashTimer.current) clearTimeout(flashTimer.current);
-      flashTimer.current = setTimeout(() => patch({ flashMsg: "" }), 3200);
-    },
-    [patch],
+    [state.composePostId, versionsQuery.data, restoreVersionMutation, flash],
   );
   const copyText = useCallback(
     (id?: PlatformId) => {
@@ -1064,11 +1090,12 @@ export function useGenoraController(nav: {
       duplicatePostMutation.mutate(postId, {
         onError: (err) => {
           console.error("Failed to duplicate post", err);
+          flash("Couldn't duplicate the post — try again.", "error");
         },
       });
       setState((s) => ({ ...s, moveMenu: null }));
     },
-    [duplicatePostMutation],
+    [duplicatePostMutation, flash],
   );
 
   const startRenamePost = useCallback((postId: string) => {
@@ -1097,12 +1124,13 @@ export function useGenoraController(nav: {
         {
           onError: (err) => {
             console.error("Failed to rename post", err);
+            flash("Couldn't rename the post — try again.", "error");
           },
         },
       );
       return { ...s, renamingPostId: null, renameDraftValue: "" };
     });
-  }, [updatePostMutation]);
+  }, [updatePostMutation, flash]);
   const cancelRenamePost = useCallback(
     () => patch({ renamingPostId: null, renameDraftValue: "" }),
     [patch],
@@ -1126,6 +1154,7 @@ export function useGenoraController(nav: {
     if (d.kind === "deletePost") {
       await deletePostMutation.mutateAsync(d.postId).catch((err: unknown) => {
         console.error("Failed to delete post", err);
+        flash("Couldn't delete the post — try again.", "error");
       });
       setState((s) => ({ ...s, confirmDialog: null }));
       return;
@@ -1138,6 +1167,7 @@ export function useGenoraController(nav: {
         .mutateAsync(d.folderId)
         .catch((err: unknown) => {
           console.error("Failed to delete folder", err);
+          flash("Couldn't delete the folder — try again.", "error");
         });
       setState((s) => ({
         ...s,
@@ -1171,6 +1201,7 @@ export function useGenoraController(nav: {
     resetAllInstructionsMutation,
     deletePostMutation,
     deleteFolderMutation,
+    flash,
   ]);
 
   // ---- drafts page: filters/sort ------------------------------------------
