@@ -3,7 +3,7 @@ import type { GeneratePostOutput, GeneratePostPayload } from "./generatePost";
 
 const persistSuccessMock = vi.fn();
 const persistFailureMock = vi.fn();
-const triggerAndWaitMock = vi.fn();
+const batchTriggerAndWaitMock = vi.fn();
 const updateMock = vi.fn();
 const resolveGenerationKeyMock = vi.fn();
 
@@ -26,7 +26,8 @@ vi.mock("@/lib/generation/resolveGenerationKey", () => ({
 
 vi.mock("./generatePlatformPost", () => ({
   generatePlatformPost: {
-    triggerAndWait: (...args: unknown[]) => triggerAndWaitMock(...args),
+    batchTriggerAndWait: (...args: unknown[]) =>
+      batchTriggerAndWaitMock(...args),
   },
 }));
 
@@ -57,7 +58,7 @@ const basePayload = {
 beforeEach(() => {
   persistSuccessMock.mockReset();
   persistFailureMock.mockReset();
-  triggerAndWaitMock.mockReset();
+  batchTriggerAndWaitMock.mockReset();
   updateMock.mockReset();
   resolveGenerationKeyMock.mockReset();
   resolveGenerationKeyMock.mockResolvedValue({
@@ -77,18 +78,22 @@ describe("generatePost", () => {
         platforms: [{ platform: "linkedin", modelId: "made-up" as never }],
       }),
     ).rejects.toThrow(AbortTaskRunError);
-    expect(triggerAndWaitMock).not.toHaveBeenCalled();
+    expect(batchTriggerAndWaitMock).not.toHaveBeenCalled();
   });
 
   it("persists success and marks the post generated when a platform succeeds", async () => {
-    triggerAndWaitMock.mockResolvedValue({
-      ok: true,
-      output: {
-        status: "success",
-        content: "final",
-        revisionCount: 1,
-        usage: [],
-      },
+    batchTriggerAndWaitMock.mockResolvedValue({
+      runs: [
+        {
+          ok: true,
+          output: {
+            status: "success",
+            content: "final",
+            revisionCount: 1,
+            usage: [],
+          },
+        },
+      ],
     });
     const where = vi.fn().mockResolvedValue(undefined);
     const set = vi.fn().mockReturnValue({ where });
@@ -109,9 +114,8 @@ describe("generatePost", () => {
   });
 
   it("does not touch posts.status when every platform fails", async () => {
-    triggerAndWaitMock.mockResolvedValue({
-      ok: true,
-      output: { status: "failed", errorReason: "boom" },
+    batchTriggerAndWaitMock.mockResolvedValue({
+      runs: [{ ok: true, output: { status: "failed", errorReason: "boom" } }],
     });
 
     const result = await run({
@@ -127,9 +131,8 @@ describe("generatePost", () => {
   });
 
   it("treats a triggerAndWait rejection (run.ok === false) as a platform failure", async () => {
-    triggerAndWaitMock.mockResolvedValue({
-      ok: false,
-      error: new Error("child task crashed"),
+    batchTriggerAndWaitMock.mockResolvedValue({
+      runs: [{ ok: false, error: new Error("child task crashed") }],
     });
 
     const result = await run({
@@ -144,14 +147,18 @@ describe("generatePost", () => {
   });
 
   it("degrades to a failed result instead of throwing when persistSuccess rejects", async () => {
-    triggerAndWaitMock.mockResolvedValue({
-      ok: true,
-      output: {
-        status: "success",
-        content: "final",
-        revisionCount: 1,
-        usage: [],
-      },
+    batchTriggerAndWaitMock.mockResolvedValue({
+      runs: [
+        {
+          ok: true,
+          output: {
+            status: "success",
+            content: "final",
+            revisionCount: 1,
+            usage: [],
+          },
+        },
+      ],
     });
     persistSuccessMock.mockRejectedValue(new Error("db unavailable"));
     persistFailureMock.mockResolvedValue(undefined);
@@ -173,14 +180,18 @@ describe("generatePost", () => {
   });
 
   it("does not throw when both persistSuccess and persistFailure reject", async () => {
-    triggerAndWaitMock.mockResolvedValue({
-      ok: true,
-      output: {
-        status: "success",
-        content: "final",
-        revisionCount: 1,
-        usage: [],
-      },
+    batchTriggerAndWaitMock.mockResolvedValue({
+      runs: [
+        {
+          ok: true,
+          output: {
+            status: "success",
+            content: "final",
+            revisionCount: 1,
+            usage: [],
+          },
+        },
+      ],
     });
     persistSuccessMock.mockRejectedValue(new Error("db unavailable"));
     persistFailureMock.mockRejectedValue(new Error("db still unavailable"));
@@ -196,9 +207,8 @@ describe("generatePost", () => {
   });
 
   it("does not reject the whole run when persistFailure rejects on a normal generation failure", async () => {
-    triggerAndWaitMock.mockResolvedValue({
-      ok: true,
-      output: { status: "failed", errorReason: "boom" },
+    batchTriggerAndWaitMock.mockResolvedValue({
+      runs: [{ ok: true, output: { status: "failed", errorReason: "boom" } }],
     });
     persistFailureMock.mockRejectedValue(new Error("db unavailable"));
 
@@ -213,14 +223,27 @@ describe("generatePost", () => {
   });
 
   it("resolves the generation key once per platform and passes it into the child payload", async () => {
-    triggerAndWaitMock.mockResolvedValue({
-      ok: true,
-      output: {
-        status: "success",
-        content: "final",
-        revisionCount: 0,
-        usage: [],
-      },
+    batchTriggerAndWaitMock.mockResolvedValue({
+      runs: [
+        {
+          ok: true,
+          output: {
+            status: "success",
+            content: "final",
+            revisionCount: 0,
+            usage: [],
+          },
+        },
+        {
+          ok: true,
+          output: {
+            status: "success",
+            content: "final",
+            revisionCount: 0,
+            usage: [],
+          },
+        },
+      ],
     });
     const where = vi.fn().mockResolvedValue(undefined);
     const set = vi.fn().mockReturnValue({ where });
@@ -235,16 +258,26 @@ describe("generatePost", () => {
     });
 
     expect(resolveGenerationKeyMock).toHaveBeenCalledTimes(2);
-    expect(triggerAndWaitMock).toHaveBeenNthCalledWith(
-      1,
+    expect(batchTriggerAndWaitMock).toHaveBeenCalledWith([
       expect.objectContaining({
-        generationKey: {
-          provider: "groq",
-          apiModel: "openai/gpt-oss-120b",
-          apiKey: "test-key",
-        },
+        payload: expect.objectContaining({
+          generationKey: {
+            provider: "groq",
+            apiModel: "openai/gpt-oss-120b",
+            apiKey: "test-key",
+          },
+        }),
       }),
-    );
+      expect.objectContaining({
+        payload: expect.objectContaining({
+          generationKey: {
+            provider: "groq",
+            apiModel: "openai/gpt-oss-120b",
+            apiKey: "test-key",
+          },
+        }),
+      }),
+    ]);
   });
 
   it("records a failure and never triggers the child task when key resolution fails (e.g. quota exhausted)", async () => {
@@ -262,7 +295,7 @@ describe("generatePost", () => {
     expect(result).toEqual({
       results: [{ platform: "linkedin", status: "failed" }],
     });
-    expect(triggerAndWaitMock).not.toHaveBeenCalled();
+    expect(batchTriggerAndWaitMock).not.toHaveBeenCalled();
     expect(persistFailureMock).toHaveBeenCalledWith(
       expect.objectContaining({
         errorReason: "free-tier quota exhausted",
@@ -271,20 +304,23 @@ describe("generatePost", () => {
   });
 
   it("marks the post generated if at least one of several platforms succeeds", async () => {
-    triggerAndWaitMock
-      .mockResolvedValueOnce({
-        ok: true,
-        output: {
-          status: "success",
-          content: "final",
-          revisionCount: 0,
-          usage: [],
+    batchTriggerAndWaitMock.mockResolvedValue({
+      runs: [
+        {
+          ok: true,
+          output: {
+            status: "success",
+            content: "final",
+            revisionCount: 0,
+            usage: [],
+          },
         },
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        output: { status: "failed", errorReason: "boom" },
-      });
+        {
+          ok: true,
+          output: { status: "failed", errorReason: "boom" },
+        },
+      ],
+    });
     const where = vi.fn().mockResolvedValue(undefined);
     const set = vi.fn().mockReturnValue({ where });
     updateMock.mockReturnValue({ set });
