@@ -98,14 +98,18 @@ export const generatePost = task({
     );
 
     const keyFailures = keyResolutions.filter(
-      (r): r is (typeof keyResolutions)[number] & { error: GenerationKeyError } =>
+      (
+        r,
+      ): r is (typeof keyResolutions)[number] & { error: GenerationKeyError } =>
         r.error !== null,
     );
     const readyToTrigger = keyResolutions.filter(
       (
         r,
       ): r is (typeof keyResolutions)[number] & {
-        generationKey: NonNullable<(typeof keyResolutions)[number]["generationKey"]>;
+        generationKey: NonNullable<
+          (typeof keyResolutions)[number]["generationKey"]
+        >;
       } => r.generationKey !== null,
     );
 
@@ -219,12 +223,10 @@ export const generatePost = task({
     );
 
     const results: GeneratePostResult[] = [
-      ...keyFailures.map(
-        (f): GeneratePostResult => ({
-          platform: f.selection.platform,
-          status: "failed",
-        }),
-      ),
+      ...keyFailures.map((f): GeneratePostResult => ({
+        platform: f.selection.platform,
+        status: "failed",
+      })),
       ...triggeredResults,
     ];
 
