@@ -28,13 +28,13 @@ voice, not a generic paraphrase.
 <td width="50%">
 
 **Dashboard**
-<img src="https://placehold.co/900x560/0E0D0B/E8853A?text=Dashboard&font=raleway" alt="Dashboard screenshot placeholder" width="100%" />
+<img src="https://github.com/user-attachments/assets/f22241d3-0a8a-4fcc-b387-177fd67a382e" alt="Dashboard screenshot placeholder" width="100%" />
 
 </td>
 <td width="50%">
 
 **Compose — write once**
-<img src="https://placehold.co/900x560/0E0D0B/E8853A?text=Compose&font=raleway" alt="Compose screenshot placeholder" width="100%" />
+<img src="https://github.com/user-attachments/assets/ca23c6c5-e0a3-45fb-bd9a-333ec8a8bd42" alt="Compose screenshot placeholder" width="100%" />
 
 </td>
 </tr>
@@ -48,7 +48,7 @@ voice, not a generic paraphrase.
 <td width="50%">
 
 **Settings — BYOK & Slop Guard**
-<img src="https://placehold.co/900x560/0E0D0B/E8853A?text=Settings&font=raleway" alt="Settings screenshot placeholder" width="100%" />
+<img src="https://github.com/user-attachments/assets/1c1764ea-bd09-4af6-a19b-29315c048559" alt="Settings screenshot placeholder" width="100%" />
 
 </td>
 </tr>
