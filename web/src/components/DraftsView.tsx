@@ -4,6 +4,7 @@ import type { CSSProperties } from "react";
 import { ORDER, PLAT } from "@/lib/genora/data";
 import type { DraftsSort, PlatformId, PostStatus } from "@/lib/genora/types";
 import { DraftRow } from "./DraftRow";
+import { Skeleton } from "./Skeleton";
 import type { GenoraViewProps } from "./viewProps";
 
 const STATUS_OPTIONS: (PostStatus | "all")[] = [
@@ -29,7 +30,12 @@ const selectStyle: CSSProperties = {
   color: "var(--c-text2)",
 };
 
-export function DraftsView({ state, derived, actions }: GenoraViewProps) {
+export function DraftsView({
+  state,
+  derived,
+  loading,
+  actions,
+}: GenoraViewProps) {
   return (
     <main
       style={{
@@ -176,7 +182,29 @@ export function DraftsView({ state, derived, actions }: GenoraViewProps) {
             </select>
           </div>
 
-          {derived.draftsEmpty && (
+          {loading.posts && state.posts.length === 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 14,
+                    background: "var(--c-surface)",
+                    border: "1px solid var(--c-borderStrong)",
+                    borderRadius: 12,
+                    padding: "13px 16px",
+                  }}
+                >
+                  <Skeleton width={26} height={26} radius={7} />
+                  <Skeleton width="30%" height={14} />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!loading.posts && derived.draftsEmpty && (
             <div
               style={{
                 display: "flex",
@@ -259,6 +287,7 @@ export function DraftsView({ state, derived, actions }: GenoraViewProps) {
                   post={p}
                   state={state}
                   derived={derived}
+                  loading={loading}
                   actions={actions}
                 />
               ))}

@@ -7,7 +7,12 @@ import { SettingsBody, ThemeToggle } from "./SettingsBody";
 import { modalCardStyle } from "./styleHelpers";
 import type { GenoraViewProps } from "./viewProps";
 
-export function SettingsModal({ state, derived, actions }: GenoraViewProps) {
+export function SettingsModal({
+  state,
+  derived,
+  loading,
+  actions,
+}: GenoraViewProps) {
   const router = useRouter();
   const close = () => {
     // A direct or refreshed visit to /settings has no prior entry in this
@@ -95,7 +100,12 @@ export function SettingsModal({ state, derived, actions }: GenoraViewProps) {
             </svg>
           </Hoverable>
         </header>
-        <SettingsBody state={state} derived={derived} actions={actions} />
+        <SettingsBody
+          state={state}
+          derived={derived}
+          loading={loading}
+          actions={actions}
+        />
       </div>
     </>
   );

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import type { Folder } from "@/lib/genora/types";
 import { usePopoverDismissBySelector } from "@/hooks/usePopoverDismiss";
 import { Hoverable } from "./Hoverable";
+import { Skeleton } from "./Skeleton";
 import { moveOptStyle, popoverStyle } from "./styleHelpers";
 import type { GenoraViewProps } from "./viewProps";
 
@@ -42,7 +43,7 @@ function navItemStyle(active: boolean): CSSProperties {
   };
 }
 
-export function Sidebar({ state, derived, actions }: GenoraViewProps) {
+export function Sidebar({ state, derived, loading, actions }: GenoraViewProps) {
   const pathname = usePathname();
   const isDashboard = pathname === "/dashboard";
   const isDrafts = pathname === "/drafts";
@@ -213,155 +214,172 @@ export function Sidebar({ state, derived, actions }: GenoraViewProps) {
         </Hoverable>
       </div>
       <nav style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-        {state.folders.slice(0, SIDEBAR_FOLDER_LIST_LIMIT).map((f: Folder) => {
-          const active = isDrafts
-            ? state.draftsFolderFilter === f.id
-            : state.activeFolder === f.id;
-          const renaming = state.renamingFolderId === f.id;
-          const menuOpen = state.folderMenu === f.id;
-          return (
-            <div
-              key={f.id}
-              data-folder-menu-open={menuOpen ? "true" : undefined}
-              style={{ position: "relative" }}
-            >
-              {renaming ? (
-                <input
-                  autoFocus
-                  value={state.renameFolderValue}
-                  onChange={(e) => actions.onRenameFolderInput(e.target.value)}
-                  onKeyDown={onRenameKeyDown}
-                  onBlur={actions.commitRenameFolder}
-                  style={{
-                    width: "100%",
-                    background: "var(--c-surface)",
-                    border: "1px solid var(--c-borderHover)",
-                    borderRadius: 9,
-                    padding: "7px 10px",
-                    fontSize: 13.5,
-                  }}
-                />
-              ) : (
-                <button
-                  onClick={() => onFolderClick(f.id)}
-                  style={folderButtonStyle(active)}
-                >
-                  <span
+        {loading.folders && state.folders.length === 0 ? (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+              padding: "8px 10px",
+            }}
+          >
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} height={13} width={`${70 - i * 12}%`} />
+            ))}
+          </div>
+        ) : (
+          state.folders.slice(0, SIDEBAR_FOLDER_LIST_LIMIT).map((f: Folder) => {
+            const active = isDrafts
+              ? state.draftsFolderFilter === f.id
+              : state.activeFolder === f.id;
+            const renaming = state.renamingFolderId === f.id;
+            const menuOpen = state.folderMenu === f.id;
+            return (
+              <div
+                key={f.id}
+                data-folder-menu-open={menuOpen ? "true" : undefined}
+                style={{ position: "relative" }}
+              >
+                {renaming ? (
+                  <input
+                    autoFocus
+                    value={state.renameFolderValue}
+                    onChange={(e) =>
+                      actions.onRenameFolderInput(e.target.value)
+                    }
+                    onKeyDown={onRenameKeyDown}
+                    onBlur={actions.commitRenameFolder}
                     style={{
+                      width: "100%",
+                      background: "var(--c-surface)",
+                      border: "1px solid var(--c-borderHover)",
+                      borderRadius: 9,
+                      padding: "7px 10px",
+                      fontSize: 13.5,
+                    }}
+                  />
+                ) : (
+                  <button
+                    onClick={() => onFolderClick(f.id)}
+                    style={folderButtonStyle(active)}
+                  >
+                    <span
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 11,
+                        overflow: "hidden",
+                        color: active ? "var(--c-text)" : "var(--c-text4)",
+                      }}
+                    >
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        style={{ flex: "none" }}
+                      >
+                        <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                      </svg>
+                      <span
+                        style={{
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          color: active ? "var(--c-text)" : "var(--c-text2)",
+                        }}
+                      >
+                        {f.name}
+                      </span>
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 12,
+                        color: "var(--c-text5)",
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
+                      {derived.counts[f.id] ?? 0}
+                    </span>
+                  </button>
+                )}
+                {!renaming && (
+                  <Hoverable
+                    as="button"
+                    title="Folder options"
+                    aria-haspopup="menu"
+                    aria-expanded={menuOpen}
+                    onClick={() => actions.toggleFolderMenu(f.id)}
+                    style={{
+                      position: "absolute",
+                      top: "50%",
+                      right: 4,
+                      transform: "translateY(-50%)",
+                      width: 20,
+                      height: 20,
                       display: "flex",
                       alignItems: "center",
-                      gap: 11,
-                      overflow: "hidden",
-                      color: active ? "var(--c-text)" : "var(--c-text4)",
+                      justifyContent: "center",
+                      background: "none",
+                      border: "none",
+                      borderRadius: 5,
+                      color: "var(--c-text5)",
+                    }}
+                    hoverStyle={{
+                      background: "var(--c-popover)",
+                      color: "var(--c-text)",
                     }}
                   >
                     <svg
-                      width="15"
-                      height="15"
+                      width="12"
+                      height="12"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
-                      strokeWidth="1.8"
+                      strokeWidth="2.2"
                       strokeLinecap="round"
-                      strokeLinejoin="round"
-                      style={{ flex: "none" }}
                     >
-                      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                      <circle cx="5" cy="12" r="1" />
+                      <circle cx="12" cy="12" r="1" />
+                      <circle cx="19" cy="12" r="1" />
                     </svg>
-                    <span
-                      style={{
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        color: active ? "var(--c-text)" : "var(--c-text2)",
-                      }}
+                  </Hoverable>
+                )}
+                {menuOpen && (
+                  <div
+                    role="menu"
+                    style={{ ...popoverStyle, top: 30, right: 4, left: "auto" }}
+                  >
+                    <button
+                      role="menuitem"
+                      onClick={() => actions.startRenameFolder(f.id)}
+                      style={moveOptStyle}
                     >
-                      {f.name}
-                    </span>
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 12,
-                      color: "var(--c-text5)",
-                      fontVariantNumeric: "tabular-nums",
-                    }}
-                  >
-                    {derived.counts[f.id] ?? 0}
-                  </span>
-                </button>
-              )}
-              {!renaming && (
-                <Hoverable
-                  as="button"
-                  title="Folder options"
-                  aria-haspopup="menu"
-                  aria-expanded={menuOpen}
-                  onClick={() => actions.toggleFolderMenu(f.id)}
-                  style={{
-                    position: "absolute",
-                    top: "50%",
-                    right: 4,
-                    transform: "translateY(-50%)",
-                    width: 20,
-                    height: 20,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    background: "none",
-                    border: "none",
-                    borderRadius: 5,
-                    color: "var(--c-text5)",
-                  }}
-                  hoverStyle={{
-                    background: "var(--c-popover)",
-                    color: "var(--c-text)",
-                  }}
-                >
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.2"
-                    strokeLinecap="round"
-                  >
-                    <circle cx="5" cy="12" r="1" />
-                    <circle cx="12" cy="12" r="1" />
-                    <circle cx="19" cy="12" r="1" />
-                  </svg>
-                </Hoverable>
-              )}
-              {menuOpen && (
-                <div
-                  role="menu"
-                  style={{ ...popoverStyle, top: 30, right: 4, left: "auto" }}
-                >
-                  <button
-                    role="menuitem"
-                    onClick={() => actions.startRenameFolder(f.id)}
-                    style={moveOptStyle}
-                  >
-                    Rename
-                  </button>
-                  <button
-                    role="menuitem"
-                    onClick={() => {
-                      actions.toggleFolderMenu(null);
-                      actions.openConfirmDialog({
-                        kind: "deleteFolder",
-                        folderId: f.id,
-                      });
-                    }}
-                    style={{ ...moveOptStyle, color: "#d47a7a" }}
-                  >
-                    Delete
-                  </button>
-                </div>
-              )}
-            </div>
-          );
-        })}
+                      Rename
+                    </button>
+                    <button
+                      role="menuitem"
+                      onClick={() => {
+                        actions.toggleFolderMenu(null);
+                        actions.openConfirmDialog({
+                          kind: "deleteFolder",
+                          folderId: f.id,
+                        });
+                      }}
+                      style={{ ...moveOptStyle, color: "#d47a7a" }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
       </nav>
 
       {state.folders.length > SIDEBAR_FOLDER_LIST_LIMIT && (

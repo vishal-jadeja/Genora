@@ -10,8 +10,8 @@ describe("getModelCatalogEntry", () => {
     expect(getModelCatalogEntry("not-a-model")).toBeUndefined();
   });
 
-  it("marks exactly the two free-tier models as free", () => {
+  it("marks exactly groq as the free-tier model (gemini is BYOK-only)", () => {
     const freeModels = Object.values(MODEL_CATALOG).filter((m) => m.free);
-    expect(freeModels.map((m) => m.id).sort()).toEqual(["gemini", "groq"]);
+    expect(freeModels.map((m) => m.id).sort()).toEqual(["groq"]);
   });
 });

@@ -13,6 +13,8 @@ interface DraftRowProps extends GenoraViewProps {
 }
 
 export function DraftRow({ post, state, derived, actions }: DraftRowProps) {
+  // `loading` isn't used here — DraftsView owns the skeleton/empty gating —
+  // but DraftRowProps extends GenoraViewProps so it's accepted on the type.
   const statusColor = STATUS_COLOR[post.status];
   const renaming = state.renamingPostId === post.id;
   const menuOpen = state.moveMenu === post.id;

@@ -14,6 +14,7 @@ import {
 } from "@/hooks/usePopoverDismiss";
 import { ButtonSpinner } from "./ButtonSpinner";
 import { Hoverable } from "./Hoverable";
+import { Skeleton } from "./Skeleton";
 import {
   chipStyle,
   glassPanelStyle,
@@ -24,11 +25,18 @@ import {
 } from "./styleHelpers";
 import type { GenoraViewProps } from "./viewProps";
 
-export function DashboardView({ state, derived, actions }: GenoraViewProps) {
-  return <Main state={state} derived={derived} actions={actions} />;
+export function DashboardView({
+  state,
+  derived,
+  loading,
+  actions,
+}: GenoraViewProps) {
+  return (
+    <Main state={state} derived={derived} loading={loading} actions={actions} />
+  );
 }
 
-function Main({ state, derived, actions }: GenoraViewProps) {
+function Main({ state, derived, loading, actions }: GenoraViewProps) {
   const dashExpanded = derived.dashExpanded;
 
   const composeFolderOptions = [
@@ -441,7 +449,59 @@ function Main({ state, derived, actions }: GenoraViewProps) {
             )}
           </div>
 
-          {derived.hasContent && (
+          {loading.folders && state.folders.length === 0 && (
+            <>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 9,
+                  margin: "44px 2px 16px",
+                  color: "var(--c-text2)",
+                }}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                </svg>
+                <span style={{ fontSize: 14.5, fontWeight: 600 }}>Folders</span>
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(4,minmax(0,1fr))",
+                  gap: 12,
+                }}
+              >
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      border: "1px solid var(--c-borderStrong)",
+                      borderRadius: 12,
+                      padding: 16,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 8,
+                    }}
+                  >
+                    <Skeleton width="65%" height={14} />
+                    <Skeleton width="35%" height={11} />
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {!loading.folders && derived.hasContent && (
             <>
               <div
                 style={{
@@ -812,6 +872,42 @@ function Main({ state, derived, actions }: GenoraViewProps) {
             })}
           </div>
 
+          {loading.posts && state.posts.length === 0 && (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3,minmax(0,1fr))",
+                gap: 12,
+              }}
+            >
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  style={{
+                    border: "1px solid var(--c-borderStrong)",
+                    borderRadius: 12,
+                    padding: 16,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 12,
+                    minHeight: 136,
+                  }}
+                >
+                  <Skeleton width={26} height={26} radius={7} />
+                  <div style={{ flex: 1 }}>
+                    <Skeleton
+                      width="80%"
+                      height={16}
+                      style={{ marginBottom: 8 }}
+                    />
+                    <Skeleton width="100%" height={12} />
+                  </div>
+                  <Skeleton width="40%" height={11} />
+                </div>
+              ))}
+            </div>
+          )}
+
           {derived.hasRows && (
             <div
               style={{
@@ -1138,7 +1234,7 @@ function Main({ state, derived, actions }: GenoraViewProps) {
             </div>
           )}
 
-          {derived.showEmptyFolder && (
+          {!loading.posts && derived.showEmptyFolder && (
             <div
               style={{
                 display: "flex",
@@ -1178,7 +1274,7 @@ function Main({ state, derived, actions }: GenoraViewProps) {
             </div>
           )}
 
-          {derived.showEmptyAll && (
+          {!loading.posts && derived.showEmptyAll && (
             <div
               style={{
                 display: "flex",

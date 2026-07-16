@@ -64,4 +64,4 @@ Key decisions:
 ## Notes
 
 - `web/CLAUDE.md` (auto-managed block injected by Next.js — don't hand-edit): this Next.js version has breaking changes vs. training data — read the relevant guide in `web/node_modules/next/dist/docs/` before writing Next.js code.
-- `web/src/components/` + `web/src/lib/genora/` is a self-contained frontend UI prototype (mock data in `lib/genora/data.ts`, state in `useGenoraController.ts`) — not yet wired to the backend.
+- `web/src/components/` + `web/src/lib/genora/` is the live app UI (originally built as a self-contained prototype) — `useGenoraController.ts` is now fully wired to the backend via TanStack Query hooks (`useFolders`, `usePosts`, `useApiKeys`, `useQuota`, `useGenerate`, etc.). `lib/genora/data.ts` holds only static config (model/platform metadata, themes, default instructions); its `folders`/`posts` arrays are placeholders always overridden by live query data (see `displayState` in `useGenoraController.ts`).

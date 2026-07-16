@@ -126,6 +126,25 @@ svg {
   }
 }
 
+/* Skeleton loading shimmer — a highlight band sweeps left to right across
+   the placeholder block. Driven via background-position on a gradient set
+   inline by Skeleton.tsx (theme colors aren't available as static CSS). */
+@keyframes fshimmer {
+  from {
+    background-position: -150% 0;
+  }
+
+  to {
+    background-position: 150% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-skeleton] {
+    animation: none !important;
+  }
+}
+
 @keyframes cueBob {
   0%,
   100% {

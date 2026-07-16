@@ -1790,11 +1790,37 @@ export function useGenoraController(nav: {
     ],
   );
 
-  return { state: displayState, derived, actions };
+  // Cold-load flags for gating skeletons vs. empty states in the views.
+  // `isPending` (not `isFetching`) so a background refetch of already-cached
+  // data doesn't flip the UI back to a skeleton.
+  const loading = useMemo(
+    () => ({
+      posts: postsQuery.isPending,
+      folders: foldersQuery.isPending,
+      keys: apiKeysQuery.isPending,
+      quota: quotaQuery.isPending,
+      // Only meaningful while a post is actually selected — with no
+      // composePostId the query is disabled and isPending stays true forever.
+      postDetail: !!state.composePostId && postDetailQuery.isPending,
+      instructions: instructionsQuery.isPending,
+    }),
+    [
+      postsQuery.isPending,
+      foldersQuery.isPending,
+      apiKeysQuery.isPending,
+      quotaQuery.isPending,
+      state.composePostId,
+      postDetailQuery.isPending,
+      instructionsQuery.isPending,
+    ],
+  );
+
+  return { state: displayState, derived, loading, actions };
 }
 
 export type GenoraActions = ReturnType<typeof useGenoraController>["actions"];
 export type GenoraDerived = ReturnType<typeof useGenoraController>["derived"];
+export type GenoraLoading = ReturnType<typeof useGenoraController>["loading"];
 export type GenoraDisplayState = ReturnType<
   typeof useGenoraController
 >["state"];

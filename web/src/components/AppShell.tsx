@@ -20,7 +20,7 @@ export function AppShell({
     image?: string | null;
   } | null;
 }) {
-  const { state, derived, actions } = useGenora();
+  const { state, derived, loading, actions } = useGenora();
   const collapsed = state.sidebarCollapsed;
   const [peek, setPeek] = useState(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -50,6 +50,7 @@ export function AppShell({
       <AppHeader
         state={state}
         derived={derived}
+        loading={loading}
         actions={actions}
         user={user}
         onToggleMouseEnter={showPeek}
@@ -60,7 +61,12 @@ export function AppShell({
         style={{ position: "relative", display: "flex", flex: 1, minHeight: 0 }}
       >
         {!collapsed && (
-          <Sidebar state={state} derived={derived} actions={actions} />
+          <Sidebar
+            state={state}
+            derived={derived}
+            loading={loading}
+            actions={actions}
+          />
         )}
 
         {collapsed && (
@@ -92,7 +98,12 @@ export function AppShell({
                   animation: "fslidein 160ms ease",
                 }}
               >
-                <Sidebar state={state} derived={derived} actions={actions} />
+                <Sidebar
+                  state={state}
+                  derived={derived}
+                  loading={loading}
+                  actions={actions}
+                />
               </div>
             )}
           </div>

@@ -28,14 +28,17 @@ export const MODEL_CATALOG: Record<ModelId, ModelCatalogEntry> = {
     free: false,
   },
   gpt5: { id: "gpt5", provider: "openai", apiModel: "gpt-5", free: false },
-  // Free tier: Gemini 2.5 Flash (not Pro) to stay within free-tier rate
-  // limits, and Groq — both use a platform-owned key (resolveGenerationKey).
+  // Gemini is BYOK-only: the platform-owned Gemini key is not reliable enough
+  // on the free tier (provider-side failures), so it's excluded from the
+  // free-tier fallback in resolveGenerationKey and requires the user's own
+  // Google key.
   gemini: {
     id: "gemini",
     provider: "gemini",
     apiModel: "gemini-2.5-flash",
-    free: true,
+    free: false,
   },
+  // Free tier: Groq only — uses a platform-owned key (resolveGenerationKey).
   // llama-3.3-70b-versatile deprecates on Groq 2026-08-16; using its
   // documented replacement up front rather than shipping a dead model id.
   groq: {

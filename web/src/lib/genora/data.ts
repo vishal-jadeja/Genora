@@ -128,7 +128,7 @@ export const MODELS: ModelMeta[] = [
   { id: "sonnet", label: "Claude Sonnet 4.5", tag: "BYOK", free: false },
   { id: "opus", label: "Claude Opus 4.1", tag: "BYOK", free: false },
   { id: "gpt5", label: "GPT-5", tag: "BYOK", free: false },
-  { id: "gemini", label: "Gemini 2.5 Flash", tag: "Free", free: true },
+  { id: "gemini", label: "Gemini 2.5 Flash", tag: "BYOK", free: false },
   { id: "groq", label: "GPT-OSS 120B · Groq", tag: "Free", free: true },
 ];
 

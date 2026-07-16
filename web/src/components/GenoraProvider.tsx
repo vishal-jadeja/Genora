@@ -66,7 +66,7 @@ function GenoraProviderInner({ children }: { children: React.ReactNode }) {
     }),
     [router],
   );
-  const { state, derived, actions } = useGenoraController(nav);
+  const { state, derived, loading, actions } = useGenoraController(nav);
   const [systemDark, setSystemDark] = useState(true);
 
   useEffect(() => {
@@ -91,7 +91,7 @@ function GenoraProviderInner({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <GenoraContext.Provider value={{ state, derived, actions }}>
+    <GenoraContext.Provider value={{ state, derived, loading, actions }}>
       <div
         style={{
           height: "100%",

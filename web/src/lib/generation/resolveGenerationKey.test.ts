@@ -78,7 +78,7 @@ describe("resolveGenerationKey", () => {
     });
   });
 
-  it("falls back to the platform Gemini key for the gemini free model when no BYOK key exists", async () => {
+  it("throws for gemini with no BYOK key, rather than falling back to the platform key", async () => {
     resolveKeyForGenerationMock.mockResolvedValue({
       source: "free-tier",
       provider: "gemini",
@@ -87,13 +87,10 @@ describe("resolveGenerationKey", () => {
     });
     process.env.PLATFORM_GEMINI_API_KEY = "aiza-platform-key";
 
-    const result = await resolveGenerationKey("user-1", "gemini");
-
-    expect(result).toEqual({
-      provider: "gemini",
-      apiModel: "gemini-2.5-flash",
-      apiKey: "aiza-platform-key",
-    });
+    await expect(resolveGenerationKey("user-1", "gemini")).rejects.toThrow(
+      /requires a BYOK gemini key/,
+    );
+    expect(consumeQuotaMock).not.toHaveBeenCalled();
   });
 
   it("consumes quota for the free-tier fallback and throws when exhausted", async () => {

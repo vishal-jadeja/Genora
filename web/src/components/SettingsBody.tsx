@@ -10,6 +10,7 @@ import type {
 } from "@/lib/genora/types";
 import { ButtonSpinner } from "./ButtonSpinner";
 import { Hoverable } from "./Hoverable";
+import { Skeleton } from "./Skeleton";
 import { GREEN, PRIMARY, radioStyle } from "./styleHelpers";
 import type { GenoraViewProps } from "./viewProps";
 
@@ -188,7 +189,12 @@ function statCardStyle(): CSSProperties {
   };
 }
 
-export function SettingsBody({ state, derived, actions }: GenoraViewProps) {
+export function SettingsBody({
+  state,
+  derived,
+  loading,
+  actions,
+}: GenoraViewProps) {
   return (
     <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
       <nav
@@ -309,9 +315,8 @@ export function SettingsBody({ state, derived, actions }: GenoraViewProps) {
               <div
                 style={{ display: "flex", flexDirection: "column", gap: 12 }}
               >
-                {PROVIDERS.map((pr) => {
-                  const k = state.keys[pr.id as ProviderId];
-                  return (
+                {loading.keys &&
+                  PROVIDERS.map((pr) => (
                     <div
                       key={pr.id}
                       style={{
@@ -321,125 +326,149 @@ export function SettingsBody({ state, derived, actions }: GenoraViewProps) {
                         background: "var(--c-surface)",
                       }}
                     >
+                      <Skeleton
+                        width="35%"
+                        height={14}
+                        style={{ marginBottom: 10 }}
+                      />
+                      <Skeleton width="60%" height={12} />
+                    </div>
+                  ))}
+                {!loading.keys &&
+                  PROVIDERS.map((pr) => {
+                    const k = state.keys[pr.id as ProviderId];
+                    return (
                       <div
+                        key={pr.id}
                         style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 10,
-                          marginBottom: 12,
+                          border: "1px solid var(--c-borderStrong)",
+                          borderRadius: 12,
+                          padding: "16px 18px",
+                          background: "var(--c-surface)",
                         }}
                       >
-                        <span style={{ fontSize: 15, fontWeight: 600 }}>
-                          {pr.name}
-                        </span>
-                        <span
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 600,
-                            padding: "2px 8px",
-                            borderRadius: 5,
-                            color: k.c ? GREEN : "var(--c-text3)",
-                            background: k.c
-                              ? "rgba(108,174,142,.12)"
-                              : "var(--c-tile)",
-                          }}
-                        >
-                          {k.c ? "Connected" : "Not connected"}
-                        </span>
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: 10,
-                          alignItems: "center",
-                        }}
-                      >
-                        <input
-                          value={k.v}
-                          onChange={(e) =>
-                            actions.onKeyInput(
-                              pr.id as ProviderId,
-                              e.target.value,
-                            )
-                          }
-                          placeholder={pr.ph}
-                          type="password"
-                          style={{
-                            flex: 1,
-                            background: "var(--c-surface)",
-                            border: "1px solid var(--c-borderStrong)",
-                            borderRadius: 8,
-                            padding: "9px 13px",
-                            fontSize: 13,
-                            fontFamily: "var(--font-jetbrains-mono), monospace",
-                          }}
-                        />
-                        <button
-                          onClick={() =>
-                            actions.validateKey(pr.id as ProviderId)
-                          }
-                          disabled={state.keyValidating[pr.id as ProviderId]}
+                        <div
                           style={{
                             display: "flex",
                             alignItems: "center",
-                            gap: 7,
-                            border: `1px solid ${k.c ? "var(--c-borderStrong)" : PRIMARY}`,
-                            background: k.c ? "transparent" : PRIMARY,
-                            color: k.c
-                              ? "var(--c-text2)"
-                              : "var(--c-primaryText)",
-                            borderRadius: 8,
-                            fontSize: 12.5,
-                            fontWeight: 600,
-                            padding: "9px 15px",
-                            ...(state.keyValidating[pr.id as ProviderId] && {
-                              cursor: "not-allowed",
-                            }),
+                            gap: 10,
+                            marginBottom: 12,
                           }}
                         >
-                          {state.keyValidating[pr.id as ProviderId] && (
-                            <ButtonSpinner
-                              size={12}
-                              color={
-                                k.c ? "var(--c-text2)" : "var(--c-primaryText)"
-                              }
-                            />
-                          )}
-                          {state.keyValidating[pr.id as ProviderId]
-                            ? "Saving…"
-                            : k.c
-                              ? "Update key"
-                              : "Save key"}
-                        </button>
-                        {k.c && (
-                          <Hoverable
-                            as="button"
-                            onClick={() =>
-                              actions.openConfirmDialog({
-                                kind: "removeKey",
-                                providerId: pr.id as ProviderId,
-                              })
-                            }
+                          <span style={{ fontSize: 15, fontWeight: 600 }}>
+                            {pr.name}
+                          </span>
+                          <span
                             style={{
-                              background: "none",
-                              border: "1px solid var(--c-borderStrong)",
-                              borderRadius: 8,
-                              color: "var(--c-text3)",
-                              fontSize: 12.5,
-                              padding: "9px 13px",
-                            }}
-                            hoverStyle={{
-                              color: "#d47a7a",
-                              borderColor: "#4a2626",
+                              fontSize: 11,
+                              fontWeight: 600,
+                              padding: "2px 8px",
+                              borderRadius: 5,
+                              color: k.c ? GREEN : "var(--c-text3)",
+                              background: k.c
+                                ? "rgba(108,174,142,.12)"
+                                : "var(--c-tile)",
                             }}
                           >
-                            Remove
-                          </Hoverable>
-                        )}
+                            {k.c ? "Connected" : "Not connected"}
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 10,
+                            alignItems: "center",
+                          }}
+                        >
+                          <input
+                            value={k.v}
+                            onChange={(e) =>
+                              actions.onKeyInput(
+                                pr.id as ProviderId,
+                                e.target.value,
+                              )
+                            }
+                            placeholder={pr.ph}
+                            type="password"
+                            style={{
+                              flex: 1,
+                              background: "var(--c-surface)",
+                              border: "1px solid var(--c-borderStrong)",
+                              borderRadius: 8,
+                              padding: "9px 13px",
+                              fontSize: 13,
+                              fontFamily:
+                                "var(--font-jetbrains-mono), monospace",
+                            }}
+                          />
+                          <button
+                            onClick={() =>
+                              actions.validateKey(pr.id as ProviderId)
+                            }
+                            disabled={state.keyValidating[pr.id as ProviderId]}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 7,
+                              border: `1px solid ${k.c ? "var(--c-borderStrong)" : PRIMARY}`,
+                              background: k.c ? "transparent" : PRIMARY,
+                              color: k.c
+                                ? "var(--c-text2)"
+                                : "var(--c-primaryText)",
+                              borderRadius: 8,
+                              fontSize: 12.5,
+                              fontWeight: 600,
+                              padding: "9px 15px",
+                              ...(state.keyValidating[pr.id as ProviderId] && {
+                                cursor: "not-allowed",
+                              }),
+                            }}
+                          >
+                            {state.keyValidating[pr.id as ProviderId] && (
+                              <ButtonSpinner
+                                size={12}
+                                color={
+                                  k.c
+                                    ? "var(--c-text2)"
+                                    : "var(--c-primaryText)"
+                                }
+                              />
+                            )}
+                            {state.keyValidating[pr.id as ProviderId]
+                              ? "Saving…"
+                              : k.c
+                                ? "Update key"
+                                : "Save key"}
+                          </button>
+                          {k.c && (
+                            <Hoverable
+                              as="button"
+                              onClick={() =>
+                                actions.openConfirmDialog({
+                                  kind: "removeKey",
+                                  providerId: pr.id as ProviderId,
+                                })
+                              }
+                              style={{
+                                background: "none",
+                                border: "1px solid var(--c-borderStrong)",
+                                borderRadius: 8,
+                                color: "var(--c-text3)",
+                                fontSize: 12.5,
+                                padding: "9px 13px",
+                              }}
+                              hoverStyle={{
+                                color: "#d47a7a",
+                                borderColor: "#4a2626",
+                              }}
+                            >
+                              Remove
+                            </Hoverable>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
             </>
           )}

@@ -10,6 +10,7 @@ import type {
 import { usePopoverDismiss } from "@/hooks/usePopoverDismiss";
 import { ButtonSpinner } from "./ButtonSpinner";
 import { Hoverable } from "./Hoverable";
+import { Skeleton } from "./Skeleton";
 import { PRIMARY, RED, popoverStyle } from "./styleHelpers";
 import type { GenoraViewProps } from "./viewProps";
 
@@ -23,8 +24,13 @@ const FORMAT_HINTS: Record<PlatformId, (len: number) => string> = {
   substack: () => "Substack · warm newsletter voice",
 };
 
-export function OutputView({ state, derived, actions }: GenoraViewProps) {
-  const showOutput = !state.generating;
+export function OutputView({
+  state,
+  derived,
+  loading,
+  actions,
+}: GenoraViewProps) {
+  const showOutput = !state.generating && !loading.postDetail;
   const [viewMode, setViewMode] = useState<OutputViewMode>("tabs");
   const canSideBySide = state.outPlatforms.length > 1;
   const activeFailed = state.outputStatus[state.activeTab] === "failed";
@@ -144,17 +150,9 @@ export function OutputView({ state, derived, actions }: GenoraViewProps) {
             animation: "ffade .3s ease",
           }}
         >
-          <div
-            style={{
-              width: 26,
-              height: 26,
-              border: "2px solid var(--c-borderStrong)",
-              borderTopColor: "var(--c-text)",
-              borderRadius: "50%",
-              animation: "fspin .8s linear infinite",
-              marginBottom: 22,
-            }}
-          />
+          <div style={{ marginBottom: 22 }}>
+            <ButtonSpinner size={26} color="var(--c-text)" />
+          </div>
           <div
             style={{
               fontFamily: "var(--font-newsreader), serif",
@@ -252,6 +250,38 @@ export function OutputView({ state, derived, actions }: GenoraViewProps) {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {!state.generating && loading.postDetail && (
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            minHeight: 0,
+            padding: "20px 28px",
+          }}
+        >
+          <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} width={86} height={30} radius={8} />
+            ))}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 14,
+              maxWidth: 640,
+            }}
+          >
+            <Skeleton width="90%" height={16} />
+            <Skeleton width="100%" height={16} />
+            <Skeleton width="100%" height={16} />
+            <Skeleton width="70%" height={16} />
+            <Skeleton width="85%" height={16} />
           </div>
         </div>
       )}

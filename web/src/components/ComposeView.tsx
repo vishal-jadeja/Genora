@@ -5,6 +5,7 @@ import { MODELS, ORDER, PLAT, REJECTS } from "@/lib/genora/data";
 import { usePopoverDismiss } from "@/hooks/usePopoverDismiss";
 import { ButtonSpinner } from "./ButtonSpinner";
 import { Hoverable } from "./Hoverable";
+import { Skeleton, SkeletonText } from "./Skeleton";
 import {
   AMBER,
   GREEN,
@@ -17,7 +18,12 @@ import {
 } from "./styleHelpers";
 import type { GenoraViewProps } from "./viewProps";
 
-export function ComposeView({ state, derived, actions }: GenoraViewProps) {
+export function ComposeView({
+  state,
+  derived,
+  loading,
+  actions,
+}: GenoraViewProps) {
   const composeFolderOptions = [
     { id: null as string | null, name: "No folder" },
     ...state.folders.map((f) => ({ id: f.id, name: f.name })),
@@ -379,21 +385,25 @@ export function ComposeView({ state, derived, actions }: GenoraViewProps) {
                 flexDirection: "column",
               }}
             >
-              <input
-                value={state.composeTitle}
-                onChange={(e) => actions.onTitle(e.target.value)}
-                placeholder="Title"
-                style={{
-                  background: "none",
-                  border: "none",
-                  fontFamily: "var(--font-newsreader), serif",
-                  fontSize: 36,
-                  fontWeight: 500,
-                  letterSpacing: "-.02em",
-                  padding: 0,
-                  color: "var(--c-text)",
-                }}
-              />
+              {loading.postDetail ? (
+                <Skeleton width="55%" height={36} radius={7} />
+              ) : (
+                <input
+                  value={state.composeTitle}
+                  onChange={(e) => actions.onTitle(e.target.value)}
+                  placeholder="Title"
+                  style={{
+                    background: "none",
+                    border: "none",
+                    fontFamily: "var(--font-newsreader), serif",
+                    fontSize: 36,
+                    fontWeight: 500,
+                    letterSpacing: "-.02em",
+                    padding: 0,
+                    color: "var(--c-text)",
+                  }}
+                />
+              )}
               <div
                 style={{
                   display: "flex",
@@ -492,22 +502,33 @@ export function ComposeView({ state, derived, actions }: GenoraViewProps) {
                   />
                 </div>
               </div>
-              <textarea
-                value={state.draft}
-                onChange={(e) => actions.onDraft(e.target.value)}
-                placeholder="Write the raw thought. One real idea, an opinion, a detail — Genora handles the rest."
-                style={{
-                  background: "none",
-                  border: "none",
-                  resize: "none",
-                  fontFamily: "var(--font-newsreader), serif",
-                  fontSize: 19,
-                  lineHeight: 1.7,
-                  color: "var(--c-text2)",
-                  minHeight: 320,
-                  flex: 1,
-                }}
-              />
+              {loading.postDetail ? (
+                <div style={{ paddingTop: 8 }}>
+                  <SkeletonText
+                    lines={5}
+                    gap={14}
+                    lineHeight={16}
+                    lastLineWidth="45%"
+                  />
+                </div>
+              ) : (
+                <textarea
+                  value={state.draft}
+                  onChange={(e) => actions.onDraft(e.target.value)}
+                  placeholder="Write the raw thought. One real idea, an opinion, a detail — Genora handles the rest."
+                  style={{
+                    background: "none",
+                    border: "none",
+                    resize: "none",
+                    fontFamily: "var(--font-newsreader), serif",
+                    fontSize: 19,
+                    lineHeight: 1.7,
+                    color: "var(--c-text2)",
+                    minHeight: 320,
+                    flex: 1,
+                  }}
+                />
+              )}
             </div>
           </div>
 
